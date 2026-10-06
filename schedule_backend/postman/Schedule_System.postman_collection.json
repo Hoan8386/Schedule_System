@@ -1,0 +1,3617 @@
+{
+  "info": {
+    "_postman_id": "1df346b4-11c0-4cd9-9e06-schedule-system",
+    "name": "Schedule System API",
+    "description": "T-ng h-p API nghi-p v- v- CRUD c-a 44 resource/controller. Body m-u d-a tr-n sql sample data.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api"
+    },
+    {
+      "key": "id",
+      "value": "1"
+    },
+    {
+      "key": "employeeId",
+      "value": "3"
+    },
+    {
+      "key": "storeId",
+      "value": "1"
+    },
+    {
+      "key": "shiftByDateId",
+      "value": "1"
+    },
+    {
+      "key": "schedulePeriodId",
+      "value": "1"
+    },
+    {
+      "key": "roleId",
+      "value": "1"
+    },
+    {
+      "key": "permissionId",
+      "value": "1"
+    },
+    {
+      "key": "userId",
+      "value": "1"
+    },
+    {
+      "key": "resourceId",
+      "value": "1"
+    },
+    {
+      "key": "attachmentId",
+      "value": "1"
+    },
+    {
+      "key": "attendanceId",
+      "value": "1"
+    },
+    {
+      "key": "auditLogId",
+      "value": "1"
+    },
+    {
+      "key": "bonusDetailId",
+      "value": "1"
+    },
+    {
+      "key": "bonusRecordId",
+      "value": "1"
+    },
+    {
+      "key": "disciplinaryRecordId",
+      "value": "1"
+    },
+    {
+      "key": "emergencyRequestId",
+      "value": "1"
+    },
+    {
+      "key": "employeeEvaluationId",
+      "value": "1"
+    },
+    {
+      "key": "employeeStoreId",
+      "value": "1"
+    },
+    {
+      "key": "employeeWorkSummaryId",
+      "value": "1"
+    },
+    {
+      "key": "evaluationCriteriaId",
+      "value": "1"
+    },
+    {
+      "key": "evaluationDetailId",
+      "value": "1"
+    },
+    {
+      "key": "eventScopeId",
+      "value": "1"
+    },
+    {
+      "key": "feedbackId",
+      "value": "1"
+    },
+    {
+      "key": "notificationId",
+      "value": "1"
+    },
+    {
+      "key": "notificationTemplateId",
+      "value": "1"
+    },
+    {
+      "key": "notificationTemplateVariableId",
+      "value": "1"
+    },
+    {
+      "key": "organizationSettingId",
+      "value": "1"
+    },
+    {
+      "key": "payrollId",
+      "value": "1"
+    },
+    {
+      "key": "payrollDetailId",
+      "value": "1"
+    },
+    {
+      "key": "regulationsRuleId",
+      "value": "1"
+    },
+    {
+      "key": "rolePermissionId",
+      "value": "1"
+    },
+    {
+      "key": "ruleId",
+      "value": "1"
+    },
+    {
+      "key": "shiftAssignmentId",
+      "value": "1"
+    },
+    {
+      "key": "shiftId",
+      "value": "1"
+    },
+    {
+      "key": "specialEventId",
+      "value": "1"
+    },
+    {
+      "key": "storeManagerId",
+      "value": "1"
+    },
+    {
+      "key": "systemConfigId",
+      "value": "1"
+    },
+    {
+      "key": "testAssignmentId",
+      "value": "1"
+    },
+    {
+      "key": "testId",
+      "value": "1"
+    },
+    {
+      "key": "testOptionId",
+      "value": "1"
+    },
+    {
+      "key": "testQuestionId",
+      "value": "1"
+    },
+    {
+      "key": "testResultId",
+      "value": "1"
+    },
+    {
+      "key": "todoId",
+      "value": "1"
+    },
+    {
+      "key": "userRoleId",
+      "value": "1"
+    },
+    {
+      "key": "variableId",
+      "value": "1"
+    },
+    {
+      "key": "violationId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Business APIs",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          }
+        },
+        {
+          "name": "List stores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/stores-status=ACTIVE"
+          }
+        },
+        {
+          "name": "List employees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees-status=ACTIVE"
+          }
+        },
+        {
+          "name": "Schedule periods by store",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/schedule/periods-storeId={{storeId}}"
+          }
+        },
+        {
+          "name": "Active shifts by store",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/schedule/shifts-storeId={{storeId}}"
+          }
+        },
+        {
+          "name": "Calendar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/schedule/calendar-from=2026-10-01&to=2026-10-31"
+          }
+        },
+        {
+          "name": "Employee assignments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/schedule/assignments-employeeId={{employeeId}}"
+          }
+        },
+        {
+          "name": "Register shift",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/schedule/assignments",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"shiftByDateId\": 1,\n  \"employeeId\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "Attendance by employee",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/attendance-employeeId={{employeeId}}"
+          }
+        },
+        {
+          "name": "Check in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/attendance/check-in",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"employeeId\": 3,\n  \"latitude\": 10.7769,\n  \"longitude\": 106.7009\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resource APIs (44 controllers)",
+      "description": "M-i folder t--ng -ng m-t resource controller.",
+      "item": [
+        {
+          "name": "AttachmentController - attachment",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/attachment"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/attachment/{{attachmentId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/attachment",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"fileName\": \"Postman sample\",\n  \"filePath\": \"sample\",\n  \"fileType\": \"sample\",\n  \"fileSize\": 1,\n  \"uploadedBy\": 1\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/attachment/{{attachmentId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"fileName\": \"Postman sample\",\n  \"filePath\": \"sample\",\n  \"fileType\": \"sample\",\n  \"fileSize\": 1,\n  \"uploadedBy\": 1\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/attachment/{{attachmentId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AttendanceController - attendance",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/attendance"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/attendance/{{attendanceId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/attendance",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 3,\n  \"shiftByDateId\": 1,\n  \"attachmentId\": 1,\n  \"checkInAt\": \"2026-10-05T06:58:00\",\n  \"checkInLatitude\": 10.7769,\n  \"checkInLongitude\": 106.7009,\n  \"checkInAccuracy\": 0,\n  \"checkOutAt\": \"2026-10-05T08:00:00\",\n  \"checkOutLatitude\": 0,\n  \"checkOutLongitude\": 0,\n  \"checkOutAccuracy\": 0,\n  \"workedHours\": 0,\n  \"attendanceStatus\": \"PRESENT\",\n  \"scheduleMatchStatus\": \"MATCHED\",\n  \"approvalStatus\": \"PENDING\",\n  \"approvedBy\": 1,\n  \"note\": \"Postman sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/attendance/{{attendanceId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 3,\n  \"shiftByDateId\": 1,\n  \"attachmentId\": 1,\n  \"checkInAt\": \"2026-10-05T06:58:00\",\n  \"checkInLatitude\": 10.7769,\n  \"checkInLongitude\": 106.7009,\n  \"checkInAccuracy\": 0,\n  \"checkOutAt\": \"2026-10-05T08:00:00\",\n  \"checkOutLatitude\": 0,\n  \"checkOutLongitude\": 0,\n  \"checkOutAccuracy\": 0,\n  \"workedHours\": 0,\n  \"attendanceStatus\": \"PRESENT\",\n  \"scheduleMatchStatus\": \"MATCHED\",\n  \"approvalStatus\": \"PENDING\",\n  \"approvedBy\": 1,\n  \"note\": \"Postman sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/attendance/{{attendanceId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AuditLogController - audit_log",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/audit_log"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/audit_log/{{auditLogId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/audit_log",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"auditId\": 1,\n  \"userId\": 1,\n  \"action\": \"sample\",\n  \"entityType\": \"sample\",\n  \"entityId\": 1,\n  \"oldValue\": \"sample\",\n  \"newValue\": \"sample\",\n  \"ipAddress\": \"Sample data from Postman\",\n  \"userAgent\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/audit_log/{{auditLogId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"auditId\": 1,\n  \"userId\": 1,\n  \"action\": \"sample\",\n  \"entityType\": \"sample\",\n  \"entityId\": 1,\n  \"oldValue\": \"sample\",\n  \"newValue\": \"sample\",\n  \"ipAddress\": \"Sample data from Postman\",\n  \"userAgent\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/audit_log/{{auditLogId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "BonusDetailController - bonus_detail",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/bonus_detail"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/bonus_detail/{{bonusDetailId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/bonus_detail",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"bonusRecordId\": 1,\n  \"ruleId\": 1,\n  \"type\": \"sample\",\n  \"amount\": 0,\n  \"reason\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/bonus_detail/{{bonusDetailId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"bonusRecordId\": 1,\n  \"ruleId\": 1,\n  \"type\": \"sample\",\n  \"amount\": 0,\n  \"reason\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/bonus_detail/{{bonusDetailId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "BonusRecordController - bonus_record",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/bonus_record"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/bonus_record/{{bonusRecordId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/bonus_record",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"payrollMonth\": \"sample\",\n  \"totalBonus\": 0,\n  \"totalPenalty\": 0,\n  \"totalAmount\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"approvedBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/bonus_record/{{bonusRecordId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"payrollMonth\": \"sample\",\n  \"totalBonus\": 0,\n  \"totalPenalty\": 0,\n  \"totalAmount\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"approvedBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/bonus_record/{{bonusRecordId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DisciplinaryRecordController - disciplinary_record",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/disciplinary_record"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/disciplinary_record/{{disciplinaryRecordId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/disciplinary_record",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"disciplinaryId\": 1,\n  \"storeId\": 1,\n  \"employeeId\": 1,\n  \"disciplinaryType\": \"sample\",\n  \"amount\": 0,\n  \"reason\": \"sample\",\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"approvedBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/disciplinary_record/{{disciplinaryRecordId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"disciplinaryId\": 1,\n  \"storeId\": 1,\n  \"employeeId\": 1,\n  \"disciplinaryType\": \"sample\",\n  \"amount\": 0,\n  \"reason\": \"sample\",\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"approvedBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/disciplinary_record/{{disciplinaryRecordId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EmergencyRequestController - emergency_request",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/emergency_request"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/emergency_request/{{emergencyRequestId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/emergency_request",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"assignmentId\": 1,\n  \"requestType\": \"sample\",\n  \"fromShiftAssignmentId\": 1,\n  \"toAssignmentId\": 1,\n  \"reason\": \"sample\",\n  \"status\": \"ACTIVE\",\n  \"requestedAt\": \"2026-10-05T08:00:00\",\n  \"processedBy\": 1,\n  \"processedAt\": \"2026-10-05T08:00:00\",\n  \"processNote\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/emergency_request/{{emergencyRequestId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"assignmentId\": 1,\n  \"requestType\": \"sample\",\n  \"fromShiftAssignmentId\": 1,\n  \"toAssignmentId\": 1,\n  \"reason\": \"sample\",\n  \"status\": \"ACTIVE\",\n  \"requestedAt\": \"2026-10-05T08:00:00\",\n  \"processedBy\": 1,\n  \"processedAt\": \"2026-10-05T08:00:00\",\n  \"processNote\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/emergency_request/{{emergencyRequestId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EmployeeController - employees",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/employees"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/employees/{{employeeId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/employees",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"userId\": 4,\n  \"employeeCode\": \"NV0099\",\n  \"fullName\": \"Nguyen Van Postman\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"gender\": \"MALE\",\n  \"email\": \"postman.employee@schedulesystem.local\",\n  \"phone\": \"0900000099\",\n  \"address\": \"TP. Ho Chi Minh\",\n  \"idCardFrontId\": 1,\n  \"idCardBackId\": 1,\n  \"hireDate\": \"2026-01-01\",\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/employees/{{employeeId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"userId\": 4,\n  \"employeeCode\": \"NV0099\",\n  \"fullName\": \"Nguyen Van Postman\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"gender\": \"MALE\",\n  \"email\": \"postman.employee@schedulesystem.local\",\n  \"phone\": \"0900000099\",\n  \"address\": \"TP. Ho Chi Minh\",\n  \"idCardFrontId\": 1,\n  \"idCardBackId\": 1,\n  \"hireDate\": \"2026-01-01\",\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/employees/{{employeeId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EmployeeEvaluationController - employee_evaluation",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/employee_evaluation"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/employee_evaluation/{{employeeEvaluationId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/employee_evaluation",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"evaluationId\": 1,\n  \"evaluatorId\": 1,\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"shiftByDateId\": 1,\n  \"periodStart\": \"sample\",\n  \"periodEnd\": \"sample\",\n  \"totalScore\": 0,\n  \"finalRating\": \"sample\",\n  \"status\": \"ACTIVE\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/employee_evaluation/{{employeeEvaluationId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"evaluationId\": 1,\n  \"evaluatorId\": 1,\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"shiftByDateId\": 1,\n  \"periodStart\": \"sample\",\n  \"periodEnd\": \"sample\",\n  \"totalScore\": 0,\n  \"finalRating\": \"sample\",\n  \"status\": \"ACTIVE\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/employee_evaluation/{{employeeEvaluationId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EmployeeStoreController - employee_store",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/employee_store"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/employee_store/{{employeeStoreId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/employee_store",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"startDate\": \"2026-10-05\",\n  \"endDate\": \"2026-10-05\",\n  \"isPrimary\": false,\n  \"status\": \"ACTIVE\",\n  \"assignedBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/employee_store/{{employeeStoreId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"startDate\": \"2026-10-05\",\n  \"endDate\": \"2026-10-05\",\n  \"isPrimary\": false,\n  \"status\": \"ACTIVE\",\n  \"assignedBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/employee_store/{{employeeStoreId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EmployeeWorkSummaryController - employee_work_summary",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/employee_work_summary"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/employee_work_summary/{{employeeWorkSummaryId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/employee_work_summary",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"summaryId\": 1,\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"periodStart\": \"sample\",\n  \"periodEnd\": \"sample\",\n  \"totalShifts\": 1,\n  \"totalWorkedHours\": 0,\n  \"totalScheduledHours\": 0,\n  \"averageHoursPerShift\": 0,\n  \"totalLateMinutes\": 1,\n  \"totalEarlyLeaveMinutes\": 1,\n  \"attendanceRate\": 0,\n  \"targetValue\": 0,\n  \"actualValue\": 0,\n  \"exceededValue\": 0,\n  \"evaluationScore\": 0,\n  \"calculatedAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/employee_work_summary/{{employeeWorkSummaryId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"summaryId\": 1,\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"periodStart\": \"sample\",\n  \"periodEnd\": \"sample\",\n  \"totalShifts\": 1,\n  \"totalWorkedHours\": 0,\n  \"totalScheduledHours\": 0,\n  \"averageHoursPerShift\": 0,\n  \"totalLateMinutes\": 1,\n  \"totalEarlyLeaveMinutes\": 1,\n  \"attendanceRate\": 0,\n  \"targetValue\": 0,\n  \"actualValue\": 0,\n  \"exceededValue\": 0,\n  \"evaluationScore\": 0,\n  \"calculatedAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/employee_work_summary/{{employeeWorkSummaryId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EvaluationCriteriaController - evaluation_criteria",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/evaluation_criteria"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/evaluation_criteria/{{evaluationCriteriaId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/evaluation_criteria",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"criteriaId\": 1,\n  \"criteriaCode\": \"POSTMAN_SAMPLE\",\n  \"criteriaName\": \"Postman sample\",\n  \"criteriaType\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"targetValue\": 0,\n  \"periodType\": \"sample\",\n  \"maxScore\": 0,\n  \"weight\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/evaluation_criteria/{{evaluationCriteriaId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"criteriaId\": 1,\n  \"criteriaCode\": \"POSTMAN_SAMPLE\",\n  \"criteriaName\": \"Postman sample\",\n  \"criteriaType\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"targetValue\": 0,\n  \"periodType\": \"sample\",\n  \"maxScore\": 0,\n  \"weight\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/evaluation_criteria/{{evaluationCriteriaId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EvaluationDetailController - evaluation_detail",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/evaluation_detail"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/evaluation_detail/{{evaluationDetailId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/evaluation_detail",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"evaluationId\": 1,\n  \"criteriaId\": 1,\n  \"score\": 0,\n  \"actualValue\": 0,\n  \"targetValue\": 0,\n  \"exceededValue\": 0,\n  \"comment\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/evaluation_detail/{{evaluationDetailId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"evaluationId\": 1,\n  \"criteriaId\": 1,\n  \"score\": 0,\n  \"actualValue\": 0,\n  \"targetValue\": 0,\n  \"exceededValue\": 0,\n  \"comment\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/evaluation_detail/{{evaluationDetailId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EventScopeController - event_scope",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/event_scope"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/event_scope/{{eventScopeId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/event_scope",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"eventId\": 1,\n  \"scopeType\": \"sample\",\n  \"schedulePeriodId\": 1,\n  \"shiftByDateId\": 1,\n  \"storeId\": 1,\n  \"dayOfWeek\": 1,\n  \"shiftId\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/event_scope/{{eventScopeId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"eventId\": 1,\n  \"scopeType\": \"sample\",\n  \"schedulePeriodId\": 1,\n  \"shiftByDateId\": 1,\n  \"storeId\": 1,\n  \"dayOfWeek\": 1,\n  \"shiftId\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/event_scope/{{eventScopeId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "FeedbackController - feedback",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/feedback"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/feedback/{{feedbackId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/feedback",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"shiftByDateId\": 1,\n  \"feedbackType\": \"sample\",\n  \"targetEmployeeId\": 1,\n  \"rating\": 0,\n  \"content\": \"Sample data from Postman\",\n  \"status\": \"ACTIVE\",\n  \"handledBy\": 1,\n  \"handledAt\": \"2026-10-05T08:00:00\",\n  \"response\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/feedback/{{feedbackId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"shiftByDateId\": 1,\n  \"feedbackType\": \"sample\",\n  \"targetEmployeeId\": 1,\n  \"rating\": 0,\n  \"content\": \"Sample data from Postman\",\n  \"status\": \"ACTIVE\",\n  \"handledBy\": 1,\n  \"handledAt\": \"2026-10-05T08:00:00\",\n  \"response\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/feedback/{{feedbackId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "NotificationController - notification",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/notification"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/notification/{{notificationId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/notification",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"notificationTemplateId\": 1,\n  \"title\": \"sample\",\n  \"content\": \"Sample data from Postman\",\n  \"notificationType\": \"sample\",\n  \"sourceType\": \"sample\",\n  \"sourceId\": 1,\n  \"isRead\": false,\n  \"readAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/notification/{{notificationId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"notificationTemplateId\": 1,\n  \"title\": \"sample\",\n  \"content\": \"Sample data from Postman\",\n  \"notificationType\": \"sample\",\n  \"sourceType\": \"sample\",\n  \"sourceId\": 1,\n  \"isRead\": false,\n  \"readAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/notification/{{notificationId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "NotificationTemplateController - notification_template",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/notification_template"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/notification_template/{{notificationTemplateId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/notification_template",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"templateCode\": \"POSTMAN_SAMPLE\",\n  \"title\": \"sample\",\n  \"content\": \"Sample data from Postman\",\n  \"status\": \"ACTIVE\",\n  \"updatedBy\": \"2026-10-05\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/notification_template/{{notificationTemplateId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"templateCode\": \"POSTMAN_SAMPLE\",\n  \"title\": \"sample\",\n  \"content\": \"Sample data from Postman\",\n  \"status\": \"ACTIVE\",\n  \"updatedBy\": \"2026-10-05\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/notification_template/{{notificationTemplateId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "NotificationTemplateVariableController - notification_template_variable (khoa ghep)",
+          "description": "PUT/DELETE nh-n khoa ghep trong JSON body theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/notification_template_variable"
+              }
+            },
+            {
+              "name": "GET by composite key (controller kh-ng expose GET /{id})",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/notification_template_variable"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/notification_template_variable",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"notificationTemplateId\": 1,\n  \"variableId\": 1\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update (composite key in body)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/notification_template_variable",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"notificationTemplateId\": 1,\n  \"variableId\": 1\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE (composite key in body)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/notification_template_variable",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"notificationTemplateId\": 1,\n  \"variableId\": 1\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "OrganizationSettingController - organization_setting",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/organization_setting"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/organization_setting/{{organizationSettingId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/organization_setting",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"organizationName\": \"Postman sample\",\n  \"logoFileId\": 1,\n  \"faviconFileId\": 1,\n  \"primaryColor\": \"sample\",\n  \"secondaryColor\": \"sample\",\n  \"contactEmail\": \"postman@example.com\",\n  \"contactPhone\": \"0900000099\",\n  \"regulations\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/organization_setting/{{organizationSettingId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"organizationName\": \"Postman sample\",\n  \"logoFileId\": 1,\n  \"faviconFileId\": 1,\n  \"primaryColor\": \"sample\",\n  \"secondaryColor\": \"sample\",\n  \"contactEmail\": \"postman@example.com\",\n  \"contactPhone\": \"0900000099\",\n  \"regulations\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/organization_setting/{{organizationSettingId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PayrollController - payroll",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/payroll"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/payroll/{{payrollId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/payroll",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"payrollMonth\": \"sample\",\n  \"baseAmount\": 0,\n  \"bonusAmount\": 0,\n  \"penaltyAmount\": 0,\n  \"totalAmount\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"approvedBy\": 1,\n  \"UNIQUE\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/payroll/{{payrollId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"employeeId\": 1,\n  \"storeId\": 1,\n  \"payrollMonth\": \"sample\",\n  \"baseAmount\": 0,\n  \"bonusAmount\": 0,\n  \"penaltyAmount\": 0,\n  \"totalAmount\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"approvedBy\": 1,\n  \"UNIQUE\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/payroll/{{payrollId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PayrollDetailController - payroll_detail",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/payroll_detail"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/payroll_detail/{{payrollDetailId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/payroll_detail",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"payrollId\": 1,\n  \"shiftByDateId\": 1,\n  \"attendanceId\": 1,\n  \"bonusRecordId\": 1,\n  \"violationId\": 1,\n  \"itemType\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"amount\": 0,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/payroll_detail/{{payrollDetailId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"payrollId\": 1,\n  \"shiftByDateId\": 1,\n  \"attendanceId\": 1,\n  \"bonusRecordId\": 1,\n  \"violationId\": 1,\n  \"itemType\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"amount\": 0,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/payroll_detail/{{payrollDetailId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PermissionController - permission",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/permission"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/permission/{{permissionId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/permission",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"permissionCode\": \"POSTMAN_VIEW\",\n  \"permissionName\": \"Postman view\",\n  \"description\": \"Sample data from Postman\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/permission/{{permissionId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"permissionCode\": \"POSTMAN_VIEW\",\n  \"permissionName\": \"Postman view\",\n  \"description\": \"Sample data from Postman\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/permission/{{permissionId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "RegulationsRuleController - regulations_rule",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/regulations_rule"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/regulations_rule/{{regulationsRuleId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/regulations_rule",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"organizationSettingId\": 1,\n  \"ruleId\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/regulations_rule/{{regulationsRuleId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"organizationSettingId\": 1,\n  \"ruleId\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/regulations_rule/{{regulationsRuleId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "RoleController - role",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/role"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/role/{{roleId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/role",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"roleCode\": \"POSTMAN\",\n  \"roleName\": \"Postman role\",\n  \"description\": \"Sample data from Postman\",\n  \"status\": \"ACTIVE\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/role/{{roleId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"roleCode\": \"POSTMAN\",\n  \"roleName\": \"Postman role\",\n  \"description\": \"Sample data from Postman\",\n  \"status\": \"ACTIVE\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/role/{{roleId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "RolePermissionController - role_permission (khoa ghep)",
+          "description": "PUT/DELETE nh-n khoa ghep trong JSON body theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/role_permission"
+              }
+            },
+            {
+              "name": "GET by composite key (controller kh-ng expose GET /{id})",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/role_permission"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/role_permission",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"roleId\": 1,\n  \"permissionId\": 1\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update (composite key in body)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/role_permission",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"roleId\": 1,\n  \"permissionId\": 1\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE (composite key in body)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/role_permission",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"roleId\": 1,\n  \"permissionId\": 1\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "RuleController - rule",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/rule"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/rule/{{ruleId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/rule",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"ruleCode\": \"POSTMAN_SAMPLE\",\n  \"ruleName\": \"Postman sample\",\n  \"category\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"penaltyType\": \"sample\",\n  \"penaltyAmount\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"updatedBy\": \"2026-10-05\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/rule/{{ruleId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"ruleCode\": \"POSTMAN_SAMPLE\",\n  \"ruleName\": \"Postman sample\",\n  \"category\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"penaltyType\": \"sample\",\n  \"penaltyAmount\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"updatedBy\": \"2026-10-05\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/rule/{{ruleId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "SchedulePeriodController - schedule_period",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/schedule_period"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/schedule_period/{{schedulePeriodId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/schedule_period",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"storeId\": 1,\n  \"periodName\": \"Lich thang 11/2026\",\n  \"periodType\": \"MONTH\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-30\",\n  \"registrationOpenAt\": \"2026-10-20T08:00:00\",\n  \"registrationCloseAt\": \"2026-10-27T23:59:59\",\n  \"status\": \"OPEN\",\n  \"createdBy\": 2,\n  \"finalizedBy\": 1,\n  \"finalizedAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/schedule_period/{{schedulePeriodId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"storeId\": 1,\n  \"periodName\": \"Lich thang 11/2026\",\n  \"periodType\": \"MONTH\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-30\",\n  \"registrationOpenAt\": \"2026-10-20T08:00:00\",\n  \"registrationCloseAt\": \"2026-10-27T23:59:59\",\n  \"status\": \"OPEN\",\n  \"createdBy\": 2,\n  \"finalizedBy\": 1,\n  \"finalizedAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/schedule_period/{{schedulePeriodId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ShiftAssignmentController - shift_assignment",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/shift_assignment"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/shift_assignment/{{shiftAssignmentId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/shift_assignment",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"assignmentId\": 1,\n  \"shiftByDateId\": 1,\n  \"employeeId\": 3,\n  \"status\": \"PENDING\",\n  \"approvedBy\": 2,\n  \"cancelledBy\": 1,\n  \"cancelledAt\": \"2026-10-05T08:00:00\",\n  \"cancellationReason\": \"sample\",\n  \"note\": \"Sample data from Postman\",\n  \"UNIQUE\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/shift_assignment/{{shiftAssignmentId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"assignmentId\": 1,\n  \"shiftByDateId\": 1,\n  \"employeeId\": 3,\n  \"status\": \"PENDING\",\n  \"approvedBy\": 2,\n  \"cancelledBy\": 1,\n  \"cancelledAt\": \"2026-10-05T08:00:00\",\n  \"cancellationReason\": \"sample\",\n  \"note\": \"Sample data from Postman\",\n  \"UNIQUE\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/shift_assignment/{{shiftAssignmentId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ShiftByDateController - shift_by_date",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/shift_by_date"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/shift_by_date/{{shiftByDateId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/shift_by_date",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"shiftId\": 1,\n  \"schedulePeriodId\": 1,\n  \"workDate\": \"2026-11-01\",\n  \"capacity\": 5,\n  \"shiftName\": \"Ca Postman\",\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"16:00:00\",\n  \"maxCapacity\": 5,\n  \"payRate\": 30000,\n  \"status\": \"OPEN\",\n  \"managerNote\": \"Sample data from Postman\",\n  \"UNIQUE\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/shift_by_date/{{shiftByDateId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"shiftId\": 1,\n  \"schedulePeriodId\": 1,\n  \"workDate\": \"2026-11-01\",\n  \"capacity\": 5,\n  \"shiftName\": \"Ca Postman\",\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"16:00:00\",\n  \"maxCapacity\": 5,\n  \"payRate\": 30000,\n  \"status\": \"OPEN\",\n  \"managerNote\": \"Sample data from Postman\",\n  \"UNIQUE\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/shift_by_date/{{shiftByDateId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ShiftController - shift",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/shift"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/shift/{{shiftId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/shift",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"storeId\": 1,\n  \"shiftCode\": \"CA_POSTMAN\",\n  \"shiftName\": \"Ca Postman\",\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"16:00:00\",\n  \"maxCapacity\": 5,\n  \"payRate\": 30000,\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"createdBy\": 2,\n  \"UNIQUE\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/shift/{{shiftId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"storeId\": 1,\n  \"shiftCode\": \"CA_POSTMAN\",\n  \"shiftName\": \"Ca Postman\",\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"16:00:00\",\n  \"maxCapacity\": 5,\n  \"payRate\": 30000,\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"createdBy\": 2,\n  \"UNIQUE\": \"sample\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/shift/{{shiftId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "SpecialEventController - special_event",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/special_event"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/special_event/{{specialEventId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/special_event",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"eventId\": 1,\n  \"eventName\": \"Postman sample\",\n  \"description\": \"Sample data from Postman\",\n  \"eventType\": \"sample\",\n  \"startDate\": \"2026-10-05\",\n  \"endDate\": \"2026-10-05\",\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/special_event/{{specialEventId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"eventId\": 1,\n  \"eventName\": \"Postman sample\",\n  \"description\": \"Sample data from Postman\",\n  \"eventType\": \"sample\",\n  \"startDate\": \"2026-10-05\",\n  \"endDate\": \"2026-10-05\",\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/special_event/{{specialEventId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "StoreController - stores",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/stores"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/stores/{{storeId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/stores",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"storeCode\": \"STORE099\",\n  \"storeName\": \"Cua hang Postman\",\n  \"logoId\": 1,\n  \"address\": \"TP. Ho Chi Minh\",\n  \"phone\": \"02800000099\",\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/stores/{{storeId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"storeCode\": \"STORE099\",\n  \"storeName\": \"Cua hang Postman\",\n  \"logoId\": 1,\n  \"address\": \"TP. Ho Chi Minh\",\n  \"phone\": \"02800000099\",\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/stores/{{storeId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "StoreManagerController - store_manager",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/store_manager"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/store_manager/{{storeManagerId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/store_manager",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"storeId\": 1,\n  \"employeeId\": 1,\n  \"startDate\": \"2026-10-05\",\n  \"endDate\": \"2026-10-05\",\n  \"status\": \"ACTIVE\",\n  \"assignedBy\": 1,\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/store_manager/{{storeManagerId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"storeId\": 1,\n  \"employeeId\": 1,\n  \"startDate\": \"2026-10-05\",\n  \"endDate\": \"2026-10-05\",\n  \"status\": \"ACTIVE\",\n  \"assignedBy\": 1,\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/store_manager/{{storeManagerId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "SystemConfigController - system_config",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/system_config"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/system_config/{{systemConfigId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/system_config",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"configId\": 1,\n  \"configKey\": \"sample\",\n  \"configValue\": \"sample\",\n  \"configType\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"updatedBy\": \"2026-10-05\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/system_config/{{systemConfigId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"configId\": 1,\n  \"configKey\": \"sample\",\n  \"configValue\": \"sample\",\n  \"configType\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"updatedBy\": \"2026-10-05\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/system_config/{{systemConfigId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TestAssignmentController - test_assignment",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test_assignment"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test_assignment/{{testAssignmentId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test_assignment",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"testId\": 1,\n  \"employeeId\": 1,\n  \"assignedBy\": 1,\n  \"dueAt\": \"2026-10-05T08:00:00\",\n  \"status\": \"ACTIVE\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test_assignment/{{testAssignmentId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"testId\": 1,\n  \"employeeId\": 1,\n  \"assignedBy\": 1,\n  \"dueAt\": \"2026-10-05T08:00:00\",\n  \"status\": \"ACTIVE\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/test_assignment/{{testAssignmentId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TestController - test",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test/{{testId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"testCode\": \"POSTMAN_SAMPLE\",\n  \"testName\": \"Postman sample\",\n  \"description\": \"Sample data from Postman\",\n  \"targetRoleId\": 1,\n  \"durationMinutes\": 1,\n  \"passingScore\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test/{{testId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"testCode\": \"POSTMAN_SAMPLE\",\n  \"testName\": \"Postman sample\",\n  \"description\": \"Sample data from Postman\",\n  \"targetRoleId\": 1,\n  \"durationMinutes\": 1,\n  \"passingScore\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/test/{{testId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TestOptionController - test_option",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test_option"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test_option/{{testOptionId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test_option",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"optionId\": 1,\n  \"questionId\": 1,\n  \"optionText\": \"sample\",\n  \"isCorrect\": false,\n  \"displayOrder\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test_option/{{testOptionId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"optionId\": 1,\n  \"questionId\": 1,\n  \"optionText\": \"sample\",\n  \"isCorrect\": false,\n  \"displayOrder\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/test_option/{{testOptionId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TestQuestionController - test_question",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test_question"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test_question/{{testQuestionId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test_question",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"questionId\": 1,\n  \"testId\": 1,\n  \"questionText\": \"sample\",\n  \"questionType\": \"sample\",\n  \"score\": 0,\n  \"displayOrder\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test_question/{{testQuestionId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"questionId\": 1,\n  \"testId\": 1,\n  \"questionText\": \"sample\",\n  \"questionType\": \"sample\",\n  \"score\": 0,\n  \"displayOrder\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/test_question/{{testQuestionId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TestResultController - test_result",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test_result"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/test_result/{{testResultId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test_result",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"testAssignmentId\": 1,\n  \"score\": 0,\n  \"passed\": \"sample\",\n  \"startedAt\": \"2026-10-05T08:00:00\",\n  \"submittedAt\": \"2026-10-05T08:00:00\",\n  \"gradedBy\": 1,\n  \"gradedAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/test_result/{{testResultId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"testAssignmentId\": 1,\n  \"score\": 0,\n  \"passed\": \"sample\",\n  \"startedAt\": \"2026-10-05T08:00:00\",\n  \"submittedAt\": \"2026-10-05T08:00:00\",\n  \"gradedBy\": 1,\n  \"gradedAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/test_result/{{testResultId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TodoController - todo",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/todo"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/todo/{{todoId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/todo",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"assigneeId\": 1,\n  \"title\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"todoType\": \"sample\",\n  \"sourceType\": \"sample\",\n  \"sourceId\": 1,\n  \"priority\": \"sample\",\n  \"dueAt\": \"2026-10-05T08:00:00\",\n  \"status\": \"ACTIVE\",\n  \"isSystemGenerated\": false,\n  \"createdBy\": 1,\n  \"completedAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/todo/{{todoId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"assigneeId\": 1,\n  \"title\": \"sample\",\n  \"description\": \"Sample data from Postman\",\n  \"todoType\": \"sample\",\n  \"sourceType\": \"sample\",\n  \"sourceId\": 1,\n  \"priority\": \"sample\",\n  \"dueAt\": \"2026-10-05T08:00:00\",\n  \"status\": \"ACTIVE\",\n  \"isSystemGenerated\": false,\n  \"createdBy\": 1,\n  \"completedAt\": \"2026-10-05T08:00:00\",\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/todo/{{todoId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "UserController - user",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/user"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/user/{{userId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/user",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"username\": \"postman_user\",\n  \"passwordHash\": \"password\",\n  \"email\": \"postman@schedulesystem.local\",\n  \"phone\": \"0900000099\",\n  \"status\": \"ACTIVE\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/user/{{userId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"username\": \"postman_user\",\n  \"passwordHash\": \"password\",\n  \"email\": \"postman@schedulesystem.local\",\n  \"phone\": \"0900000099\",\n  \"status\": \"ACTIVE\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/user/{{userId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "UserRoleController - user_role (khoa ghep)",
+          "description": "PUT/DELETE nh-n khoa ghep trong JSON body theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/user_role"
+              }
+            },
+            {
+              "name": "GET by composite key (controller kh-ng expose GET /{id})",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/user_role"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/user_role",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"userId\": 1,\n  \"roleId\": 1,\n  \"assignedBy\": 1\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update (composite key in body)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/user_role",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"userId\": 1,\n  \"roleId\": 1,\n  \"assignedBy\": 1\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE (composite key in body)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/user_role",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"userId\": 1,\n  \"roleId\": 1,\n  \"assignedBy\": 1\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "VariableController - variable",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/variable"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/variable/{{variableId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/variable",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"variableCode\": \"POSTMAN_SAMPLE\",\n  \"variableName\": \"Postman sample\",\n  \"dataType\": \"sample\",\n  \"sourceField\": \"sample\",\n  \"status\": \"ACTIVE\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/variable/{{variableId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"variableCode\": \"POSTMAN_SAMPLE\",\n  \"variableName\": \"Postman sample\",\n  \"dataType\": \"sample\",\n  \"sourceField\": \"sample\",\n  \"status\": \"ACTIVE\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/variable/{{variableId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ViolationController - violation",
+          "description": "CRUD REST theo controller.",
+          "item": [
+            {
+              "name": "GET list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/violation"
+              }
+            },
+            {
+              "name": "GET by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/violation/{{violationId}}"
+              }
+            },
+            {
+              "name": "POST create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/violation",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"ruleId\": 1,\n  \"disciplinaryCodeId\": 1,\n  \"attendanceId\": 1,\n  \"violationTime\": \"08:00:00\",\n  \"description\": \"Sample data from Postman\",\n  \"evidenceId\": 1,\n  \"ruleName\": \"Postman sample\",\n  \"category\": \"sample\",\n  \"ruleDescription\": \"Sample data from Postman\",\n  \"penaltyType\": \"sample\",\n  \"penaltyAmount\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PUT update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/violation/{{violationId}}",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n  \"ruleId\": 1,\n  \"disciplinaryCodeId\": 1,\n  \"attendanceId\": 1,\n  \"violationTime\": \"08:00:00\",\n  \"description\": \"Sample data from Postman\",\n  \"evidenceId\": 1,\n  \"ruleName\": \"Postman sample\",\n  \"category\": \"sample\",\n  \"ruleDescription\": \"Sample data from Postman\",\n  \"penaltyType\": \"sample\",\n  \"penaltyAmount\": 0,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": 1,\n  \"FOREIGN\": \"sample\"\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/violation/{{violationId}}"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
