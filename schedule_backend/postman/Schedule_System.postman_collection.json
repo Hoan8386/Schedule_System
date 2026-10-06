@@ -8,7 +8,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8080/api"
+      "value": "http://localhost:8080/api/v1"
     },
     {
       "key": "id",
@@ -314,7 +314,7 @@
       "description": "M-i folder t--ng -ng m-t resource controller.",
       "item": [
         {
-          "name": "AttachmentController - attachment",
+          "name": "attachment",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -388,7 +388,7 @@
           ]
         },
         {
-          "name": "AttendanceController - attendance",
+          "name": "attendance",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -462,7 +462,7 @@
           ]
         },
         {
-          "name": "AuditLogController - audit_log",
+          "name": "audit_log",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -536,7 +536,7 @@
           ]
         },
         {
-          "name": "BonusDetailController - bonus_detail",
+          "name": "bonus_detail",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -610,7 +610,7 @@
           ]
         },
         {
-          "name": "BonusRecordController - bonus_record",
+          "name": "bonus_record",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -684,7 +684,7 @@
           ]
         },
         {
-          "name": "DisciplinaryRecordController - disciplinary_record",
+          "name": "disciplinary_record",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -758,7 +758,7 @@
           ]
         },
         {
-          "name": "EmergencyRequestController - emergency_request",
+          "name": "emergency_request",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -832,7 +832,7 @@
           ]
         },
         {
-          "name": "EmployeeController - employees",
+          "name": "employees",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -906,7 +906,7 @@
           ]
         },
         {
-          "name": "EmployeeEvaluationController - employee_evaluation",
+          "name": "employee_evaluation",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -980,7 +980,7 @@
           ]
         },
         {
-          "name": "EmployeeStoreController - employee_store",
+          "name": "employee_store",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1054,7 +1054,7 @@
           ]
         },
         {
-          "name": "EmployeeWorkSummaryController - employee_work_summary",
+          "name": "employee_work_summary",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1128,7 +1128,7 @@
           ]
         },
         {
-          "name": "EvaluationCriteriaController - evaluation_criteria",
+          "name": "evaluation_criteria",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1202,7 +1202,7 @@
           ]
         },
         {
-          "name": "EvaluationDetailController - evaluation_detail",
+          "name": "evaluation_detail",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1276,7 +1276,7 @@
           ]
         },
         {
-          "name": "EventScopeController - event_scope",
+          "name": "event_scope",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1350,7 +1350,7 @@
           ]
         },
         {
-          "name": "FeedbackController - feedback",
+          "name": "feedback",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1424,7 +1424,7 @@
           ]
         },
         {
-          "name": "NotificationController - notification",
+          "name": "notification",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1498,7 +1498,7 @@
           ]
         },
         {
-          "name": "NotificationTemplateController - notification_template",
+          "name": "notification_template",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1572,7 +1572,7 @@
           ]
         },
         {
-          "name": "NotificationTemplateVariableController - notification_template_variable (khoa ghep)",
+          "name": "notification_template_variable (khoa ghep)",
           "description": "PUT/DELETE nh-n khoa ghep trong JSON body theo controller.",
           "item": [
             {
@@ -1660,7 +1660,7 @@
           ]
         },
         {
-          "name": "OrganizationSettingController - organization_setting",
+          "name": "organization_setting",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1734,7 +1734,7 @@
           ]
         },
         {
-          "name": "PayrollController - payroll",
+          "name": "payroll",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1808,7 +1808,7 @@
           ]
         },
         {
-          "name": "PayrollDetailController - payroll_detail",
+          "name": "payroll_detail",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1882,7 +1882,7 @@
           ]
         },
         {
-          "name": "PermissionController - permission",
+          "name": "permission",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -1956,7 +1956,7 @@
           ]
         },
         {
-          "name": "RegulationsRuleController - regulations_rule",
+          "name": "regulations_rule",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2030,7 +2030,7 @@
           ]
         },
         {
-          "name": "RoleController - role",
+          "name": "role",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2104,7 +2104,7 @@
           ]
         },
         {
-          "name": "RolePermissionController - role_permission (khoa ghep)",
+          "name": "role_permission (khoa ghep)",
           "description": "PUT/DELETE nh-n khoa ghep trong JSON body theo controller.",
           "item": [
             {
@@ -2192,7 +2192,7 @@
           ]
         },
         {
-          "name": "RuleController - rule",
+          "name": "rule",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2266,7 +2266,7 @@
           ]
         },
         {
-          "name": "SchedulePeriodController - schedule_period",
+          "name": "schedule_period",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2340,7 +2340,7 @@
           ]
         },
         {
-          "name": "ShiftAssignmentController - shift_assignment",
+          "name": "shift_assignment",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2414,7 +2414,7 @@
           ]
         },
         {
-          "name": "ShiftByDateController - shift_by_date",
+          "name": "shift_by_date",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2488,7 +2488,7 @@
           ]
         },
         {
-          "name": "ShiftController - shift",
+          "name": "shift",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2562,7 +2562,7 @@
           ]
         },
         {
-          "name": "SpecialEventController - special_event",
+          "name": "special_event",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2636,7 +2636,7 @@
           ]
         },
         {
-          "name": "StoreController - stores",
+          "name": "stores",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2710,7 +2710,7 @@
           ]
         },
         {
-          "name": "StoreManagerController - store_manager",
+          "name": "store_manager",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2784,7 +2784,7 @@
           ]
         },
         {
-          "name": "SystemConfigController - system_config",
+          "name": "system_config",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2858,7 +2858,7 @@
           ]
         },
         {
-          "name": "TestAssignmentController - test_assignment",
+          "name": "test_assignment",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -2932,7 +2932,7 @@
           ]
         },
         {
-          "name": "TestController - test",
+          "name": "test",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -3006,7 +3006,7 @@
           ]
         },
         {
-          "name": "TestOptionController - test_option",
+          "name": "test_option",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -3080,7 +3080,7 @@
           ]
         },
         {
-          "name": "TestQuestionController - test_question",
+          "name": "test_question",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -3154,7 +3154,7 @@
           ]
         },
         {
-          "name": "TestResultController - test_result",
+          "name": "test_result",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -3228,7 +3228,7 @@
           ]
         },
         {
-          "name": "TodoController - todo",
+          "name": "todo",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -3302,7 +3302,7 @@
           ]
         },
         {
-          "name": "UserController - user",
+          "name": "user",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -3376,7 +3376,7 @@
           ]
         },
         {
-          "name": "UserRoleController - user_role (khoa ghep)",
+          "name": "user_role (khoa ghep)",
           "description": "PUT/DELETE nh-n khoa ghep trong JSON body theo controller.",
           "item": [
             {
@@ -3464,7 +3464,7 @@
           ]
         },
         {
-          "name": "VariableController - variable",
+          "name": "variable",
           "description": "CRUD REST theo controller.",
           "item": [
             {
@@ -3538,7 +3538,7 @@
           ]
         },
         {
-          "name": "ViolationController - violation",
+          "name": "violation",
           "description": "CRUD REST theo controller.",
           "item": [
             {
