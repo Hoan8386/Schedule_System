@@ -58,6 +58,8 @@ public class PermissionService {
         entity.setPermissionCode((String) body.get("permissionCode"));
         entity.setPermissionName((String) body.get("permissionName"));
         entity.setDescription((String) body.get("description"));
+        entity.setApiPath((String) body.get("apiPath"));
+        entity.setMethod((String) body.get("method"));
         return entity;
     }
 
@@ -66,5 +68,7 @@ public class PermissionService {
         entity.setPermissionCode((String) body.get("permissionCode"));
         entity.setPermissionName((String) body.get("permissionName"));
         entity.setDescription((String) body.get("description"));
+        entity.setApiPath((String) body.get("apiPath"));
+        entity.setMethod((String) body.get("method"));
     }
 }
