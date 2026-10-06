@@ -7,6 +7,9 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.vn.schedule.repository.UserRepository;
+import com.vn.schedule.repository.UserRoleRepository;
+import com.vn.schedule.repository.RolePermissionRepository;
+import com.vn.schedule.repository.PermissionRepository;
 
 @Configuration
 public class PermissionInterceptorConfiguration implements WebMvcConfigurer {
@@ -14,8 +17,13 @@ public class PermissionInterceptorConfiguration implements WebMvcConfigurer {
     private PermissionInterceptor permissionInterceptor;
 
     @Bean
-    PermissionInterceptor getPermissionInterceptor(UserRepository userRepository) {
-        return new PermissionInterceptor(userRepository);
+    PermissionInterceptor getPermissionInterceptor(
+            UserRepository userRepository,
+            UserRoleRepository userRoleRepository,
+            RolePermissionRepository rolePermissionRepository,
+            PermissionRepository permissionRepository) {
+        return new PermissionInterceptor(
+                userRepository, userRoleRepository, rolePermissionRepository, permissionRepository);
     }
 
     @Override

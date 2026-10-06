@@ -21,5 +21,10 @@ public class Permission {
     private String permissionName;
     @Column(name = "description")
     private String description;
-}
 
+    @Column(name = "apiPath")
+    private String apiPath;
+
+    @Column(name = "method", length = 10)
+    private String method;
+}
