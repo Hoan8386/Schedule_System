@@ -1,17 +1,17 @@
 package com.vn.shopping.controller;
 
+import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
-import java.util.Map;
+import com.vn.shopping.dto.HealthResponse;
 
 @RestController
 public class HealthController {
     @GetMapping("/health")
-    public Map<String, String> health() {
-        return Map.of("status", "UP", "timestamp", Instant.now().toString());
+    public ResponseEntity<HealthResponse> health() {
+        return ResponseEntity.ok(new HealthResponse("UP", Instant.now().toString()));
     }
 }
-
-

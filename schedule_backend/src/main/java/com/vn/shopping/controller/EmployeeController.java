@@ -1,16 +1,17 @@
 package com.vn.shopping.controller;
 
+import com.vn.shopping.dto.*;
 import com.vn.shopping.domain.Employee;
 import com.vn.shopping.dto.DtoMapper;
 import com.vn.shopping.dto.EmployeeRequest;
 import com.vn.shopping.repository.EmployeeRepository;
 import com.vn.shopping.repository.UserRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/employees")
@@ -24,19 +25,19 @@ public class EmployeeController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> list(@RequestParam(required = false) String status) {
-        return DtoMapper.toList(status == null ? employees.findAll() : employees.findByStatusOrderByFullName(status));
+    public ResponseEntity<List<EmployeeResponse>> list(@RequestParam(required = false) String status) {
+        return ResponseEntity.ok(responses(status == null ? employees.findAll() : employees.findByStatusOrderByFullName(status)));
     }
 
     @GetMapping("/{id}")
-    public Map<String, Object> get(@PathVariable Integer id) {
-        return DtoMapper.toMap(employees.findById(id).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found")));
+    public ResponseEntity<EmployeeResponse> get(@PathVariable Integer id) {
+        return ResponseEntity.ok(response(employees.findById(id).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"))));
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, Object> create(@RequestBody EmployeeRequest request) {
+
+    public ResponseEntity<EmployeeResponse> create(@RequestBody EmployeeRequest request) {
         if (request.resolvedUserId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "user.id is required");
         }
@@ -44,15 +45,15 @@ public class EmployeeController {
         employee.setUser(users.getReferenceById(request.resolvedUserId()));
         apply(employee, request);
         employee.setId(null);
-        return DtoMapper.toMap(employees.save(employee));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response(employees.save(employee)));
     }
 
     @PutMapping("/{id}")
-    public Map<String, Object> update(@PathVariable Integer id, @RequestBody EmployeeRequest request) {
+    public ResponseEntity<EmployeeResponse> update(@PathVariable Integer id, @RequestBody EmployeeRequest request) {
         Employee employee = employees.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
         apply(employee, request);
-        return DtoMapper.toMap(employees.save(employee));
+        return ResponseEntity.ok(response(employees.save(employee)));
     }
 
     private void apply(Employee employee, EmployeeRequest request) {
@@ -69,9 +70,18 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Integer id) {
+
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
         employees.delete(employees.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found")));
+        return ResponseEntity.noContent().build();
+    }
+
+    private List<EmployeeResponse> responses(java.util.Collection<?> values) {
+        return values.stream().map(EmployeeResponse::new).toList();
+    }
+
+    private EmployeeResponse response(Object value) {
+        return new EmployeeResponse(DtoMapper.toMap(value));
     }
 }

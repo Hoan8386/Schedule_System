@@ -1,22 +1,52 @@
 package com.vn.shopping.controller;
 
+import com.vn.shopping.dto.*;
 import com.vn.shopping.dto.DtoMapper;
 
 import com.vn.shopping.domain.NotificationTemplateVariable;
 import com.vn.shopping.service.NotificationTemplateVariableService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/notification_template_variable")
 public class NotificationTemplateVariableController {
     private final NotificationTemplateVariableService service;
-    public NotificationTemplateVariableController(NotificationTemplateVariableService service) { this.service = service; }
-    @GetMapping public List<Map<String,Object>> list() { return DtoMapper.toList(service.findAll()); }
-    @PostMapping @ResponseStatus(HttpStatus.CREATED) public Map<String,Object> create(@RequestBody Map<String,Object> body) { return DtoMapper.toMap(service.save(body)); }
-    @PutMapping public Map<String,Object> update(@RequestBody Map<String,Object> body) { return DtoMapper.toMap(service.save(body)); }
-    @DeleteMapping @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@RequestBody Map<String,Object> body) { service.deleteBody(body); }
-}
 
+    public NotificationTemplateVariableController(NotificationTemplateVariableService service) {
+        this.service = service;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<NotificationTemplateVariableResponse>> list() {
+        return ResponseEntity.ok(responses(service.findAll()));
+    }
+
+    @PostMapping
+
+    public ResponseEntity<NotificationTemplateVariableResponse> create(@RequestBody NotificationTemplateVariableRequest body) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(response(service.save(body)));
+    }
+
+    @PutMapping
+    public ResponseEntity<NotificationTemplateVariableResponse> update(@RequestBody NotificationTemplateVariableRequest body) {
+        return ResponseEntity.ok(response(service.save(body)));
+    }
+
+    @DeleteMapping
+
+    public ResponseEntity<Void> delete(@RequestBody NotificationTemplateVariableRequest body) {
+        service.deleteBody(body);
+        return ResponseEntity.noContent().build();
+    }
+
+    private List<NotificationTemplateVariableResponse> responses(java.util.Collection<?> values) {
+        return values.stream().map(NotificationTemplateVariableResponse::new).toList();
+    }
+
+    private NotificationTemplateVariableResponse response(Object value) {
+        return new NotificationTemplateVariableResponse(DtoMapper.toMap(value));
+    }
+}

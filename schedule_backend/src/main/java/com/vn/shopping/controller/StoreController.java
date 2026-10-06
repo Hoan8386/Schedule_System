@@ -1,16 +1,17 @@
 package com.vn.shopping.controller;
 
+import com.vn.shopping.dto.*;
 import com.vn.shopping.domain.Store;
 import com.vn.shopping.dto.DtoMapper;
 import com.vn.shopping.dto.StoreRequest;
 import com.vn.shopping.repository.StoreRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/stores")
@@ -22,31 +23,31 @@ public class StoreController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> list(@RequestParam(required = false) String status) {
-        return DtoMapper.toList(status == null ? stores.findAll() : stores.findByStatusOrderByStoreName(status));
+    public ResponseEntity<List<StoreResponse>> list(@RequestParam(required = false) String status) {
+        return ResponseEntity.ok(responses(status == null ? stores.findAll() : stores.findByStatusOrderByStoreName(status)));
     }
 
     @GetMapping("/{id}")
-    public Map<String, Object> get(@PathVariable Integer id) {
-        return DtoMapper.toMap(stores.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found")));
+    public ResponseEntity<StoreResponse> get(@PathVariable Integer id) {
+        return ResponseEntity.ok(response(stores.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"))));
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, Object> create(@Valid @RequestBody StoreRequest request) {
+
+    public ResponseEntity<StoreResponse> create(@Valid @RequestBody StoreRequest request) {
         Store store = new Store();
         apply(store, request);
         store.setId(null);
-        return DtoMapper.toMap(stores.save(store));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response(stores.save(store)));
     }
 
     @PutMapping("/{id}")
-    public Map<String, Object> update(@PathVariable Integer id, @Valid @RequestBody StoreRequest request) {
+    public ResponseEntity<StoreResponse> update(@PathVariable Integer id, @Valid @RequestBody StoreRequest request) {
         Store store = stores.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
         apply(store, request);
-        return DtoMapper.toMap(stores.save(store));
+        return ResponseEntity.ok(response(stores.save(store)));
     }
 
     private void apply(Store store, StoreRequest request) {
@@ -60,9 +61,18 @@ public class StoreController {
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Integer id) {
+
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
         stores.delete(stores.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found")));
+        return ResponseEntity.noContent().build();
+    }
+
+    private List<StoreResponse> responses(java.util.Collection<?> values) {
+        return values.stream().map(StoreResponse::new).toList();
+    }
+
+    private StoreResponse response(Object value) {
+        return new StoreResponse(DtoMapper.toMap(value));
     }
 }
