@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/attachment")
+@RequestMapping("/api/v1/attachment")
 public class AttachmentController {
     private final AttachmentService service;
 

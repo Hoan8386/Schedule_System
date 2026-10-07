@@ -14,7 +14,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/stores")
+@RequestMapping("/api/v1/stores")
 public class StoreController {
     private final StoreRepository stores;
 

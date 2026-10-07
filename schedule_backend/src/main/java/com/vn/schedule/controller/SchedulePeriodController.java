@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/schedule_period")
+@RequestMapping("/api/v1/schedule_period")
 public class SchedulePeriodController {
     private final SchedulePeriodService service;
 

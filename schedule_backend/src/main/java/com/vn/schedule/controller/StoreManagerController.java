@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/store_manager")
+@RequestMapping("/api/v1/store_manager")
 public class StoreManagerController {
     private final StoreManagerService service;
 

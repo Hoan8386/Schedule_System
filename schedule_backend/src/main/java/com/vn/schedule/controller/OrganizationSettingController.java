@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/organization_setting")
+@RequestMapping("/api/v1/organization_setting")
 public class OrganizationSettingController {
     private final OrganizationSettingService service;
 

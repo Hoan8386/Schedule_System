@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/todo")
+@RequestMapping("/api/v1/todo")
 public class TodoController {
     private final TodoService service;
 

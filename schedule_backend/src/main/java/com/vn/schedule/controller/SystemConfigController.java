@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/system_config")
+@RequestMapping("/api/v1/system_config")
 public class SystemConfigController {
     private final SystemConfigService service;
 
