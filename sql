@@ -1290,16 +1290,30 @@ VALUES
 (221, 'POST_VIOLATION', 'POST /api/v1/violation', 'Controller route POST /api/v1/violation', '/api/v1/violation', 'POST'),
 (222, 'DELETE_VIOLATION_ID', 'DELETE /api/v1/violation/{id}', 'Controller route DELETE /api/v1/violation/{id}', '/api/v1/violation/{id}', 'DELETE'),
 (223, 'GET_VIOLATION_ID', 'GET /api/v1/violation/{id}', 'Controller route GET /api/v1/violation/{id}', '/api/v1/violation/{id}', 'GET'),
-(224, 'PUT_VIOLATION_ID', 'PUT /api/v1/violation/{id}', 'Controller route PUT /api/v1/violation/{id}', '/api/v1/violation/{id}', 'PUT');
+(224, 'PUT_VIOLATION_ID', 'PUT /api/v1/violation/{id}', 'Controller route PUT /api/v1/violation/{id}', '/api/v1/violation/{id}', 'PUT'),
+(225, 'POST_AUTH_LOGIN', 'POST /api/v1/auth/login', 'Controller route POST /api/v1/auth/login', '/api/v1/auth/login', 'POST'),
+(226, 'POST_AUTH_REFRESH', 'POST /api/v1/auth/refresh', 'Controller route POST /api/v1/auth/refresh', '/api/v1/auth/refresh', 'POST'),
+(227, 'POST_AUTH_REGISTER', 'POST /api/v1/auth/register', 'Controller route POST /api/v1/auth/register', '/api/v1/auth/register', 'POST'),
+(228, 'POST_AUTH_CONFIRM', 'POST /api/v1/auth/confirm', 'Controller route POST /api/v1/auth/confirm', '/api/v1/auth/confirm', 'POST'),
+(229, 'POST_AUTH_FORGOT_PASSWORD', 'POST /api/v1/auth/forgot-password', 'Controller route POST /api/v1/auth/forgot-password', '/api/v1/auth/forgot-password', 'POST'),
+(230, 'POST_AUTH_RESET_PASSWORD', 'POST /api/v1/auth/reset-password', 'Controller route POST /api/v1/auth/reset-password', '/api/v1/auth/reset-password', 'POST');
 
 INSERT INTO `user`
 (user_id, username, password_hash, email, phone, status, created_at, updated_at)
 VALUES
-(1, 'admin', 'password', 'admin@schedulesystem.local', '0900000001', 'ACTIVE', NOW(), NOW()),
-(2, 'manager', 'password', 'manager@schedulesystem.local', '0900000002', 'ACTIVE', NOW(), NOW()),
-(3, 'storemanager01', 'password', 'storemanager01@schedulesystem.local', '0900000003', 'ACTIVE', NOW(), NOW()),
-(4, 'employee01', 'password', 'employee01@schedulesystem.local', '0900000004', 'ACTIVE', NOW(), NOW()),
-(5, 'employee02', 'password', 'employee02@schedulesystem.local', '0900000005', 'ACTIVE', NOW(), NOW());
+(1, 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin@schedulesystem.local', '0900000001', 'ACTIVE', NOW(), NOW()),
+(2, 'manager', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'manager@schedulesystem.local', '0900000002', 'ACTIVE', NOW(), NOW()),
+(3, 'storemanager01', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'storemanager01@schedulesystem.local', '0900000003', 'ACTIVE', NOW(), NOW()),
+(4, 'employee01', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'employee01@schedulesystem.local', '0900000004', 'ACTIVE', NOW(), NOW()),
+(5, 'employee02', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'employee02@schedulesystem.local', '0900000005', 'ACTIVE', NOW(), NOW());
+
+INSERT INTO `user_role` (user_id, role_id, assigned_at)
+VALUES
+(1, 1, NOW()),
+(2, 2, NOW()),
+(3, 3, NOW()),
+(4, 4, NOW()),
+(5, 4, NOW());
 
 
 
