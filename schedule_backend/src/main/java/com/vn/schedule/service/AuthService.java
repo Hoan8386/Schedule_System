@@ -12,6 +12,7 @@ import com.vn.schedule.dto.AuthRegisterRequest;
 import com.vn.schedule.dto.AuthResetPasswordRequest;
 import com.vn.schedule.dto.response.ResLoginDTO;
 import com.vn.schedule.repository.UserRepository;
+import com.vn.schedule.repository.UserRoleRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.util.SecurityUtil;
 
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
+    private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityUtil securityUtil;
 
@@ -118,8 +120,11 @@ public class AuthService {
 
     private ResLoginDTO tokens(User user) {
         ResLoginDTO dto = new ResLoginDTO();
+        String roleCode = userRoleRepository.findRoleCodesByUserId(user.getId()).stream()
+                .findFirst()
+                .orElse(null);
         dto.setUser(new ResLoginDTO.UserLogin(user.getId(), user.getUsername(), user.getEmail(),
-                user.getPhone(), user.getStatus()));
+                user.getPhone(), user.getStatus(), roleCode));
         dto.setAccessToken(securityUtil.createAccessToken(user.getEmail(), dto));
         dto.setRefreshToken(securityUtil.createRefreshToken(user.getEmail(), dto));
         return dto;

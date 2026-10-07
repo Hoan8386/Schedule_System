@@ -5,12 +5,15 @@ import AuthLayout from "@/components/auth/AuthLayout";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
 import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal";
-import DashboardView from "@/components/dashboard/DashboardView";
+import ManagementLayout from "@/components/management/ManagementLayout";
+import StoreManagerLayout from "@/components/store-manager/StoreManagerLayout";
+import EmployeeLayout from "@/components/employee/EmployeeLayout";
 import { useAuth } from "@/context/AuthContext";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Users, Store, Shield, UserCheck } from "lucide-react";
+import { UserRoleCode } from "@/types/auth";
 
 export default function Home() {
-  const { isAuthenticated, isLoading, mockLoginForDemo } = useAuth();
+  const { user, isAuthenticated, isLoading, mockLoginForDemo } = useAuth();
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [showDemoBar, setShowDemoBar] = useState(true);
@@ -26,8 +29,15 @@ export default function Home() {
     );
   }
 
-  if (isAuthenticated) {
-    return <DashboardView />;
+  if (isAuthenticated && user) {
+    if (user.role === "STORE_MANAGER") {
+      return <StoreManagerLayout />;
+    }
+    if (user.role === "EMPLOYEE") {
+      return <EmployeeLayout />;
+    }
+    // ADMIN or MANAGER
+    return <ManagementLayout />;
   }
 
   return (
@@ -49,16 +59,16 @@ export default function Home() {
         onClose={() => setIsForgotModalOpen(false)}
       />
 
-      {/* Quick Demo Assist Pill (can be collapsed or dismissed) */}
+      {/* Quick Demo Assist Pill: 4 roles selector */}
       {showDemoBar && (
         <aside
-          aria-label="Công cụ kiểm tra nhanh"
-          className="fixed bottom-4 right-4 z-40 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xl p-3 text-xs max-w-xs sm:max-w-md hidden sm:block animate-in slide-in-from-bottom-2 duration-300"
+          aria-label="Công cụ kiểm tra nhanh 4 phân quyền"
+          className="fixed bottom-4 right-4 z-40 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xl p-3.5 text-xs max-w-sm sm:max-w-md hidden sm:block animate-in slide-in-from-bottom-2 duration-300"
         >
           <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-100">
             <div className="flex items-center gap-1.5 font-bold text-slate-800">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Tiện ích kiểm thử giao diện & API</span>
+              <span>Đăng nhập nhanh theo 4 Phân quyền</span>
             </div>
             <button
               type="button"
@@ -70,27 +80,40 @@ export default function Home() {
             </button>
           </div>
           <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
-            Hệ thống đang kết nối trực tiếp với backend Spring Boot tại <code className="bg-slate-100 px-1 py-0.5 rounded text-amber-700 font-mono">http://localhost:8080</code>.
+            Chọn một vai trò bên dưới để kiểm thử giao diện & luồng nghiệp vụ tương ứng:
           </p>
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
+          <div className="mt-2.5 grid grid-cols-2 gap-1.5">
             <button
               type="button"
-              onClick={() => {
-                setAuthMode("login");
-                mockLoginForDemo("minhanh");
-              }}
-              className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold border border-amber-200 text-[11px] transition-colors cursor-pointer"
+              onClick={() => mockLoginForDemo(undefined, "ADMIN")}
+              className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-200 text-[11px] transition-colors flex items-center gap-1.5"
             >
-              ⚡ Xem trước Dashboard
+              <Shield className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>1. ADMIN (Quản trị viên)</span>
             </button>
             <button
               type="button"
-              onClick={() => {
-                setAuthMode(authMode === "login" ? "register" : "login");
-              }}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-[11px] transition-colors cursor-pointer"
+              onClick={() => mockLoginForDemo(undefined, "MANAGER")}
+              className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-200 text-[11px] transition-colors flex items-center gap-1.5"
             >
-              🔄 Chuyển sang {authMode === "login" ? "Đăng ký" : "Đăng nhập"}
+              <Users className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>2. MANAGER (Quản lý)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => mockLoginForDemo(undefined, "STORE_MANAGER")}
+              className="px-2.5 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-900 font-bold border border-orange-200 text-[11px] transition-colors flex items-center gap-1.5"
+            >
+              <Store className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+              <span>3. Trưởng cửa hàng</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => mockLoginForDemo(undefined, "EMPLOYEE")}
+              className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold border border-blue-200 text-[11px] transition-colors flex items-center gap-1.5"
+            >
+              <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span>4. Nhân viên</span>
             </button>
           </div>
         </aside>

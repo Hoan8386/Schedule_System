@@ -131,7 +131,8 @@ Response:
       "username": "user01",
       "email": "user@example.com",
       "phone": "0900000000",
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "roleCode": "ADMIN"
     }
   }
 }
@@ -149,13 +150,23 @@ Authorization: Bearer <access_token>
 |---|---|---|
 | `POST` | `/auth/register` | `{ "message": string, "token": string }` |
 | `POST` | `/auth/confirm` | `null`, HTTP `200` |
-| `POST` | `/auth/login` | `{ "access_token": string, "refresh_token": string, "user": UserLogin }` |
+| `POST` | `/auth/login` | `{ "access_token": string, "refresh_token": string, "user": UserLogin }`; `user` có thêm `roleCode` |
 | `POST` | `/auth/refresh` | Giống login |
 | `POST` | `/auth/forgot-password` | `{ "message": string, "token": string }` |
 | `POST` | `/auth/reset-password` | `null`, HTTP `200` |
 
 Tên field request refresh là `refreshToken`; tên field response là
 `refresh_token` và `access_token`.
+
+`UserLogin` có field role sau:
+
+| Field | Kiểu | Mô tả |
+|---|---|---|
+| `roleCode` | `string \| null` | Mã role, ví dụ `ADMIN`, `MANAGER`, `EMPLOYEE`. |
+
+Role code được lấy từ bản ghi role đầu tiên trong `user_role`, theo thứ tự
+`assignedAt`. Nếu user chưa có bản ghi phân quyền trong `user_role`, field này
+sẽ là `null`; cần gán role cho user trước khi đăng nhập.
 
 ## 6. CRUD endpoint convention
 
