@@ -9,14 +9,18 @@ import java.time.LocalDateTime;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @Service
 public class AttachmentService {
     private final AttachmentRepository repository;
-    public AttachmentService(AttachmentRepository repository) {
+    private final R2StorageService storageService;
+
+    public AttachmentService(AttachmentRepository repository, R2StorageService storageService) {
         this.repository = repository;
+        this.storageService = storageService;
     }
 
     public List<Attachment> findAll() {
@@ -52,6 +56,24 @@ public class AttachmentService {
     @Transactional
     public void deleteBody(AttachmentRequest body) {
         repository.delete(toEntity(body));
+    }
+
+    @Transactional
+    public Attachment uploadImage(MultipartFile file, Integer uploadedBy) {
+        R2StorageService.StoredObject stored = storageService.uploadImage(file);
+        try {
+            Attachment attachment = new Attachment();
+            attachment.setFileName(stored.fileName());
+            attachment.setFilePath(stored.url());
+            attachment.setFileType(stored.fileType());
+            attachment.setFileSize(stored.fileSize());
+            attachment.setUploadedBy(uploadedBy);
+            attachment.setUploadedAt(LocalDateTime.now());
+            return repository.save(attachment);
+        } catch (RuntimeException exception) {
+            storageService.delete(stored.key());
+            throw exception;
+        }
     }
     private Attachment toEntity(AttachmentRequest body) {
         Attachment entity = new Attachment();

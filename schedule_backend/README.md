@@ -12,6 +12,37 @@ Spring Boot backend for the `schedule_system` database, using the root package
 Biến môi trường: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `SERVER_PORT`,
 `CORS_ALLOWED_ORIGINS`. Hibernate dùng `ddl-auto: validate`.
 
+### Cloudflare R2
+
+Để lưu ảnh qua endpoint `POST /api/v1/attachment/upload`, gửi
+`multipart/form-data` với field `file` (tuỳ chọn `uploadedBy`). Cấu hình các
+biến môi trường sau; không đưa access key hoặc secret key vào source code:
+
+```text
+R2_ENABLED=true
+R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+R2_ACCESS_KEY=<R2 access key id>
+R2_SECRET_KEY=<R2 secret access key>
+R2_BUCKET=<bucket name>
+R2_REGION=auto
+R2_PUBLIC_BASE_URL=https://<public-domain>
+```
+
+`R2_PUBLIC_BASE_URL` là domain public hoặc custom domain đã trỏ vào bucket.
+Nếu bỏ trống, API trả về object key thay vì URL public.
+
+Employee và store dùng multipart khi tạo/cập nhật:
+
+- `POST/PUT /api/v1/employees`: các field text `userId`, `employeeCode`,
+  `fullName`, `dateOfBirth`, `gender`, `email`, `phone`, `address`, `hireDate`,
+  `status`, `note`, cùng hai file ảnh `idCardFront` và `idCardBack`.
+- `POST/PUT /api/v1/stores`: các field text `storeCode`, `storeName`,
+  `address`, `phone`, `status`, `note`, cùng file ảnh `logo`.
+
+Backend upload ảnh lên R2 và tạo bản ghi `attachment` trước, sau đó mới gán
+`id_card_front_id`, `id_card_back_id` hoặc `logo_id`; request không nhận các ID
+ảnh này nữa.
+
 ## Cấu hình
 
 Cấu hình Java nằm trong `src/main/java/com/vn/shopping/config`:

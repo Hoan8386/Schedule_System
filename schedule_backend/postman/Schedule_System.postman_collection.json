@@ -23,6 +23,18 @@
       "value": "1"
     },
     {
+      "key": "idCardFrontPath",
+      "value": "C:/path/to/id-card-front.jpg"
+    },
+    {
+      "key": "idCardBackPath",
+      "value": "C:/path/to/id-card-back.jpg"
+    },
+    {
+      "key": "storeLogoPath",
+      "value": "C:/path/to/store-logo.jpg"
+    },
+    {
       "key": "shiftByDateId",
       "value": "1"
     },
@@ -1009,21 +1021,76 @@
               "name": "POST create",
               "request": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
                 "url": "{{baseUrl}}/employees",
                 "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "userId",
+                      "type": "text",
+                      "value": "4"
+                    },
+                    {
+                      "key": "employeeCode",
+                      "type": "text",
+                      "value": "NV0099"
+                    },
+                    {
+                      "key": "fullName",
+                      "type": "text",
+                      "value": "Nguyen Van Postman"
+                    },
+                    {
+                      "key": "dateOfBirth",
+                      "type": "text",
+                      "value": "2000-01-01"
+                    },
+                    {
+                      "key": "gender",
+                      "type": "text",
+                      "value": "MALE"
+                    },
+                    {
+                      "key": "email",
+                      "type": "text",
+                      "value": "postman.employee@schedulesystem.local"
+                    },
+                    {
+                      "key": "phone",
+                      "type": "text",
+                      "value": "0900000099"
+                    },
+                    {
+                      "key": "address",
+                      "type": "text",
+                      "value": "TP. Ho Chi Minh"
+                    },
+                    {
+                      "key": "hireDate",
+                      "type": "text",
+                      "value": "2026-01-01"
+                    },
+                    {
+                      "key": "status",
+                      "type": "text",
+                      "value": "ACTIVE"
+                    },
+                    {
+                      "key": "note",
+                      "type": "text",
+                      "value": "Sample data from Postman"
+                    },
+                    {
+                      "key": "idCardFront",
+                      "type": "file",
+                      "src": "{{idCardFrontPath}}"
+                    },
+                    {
+                      "key": "idCardBack",
+                      "type": "file",
+                      "src": "{{idCardBackPath}}"
                     }
-                  },
-                  "raw": "{\n  \"userId\": 4,\n  \"employeeCode\": \"NV0099\",\n  \"fullName\": \"Nguyen Van Postman\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"gender\": \"MALE\",\n  \"email\": \"postman.employee@schedulesystem.local\",\n  \"phone\": \"0900000099\",\n  \"address\": \"TP. Ho Chi Minh\",\n  \"idCardFrontId\": 1,\n  \"idCardBackId\": 1,\n  \"hireDate\": \"2026-01-01\",\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                  ]
                 }
               }
             },
@@ -1031,21 +1098,76 @@
               "name": "PUT update",
               "request": {
                 "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
                 "url": "{{baseUrl}}/employees/{{employeeId}}",
                 "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "userId",
+                      "type": "text",
+                      "value": "4"
+                    },
+                    {
+                      "key": "employeeCode",
+                      "type": "text",
+                      "value": "NV0099"
+                    },
+                    {
+                      "key": "fullName",
+                      "type": "text",
+                      "value": "Nguyen Van Postman"
+                    },
+                    {
+                      "key": "dateOfBirth",
+                      "type": "text",
+                      "value": "2000-01-01"
+                    },
+                    {
+                      "key": "gender",
+                      "type": "text",
+                      "value": "MALE"
+                    },
+                    {
+                      "key": "email",
+                      "type": "text",
+                      "value": "postman.employee@schedulesystem.local"
+                    },
+                    {
+                      "key": "phone",
+                      "type": "text",
+                      "value": "0900000099"
+                    },
+                    {
+                      "key": "address",
+                      "type": "text",
+                      "value": "TP. Ho Chi Minh"
+                    },
+                    {
+                      "key": "hireDate",
+                      "type": "text",
+                      "value": "2026-01-01"
+                    },
+                    {
+                      "key": "status",
+                      "type": "text",
+                      "value": "ACTIVE"
+                    },
+                    {
+                      "key": "note",
+                      "type": "text",
+                      "value": "Updated from Postman"
+                    },
+                    {
+                      "key": "idCardFront",
+                      "type": "file",
+                      "src": "{{idCardFrontPath}}"
+                    },
+                    {
+                      "key": "idCardBack",
+                      "type": "file",
+                      "src": "{{idCardBackPath}}"
                     }
-                  },
-                  "raw": "{\n  \"userId\": 4,\n  \"employeeCode\": \"NV0099\",\n  \"fullName\": \"Nguyen Van Postman\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"gender\": \"MALE\",\n  \"email\": \"postman.employee@schedulesystem.local\",\n  \"phone\": \"0900000099\",\n  \"address\": \"TP. Ho Chi Minh\",\n  \"idCardFrontId\": 1,\n  \"idCardBackId\": 1,\n  \"hireDate\": \"2026-01-01\",\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                  ]
                 }
               }
             },
@@ -2813,21 +2935,46 @@
               "name": "POST create",
               "request": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
                 "url": "{{baseUrl}}/stores",
                 "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "storeCode",
+                      "type": "text",
+                      "value": "STORE099"
+                    },
+                    {
+                      "key": "storeName",
+                      "type": "text",
+                      "value": "Cua hang Postman"
+                    },
+                    {
+                      "key": "address",
+                      "type": "text",
+                      "value": "TP. Ho Chi Minh"
+                    },
+                    {
+                      "key": "phone",
+                      "type": "text",
+                      "value": "02800000099"
+                    },
+                    {
+                      "key": "status",
+                      "type": "text",
+                      "value": "ACTIVE"
+                    },
+                    {
+                      "key": "note",
+                      "type": "text",
+                      "value": "Sample data from Postman"
+                    },
+                    {
+                      "key": "logo",
+                      "type": "file",
+                      "src": "{{storeLogoPath}}"
                     }
-                  },
-                  "raw": "{\n  \"storeCode\": \"STORE099\",\n  \"storeName\": \"Cua hang Postman\",\n  \"logoId\": 1,\n  \"address\": \"TP. Ho Chi Minh\",\n  \"phone\": \"02800000099\",\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                  ]
                 }
               }
             },
@@ -2835,21 +2982,46 @@
               "name": "PUT update",
               "request": {
                 "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
                 "url": "{{baseUrl}}/stores/{{storeId}}",
                 "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "storeCode",
+                      "type": "text",
+                      "value": "STORE099"
+                    },
+                    {
+                      "key": "storeName",
+                      "type": "text",
+                      "value": "Cua hang Postman"
+                    },
+                    {
+                      "key": "address",
+                      "type": "text",
+                      "value": "TP. Ho Chi Minh"
+                    },
+                    {
+                      "key": "phone",
+                      "type": "text",
+                      "value": "02800000099"
+                    },
+                    {
+                      "key": "status",
+                      "type": "text",
+                      "value": "ACTIVE"
+                    },
+                    {
+                      "key": "note",
+                      "type": "text",
+                      "value": "Updated from Postman"
+                    },
+                    {
+                      "key": "logo",
+                      "type": "file",
+                      "src": "{{storeLogoPath}}"
                     }
-                  },
-                  "raw": "{\n  \"storeCode\": \"STORE099\",\n  \"storeName\": \"Cua hang Postman\",\n  \"logoId\": 1,\n  \"address\": \"TP. Ho Chi Minh\",\n  \"phone\": \"02800000099\",\n  \"status\": \"ACTIVE\",\n  \"note\": \"Sample data from Postman\",\n  \"FOREIGN\": \"sample\"\n}"
+                  ]
                 }
               }
             },

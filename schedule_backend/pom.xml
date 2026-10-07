@@ -162,6 +162,26 @@
 			<artifactId>firebase-admin</artifactId>
 		<version>9.4.3</version>
         </dependency>
+
+		<!-- AWS S3 client used with Cloudflare R2 -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>2.25.60</version>
+		</dependency>
+
+		<!-- Apache HttpClient required by AWS SDK Apache HTTP client -->
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.14</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpcore</artifactId>
+			<version>4.4.16</version>
+		</dependency>
     </dependencies>
 
     <build>
@@ -173,5 +193,4 @@
         </plugins>
     </build>
 </project>
-
 
