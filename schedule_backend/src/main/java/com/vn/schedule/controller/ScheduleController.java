@@ -16,7 +16,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/schedule")
+@RequestMapping("/api/v1/schedule")
 public class ScheduleController {
     private final SchedulePeriodRepository periods;
     private final ShiftRepository shifts;

@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/variable")
+@RequestMapping("/api/v1/variable")
 public class VariableController {
     private final VariableService service;
 

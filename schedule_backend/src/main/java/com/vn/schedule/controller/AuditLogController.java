@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/audit_log")
+@RequestMapping("/api/v1/audit_log")
 public class AuditLogController {
     private final AuditLogService service;
 

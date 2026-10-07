@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/special_event")
+@RequestMapping("/api/v1/special_event")
 public class SpecialEventController {
     private final SpecialEventService service;
 

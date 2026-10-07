@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/shift")
+@RequestMapping("/api/v1/shift")
 public class ShiftController {
     private final ShiftService service;
 

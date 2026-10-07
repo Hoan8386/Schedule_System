@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/employee_store")
+@RequestMapping("/api/v1/employee_store")
 public class EmployeeStoreController {
     private final EmployeeStoreService service;
 

@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/permission")
+@RequestMapping("/api/v1/permission")
 public class PermissionController {
     private final PermissionService service;
 

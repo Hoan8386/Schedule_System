@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/bonus_detail")
+@RequestMapping("/api/v1/bonus_detail")
 public class BonusDetailController {
     private final BonusDetailService service;
 

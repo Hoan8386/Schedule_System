@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/evaluation_detail")
+@RequestMapping("/api/v1/evaluation_detail")
 public class EvaluationDetailController {
     private final EvaluationDetailService service;
 

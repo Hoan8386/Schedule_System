@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/role")
+@RequestMapping("/api/v1/role")
 public class RoleController {
     private final RoleService service;
 

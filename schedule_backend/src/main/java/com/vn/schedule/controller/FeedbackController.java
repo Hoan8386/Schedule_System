@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/feedback")
+@RequestMapping("/api/v1/feedback")
 public class FeedbackController {
     private final FeedbackService service;
 

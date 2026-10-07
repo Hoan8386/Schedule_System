@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/event_scope")
+@RequestMapping("/api/v1/event_scope")
 public class EventScopeController {
     private final EventScopeService service;
 

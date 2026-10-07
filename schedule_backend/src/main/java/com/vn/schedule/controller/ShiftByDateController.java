@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/shift_by_date")
+@RequestMapping("/api/v1/shift_by_date")
 public class ShiftByDateController {
     private final ShiftByDateService service;
 

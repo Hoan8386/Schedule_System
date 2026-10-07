@@ -16,7 +16,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/attendance")
+@RequestMapping("/api/v1/attendance")
 public class AttendanceController {
     private final AttendanceRepository attendance;
     private final EmployeeRepository employees;

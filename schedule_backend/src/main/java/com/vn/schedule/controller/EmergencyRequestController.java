@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/emergency_request")
+@RequestMapping("/api/v1/emergency_request")
 public class EmergencyRequestController {
     private final EmergencyRequestService service;
 

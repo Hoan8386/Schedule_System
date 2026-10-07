@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/disciplinary_record")
+@RequestMapping("/api/v1/disciplinary_record")
 public class DisciplinaryRecordController {
     private final DisciplinaryRecordService service;
 

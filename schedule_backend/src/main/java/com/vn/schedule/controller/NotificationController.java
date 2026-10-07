@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/notification")
+@RequestMapping("/api/v1/notification")
 public class NotificationController {
     private final NotificationService service;
 

@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/violation")
+@RequestMapping("/api/v1/violation")
 public class ViolationController {
     private final ViolationService service;
 

@@ -12,7 +12,7 @@ import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
-@RequestMapping("/test_assignment")
+@RequestMapping("/api/v1/test_assignment")
 public class TestAssignmentController {
     private final TestAssignmentService service;
 
