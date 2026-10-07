@@ -5,6 +5,7 @@ import AuthLayout from "@/components/auth/AuthLayout";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
 import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal";
+import AdminLayout from "@/components/admin/AdminLayout";
 import ManagementLayout from "@/components/management/ManagementLayout";
 import StoreManagerLayout from "@/components/store-manager/StoreManagerLayout";
 import EmployeeLayout from "@/components/employee/EmployeeLayout";
@@ -30,13 +31,17 @@ export default function Home() {
   }
 
   if (isAuthenticated && user) {
-    if (user.role === "STORE_MANAGER") {
+    const roleCode = (user.roleCode || user.role || "ADMIN") as string;
+    if (roleCode === "ADMIN") {
+      return <AdminLayout />;
+    }
+    if (roleCode === "STORE_MANAGER") {
       return <StoreManagerLayout />;
     }
-    if (user.role === "EMPLOYEE") {
+    if (roleCode === "EMPLOYEE") {
       return <EmployeeLayout />;
     }
-    // ADMIN or MANAGER
+    // Default to Manager Layout for MANAGER or other roles
     return <ManagementLayout />;
   }
 

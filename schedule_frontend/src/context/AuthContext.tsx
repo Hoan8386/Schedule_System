@@ -8,6 +8,7 @@ import {
   AuthTokenResponse,
   ResLoginDTO,
   UserLogin,
+  UserRoleCode,
 } from "@/types/auth";
 import { authApi, ApiResponse } from "@/lib/api";
 
@@ -31,6 +32,7 @@ const mockProfiles: Record<UserRoleCode, UserLogin> = {
     phone: "0901234567",
     status: "ACTIVE",
     role: "ADMIN",
+    roleCode: "ADMIN",
     roleId: 1,
     roleName: "Quản trị viên",
     fullName: "Quản trị viên Hệ thống",
@@ -42,6 +44,7 @@ const mockProfiles: Record<UserRoleCode, UserLogin> = {
     phone: "0902345678",
     status: "ACTIVE",
     role: "MANAGER",
+    roleCode: "MANAGER",
     roleId: 2,
     roleName: "Quản lý chuỗi",
     fullName: "Nguyễn Hải Đăng",
@@ -53,6 +56,7 @@ const mockProfiles: Record<UserRoleCode, UserLogin> = {
     phone: "0903456789",
     status: "ACTIVE",
     role: "STORE_MANAGER",
+    roleCode: "STORE_MANAGER",
     roleId: 3,
     roleName: "Trưởng cửa hàng",
     fullName: "Trần Thu Hà",
@@ -66,6 +70,7 @@ const mockProfiles: Record<UserRoleCode, UserLogin> = {
     phone: "0903246810",
     status: "ACTIVE",
     role: "EMPLOYEE",
+    roleCode: "EMPLOYEE",
     roleId: 4,
     roleName: "Nhân viên bán hàng",
     fullName: "Nguyễn Minh Anh",
@@ -86,10 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const savedUser = authApi.getSavedUser();
       const token = authApi.getSavedToken();
       if (savedUser && token) {
-        // Fallback default role to ADMIN if missing
-        if (!savedUser.role) {
-          savedUser.role = "ADMIN";
-        }
+        const role = (savedUser.roleCode || savedUser.role || "ADMIN") as UserRoleCode;
+        savedUser.role = role;
+        savedUser.roleCode = role;
         setUser(savedUser);
       }
     } catch (e) {
@@ -107,14 +111,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await authApi.login(payload);
       if (res.data?.user) {
         const u = res.data.user;
-        if (!u.role) {
-          // Check roleId if available
-          if (u.roleId === 1) u.role = "ADMIN";
-          else if (u.roleId === 2) u.role = "MANAGER";
-          else if (u.roleId === 3) u.role = "STORE_MANAGER";
-          else if (u.roleId === 4) u.role = "EMPLOYEE";
-          else u.role = "ADMIN";
+        const roleCode = (u.roleCode || u.role) as UserRoleCode;
+        if (roleCode) {
+          u.role = roleCode;
+          u.roleCode = roleCode;
+        } else if (u.roleId === 1) {
+          u.role = "ADMIN";
+          u.roleCode = "ADMIN";
+        } else if (u.roleId === 2) {
+          u.role = "MANAGER";
+          u.roleCode = "MANAGER";
+        } else if (u.roleId === 3) {
+          u.role = "STORE_MANAGER";
+          u.roleCode = "STORE_MANAGER";
+        } else if (u.roleId === 4) {
+          u.role = "EMPLOYEE";
+          u.roleCode = "EMPLOYEE";
+        } else {
+          u.role = "ADMIN";
+          u.roleCode = "ADMIN";
         }
+
+        if (!u.roleName) {
+          if (u.role === "ADMIN") u.roleName = "Quản trị viên";
+          else if (u.role === "MANAGER") u.roleName = "Quản lý";
+          else if (u.role === "STORE_MANAGER") u.roleName = "Trưởng cửa hàng";
+          else if (u.role === "EMPLOYEE") u.roleName = "Nhân viên";
+        }
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem("bloan_user", JSON.stringify(u));
+        }
+
         setUser(u);
       }
       return res;

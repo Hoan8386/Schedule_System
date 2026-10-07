@@ -100,14 +100,11 @@ export default function EmployeeLayout() {
           <div className="p-4 border-b border-slate-100 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center p-1.5 shadow-sm shadow-amber-200/50">
               <Image
-                src="/logo.png"
+                src="/logo/logo1.jpg"
                 alt="BLOAN Logo"
                 width={36}
                 height={36}
-                className="object-contain"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
-                }}
+                className="object-contain rounded-lg"
               />
             </div>
             <div>

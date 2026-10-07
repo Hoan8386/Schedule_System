@@ -14,6 +14,7 @@ export interface UserLogin {
   email: string;
   phone?: string | null;
   status?: string;
+  roleCode?: UserRoleCode | string;
   role?: UserRoleCode;
   roleId?: number;
   roleName?: string;

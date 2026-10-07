@@ -109,8 +109,12 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
             {user?.username ? user.username.slice(0, 2).toUpperCase() : "AD"}
           </div>
           <div className="flex-1 text-left overflow-hidden">
-            <p className="text-sm font-semibold text-slate-800 truncate">{user?.username || "Quản lý"}</p>
-            <p className="text-[11px] text-slate-400 truncate">Admin Manager</p>
+            <p className="text-sm font-semibold text-slate-800 truncate">
+              {user?.fullName || user?.username || "Quản lý"}
+            </p>
+            <p className="text-[11px] text-slate-400 truncate">
+              {user?.roleName || (user?.roleCode === "ADMIN" ? "Quản trị viên" : "Quản lý chuỗi")}
+            </p>
           </div>
         </div>
       </div>

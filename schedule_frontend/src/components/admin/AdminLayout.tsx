@@ -4,12 +4,14 @@ import React, { useState } from "react";
 import Image from "next/image";
 import {
   LayoutDashboard,
+  ShieldCheck,
+  Palette,
+  Code,
+  FileDigit,
+  Mail,
   Users,
   Store,
   Clock,
-  Inbox,
-  Calendar,
-  ShieldAlert,
   Wallet,
   TrendingUp,
   HelpCircle,
@@ -18,27 +20,19 @@ import {
   ChevronDown,
   ChevronsUpDown,
   Search,
-  ShieldCheck,
-  Palette,
-  Code,
-  FileDigit,
-  Mail,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import DashboardPage from "@/components/management/DashboardPage";
-import NhanSuPage from "@/components/management/NhanSuPage";
-import ChamCongPage from "@/components/management/ChamCongPage";
-import YeuCauPage from "@/components/management/YeuCauPage";
-import LichPage from "@/components/management/LichPage";
-import NoiQuyPage from "@/components/management/NoiQuyPage";
-import LuongPage from "@/components/management/LuongPage";
-import ThongKePage from "@/components/management/ThongKePage";
-import CuaHangPage from "@/components/management/CuaHangPage";
+import AdminDashboardPage from "@/components/admin/AdminDashboardPage";
 import QuanLyTaiKhoanPage from "@/components/admin/QuanLyTaiKhoanPage";
 import ThongTinThuongHieuPage from "@/components/admin/ThongTinThuongHieuPage";
 import QuanLyApiPage from "@/components/admin/QuanLyApiPage";
 import CauHinhSinhMaPage from "@/components/admin/CauHinhSinhMaPage";
 import QuanLyEmailThongBaoPage from "@/components/admin/QuanLyEmailThongBaoPage";
+import NhanSuPage from "@/components/management/NhanSuPage";
+import CuaHangPage from "@/components/management/CuaHangPage";
+import ChamCongPage from "@/components/management/ChamCongPage";
+import LuongPage from "@/components/management/LuongPage";
+import ThongKePage from "@/components/management/ThongKePage";
 
 interface MenuItem {
   id: string;
@@ -47,59 +41,39 @@ interface MenuItem {
   badge?: string | number;
 }
 
-const operationMenuItems: MenuItem[] = [
-  { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
-  { id: "nhansu", label: "Quản lý nhân sự", icon: Users, badge: "45 NV" },
-  { id: "cuahang", label: "Quản lý cửa hàng", icon: Store, badge: "24 CH" },
-  { id: "chamcong", label: "Quản lý chấm công", icon: Clock },
-  { id: "yeucau", label: "Xử lý yêu cầu", icon: Inbox, badge: "12 chờ" },
-  { id: "lich", label: "Quản lý lịch ca", icon: Calendar },
-  { id: "noiquy", label: "Nội quy & vi phạm", icon: ShieldAlert, badge: "3" },
-  { id: "luong", label: "Quản lý lương & thưởng", icon: Wallet },
-  { id: "thongke", label: "Thống kê & báo cáo", icon: TrendingUp },
-];
-
-const adminMenuItems: MenuItem[] = [
-  { id: "taikhoan", label: "Tài khoản & Phân quyền", icon: ShieldCheck },
-  { id: "thuonghieu", label: "Logo, màu sắc & Chuỗi", icon: Palette },
-  { id: "api", label: "Quản lý API & Thiết bị", icon: Code },
+const adminCoreMenuItems: MenuItem[] = [
+  { id: "dashboard", label: "Bàn làm việc Admin", icon: LayoutDashboard },
+  { id: "taikhoan", label: "Quản lý tài khoản (phân quyền)", icon: ShieldCheck, badge: "156" },
+  { id: "thuonghieu", label: "Quản lý thông tin cửa hàng (logo, màu sắc)", icon: Palette },
+  { id: "api", label: "Quản lý API & Thiết bị", icon: Code, badge: "Active" },
   { id: "sinhma", label: "Cấu hình sinh mã tự động", icon: FileDigit },
-  { id: "email_thongbao", label: "Thông báo & Gửi Email", icon: Mail },
+  { id: "email_thongbao", label: "Quản lý thông báo & Gửi Email", icon: Mail },
 ];
 
-export default function ManagementLayout() {
+const operationsMenuItems: MenuItem[] = [
+  { id: "nhansu", label: "Dữ liệu nhân sự chuỗi", icon: Users },
+  { id: "cuahang", label: "Mạng lưới cửa hàng", icon: Store },
+  { id: "chamcong", label: "Đối soát chấm công", icon: Clock },
+  { id: "luong", label: "Quỹ lương & Thưởng", icon: Wallet },
+  { id: "thongke", label: "Báo cáo tổng hợp", icon: TrendingUp },
+];
+
+export default function AdminLayout() {
   const { user, logout, switchRole } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const allItems = [...operationMenuItems, ...adminMenuItems];
+  const allItems = [...adminCoreMenuItems, ...operationsMenuItems];
 
   const getBreadcrumbTitle = () => {
     const item = allItems.find((m) => m.id === activeTab);
-    return item ? item.label : "Tổng quan";
+    return item ? item.label : "Bàn làm việc Admin";
   };
 
   const renderPage = () => {
     switch (activeTab) {
       case "dashboard":
-        return <DashboardPage />;
-      case "nhansu":
-        return <NhanSuPage />;
-      case "cuahang":
-        return <CuaHangPage />;
-      case "chamcong":
-        return <ChamCongPage />;
-      case "yeucau":
-        return <YeuCauPage />;
-      case "lich":
-        return <LichPage />;
-      case "noiquy":
-        return <NoiQuyPage />;
-      case "luong":
-        return <LuongPage />;
-      case "thongke":
-        return <ThongKePage />;
-      // Admin Pages
+        return <AdminDashboardPage onNavigate={setActiveTab} />;
       case "taikhoan":
         return <QuanLyTaiKhoanPage />;
       case "thuonghieu":
@@ -110,8 +84,19 @@ export default function ManagementLayout() {
         return <CauHinhSinhMaPage />;
       case "email_thongbao":
         return <QuanLyEmailThongBaoPage />;
+      // Operation oversight pages
+      case "nhansu":
+        return <NhanSuPage />;
+      case "cuahang":
+        return <CuaHangPage />;
+      case "chamcong":
+        return <ChamCongPage />;
+      case "luong":
+        return <LuongPage />;
+      case "thongke":
+        return <ThongKePage />;
       default:
-        return <DashboardPage />;
+        return <AdminDashboardPage onNavigate={setActiveTab} />;
     }
   };
 
@@ -120,8 +105,6 @@ export default function ManagementLayout() {
     : user?.username
     ? user.username.slice(0, 2).toUpperCase()
     : "AD";
-
-  const isRoleAdmin = user?.roleCode === "ADMIN" || user?.role === "ADMIN";
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-slate-800 font-sans">
@@ -144,23 +127,23 @@ export default function ManagementLayout() {
                 Ăn Vặt BLOAN
               </div>
               <div className="text-[11px] text-slate-400 font-medium">
-                Workforce Management
+                Quản Trị Hệ Thống (ADMIN)
               </div>
             </div>
           </div>
 
-          {/* Scope indicator: Admin / Chain Manager */}
+          {/* Scope indicator: Administrator */}
           <div className="p-3">
-            <div className="bg-amber-50/40 border border-amber-200/70 rounded-xl p-2.5 flex items-center justify-between">
+            <div className="bg-amber-50/50 border border-amber-200/80 rounded-xl p-2.5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
-                  {isRoleAdmin ? "KHÔNG GIAN QUẢN TRỊ VIÊN" : "KHÔNG GIAN QUẢN LÝ CHUỖI"}
+                <p className="text-[10px] font-black text-amber-800 uppercase tracking-wider">
+                  CỔNG QUẢN TRỊ VIÊN (ADMIN)
                 </p>
                 <p className="text-xs font-black text-slate-800 mt-0.5">
                   BLOAN · Toàn hệ thống
                 </p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Phạm vi: Toàn chuỗi (24 cửa hàng)
+                  Quyền hạn: Root Administrator
                 </p>
               </div>
               <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400" />
@@ -169,20 +152,23 @@ export default function ManagementLayout() {
 
           {/* Scrollable Navigation Items */}
           <nav className="px-2 space-y-4 mt-1 overflow-y-auto flex-1">
-            {/* Section 1: Operations */}
+            {/* Section 1: Admin Core Functions */}
             <div>
-              <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                Vận hành chuỗi
+              <p className="px-3 text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Quản trị hệ thống</span>
+                <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-black">
+                  ADMIN
+                </span>
               </p>
               <div className="space-y-0.5">
-                {operationMenuItems.map((item) => {
+                {adminCoreMenuItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   return (
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                         isActive
                           ? "bg-amber-50/80 text-amber-800 font-bold border border-amber-200/60 shadow-xs"
                           : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900"
@@ -207,16 +193,13 @@ export default function ManagementLayout() {
               </div>
             </div>
 
-            {/* Section 2: Admin System Settings */}
+            {/* Section 2: Chain Oversight */}
             <div>
-              <p className="px-3 text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>Quản trị Admin</span>
-                <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-black">
-                  ROOT
-                </span>
+              <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                Giám sát chuỗi (Oversight)
               </p>
               <div className="space-y-0.5">
-                {adminMenuItems.map((item) => {
+                {operationsMenuItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   return (
@@ -270,7 +253,7 @@ export default function ManagementLayout() {
         <header className="h-14 bg-white border-b border-slate-200/80 flex items-center justify-between px-6 shrink-0 z-10">
           {/* Breadcrumb / Title */}
           <div className="flex items-center gap-2 text-xs">
-            <span className="font-semibold text-slate-400">Quản trị toàn hệ thống</span>
+            <span className="font-semibold text-slate-400">Admin Portal</span>
             <span className="text-slate-300">/</span>
             <span className="font-bold text-slate-800 text-sm">{getBreadcrumbTitle()}</span>
           </div>
@@ -282,14 +265,14 @@ export default function ManagementLayout() {
               <Search className="w-3.5 h-3.5 absolute left-3 text-slate-400" />
               <input
                 type="text"
-                placeholder="Tìm nhân sự, cửa hàng, mã..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-hidden hover:border-slate-300 focus:border-amber-400 transition-all text-slate-700"
+                placeholder="Tìm tài khoản, API, mã..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-hidden hover:border-slate-300 focus:border-amber-400 transition-all text-slate-700 font-medium"
               />
             </div>
 
             {/* Notification Bell */}
             <button
-              onClick={() => alert("Không có thông báo mới nào chưa đọc.")}
+              onClick={() => alert("Hệ thống hoạt động bình thường, không có cảnh báo nghiêm trọng.")}
               className="relative p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
               title="Thông báo"
             >
@@ -311,7 +294,7 @@ export default function ManagementLayout() {
                     {user?.fullName || user?.username || "Admin Hoàn"}
                   </div>
                   <div className="text-[10px] text-amber-700 font-bold leading-tight">
-                    {user?.roleName || user?.role || "Quản trị viên"}
+                    Quản trị viên (ADMIN)
                   </div>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
@@ -326,11 +309,11 @@ export default function ManagementLayout() {
                     </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">{user?.email}</p>
                     <span className="mt-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                      Vai trò: {user?.roleCode || user?.role || "ADMIN"}
+                      Vai trò: ADMIN (Quản trị viên)
                     </span>
                   </div>
 
-                  {/* Switch Demo Roles for Testing */}
+                  {/* Switch Demo Roles */}
                   <div className="p-2 border-b border-slate-100">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-1">
                       Chuyển đổi giao diện Demo:
@@ -341,19 +324,29 @@ export default function ManagementLayout() {
                           switchRole("ADMIN");
                           setIsProfileOpen(false);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 text-slate-700 hover:text-amber-800 font-medium transition-colors flex items-center justify-between"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-800 font-bold transition-colors flex items-center justify-between"
                       >
                         <span>1. Quản trị viên (ADMIN)</span>
-                        <span className="text-[10px] text-amber-600 font-bold">Toàn quyền</span>
+                        <span className="text-[10px] text-amber-700 font-bold">Hiện tại</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          switchRole("MANAGER");
+                          setIsProfileOpen(false);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-700 font-medium transition-colors flex items-center justify-between"
+                      >
+                        <span>2. Quản lý chuỗi (MANAGER)</span>
+                        <span className="text-[10px] text-slate-400">Vận hành</span>
                       </button>
                       <button
                         onClick={() => {
                           switchRole("STORE_MANAGER");
                           setIsProfileOpen(false);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 text-slate-700 hover:text-amber-800 font-medium transition-colors flex items-center justify-between"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-700 font-medium transition-colors flex items-center justify-between"
                       >
-                        <span>2. Trưởng cửa hàng</span>
+                        <span>3. Trưởng cửa hàng</span>
                         <span className="text-[10px] text-slate-400">Quản lý ca</span>
                       </button>
                       <button
@@ -361,9 +354,9 @@ export default function ManagementLayout() {
                           switchRole("EMPLOYEE");
                           setIsProfileOpen(false);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 text-slate-700 hover:text-amber-800 font-medium transition-colors flex items-center justify-between"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-700 font-medium transition-colors flex items-center justify-between"
                       >
-                        <span>3. Nhân viên chuỗi</span>
+                        <span>4. Nhân viên</span>
                         <span className="text-[10px] text-slate-400">Xem ca & đăng ký</span>
                       </button>
                     </div>
