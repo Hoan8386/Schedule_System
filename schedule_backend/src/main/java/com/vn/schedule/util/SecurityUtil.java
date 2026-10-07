@@ -5,14 +5,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,7 +30,9 @@ import com.vn.schedule.dto.response.ResLoginDTO;
 public class SecurityUtil {
 
     private final JwtEncoder jwtEncoder;
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
     private static final String PASSWORD_RESET_TOKEN_TYPE = "password_reset";
+    private static final String CONFIRMATION_TOKEN_TYPE = "account_confirmation";
 
     public SecurityUtil(JwtEncoder jwtEncoder) {
         this.jwtEncoder = jwtEncoder;
@@ -93,6 +93,7 @@ public class SecurityUtil {
             .issuedAt(now)
             .expiresAt(validity)
             .subject(email)
+            .claim("purpose", REFRESH_TOKEN_TYPE)
             .claim("user", userToken)
             .build();
 
@@ -116,6 +117,21 @@ public class SecurityUtil {
         return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
     }
 
+    public String createConfirmationToken(String email) {
+        Instant now = Instant.now();
+        Instant validity = now.plus(this.passwordResetTokenExpiration, ChronoUnit.SECONDS);
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+            .issuedAt(now)
+            .expiresAt(validity)
+            .subject(email)
+            .claim("purpose", CONFIRMATION_TOKEN_TYPE)
+            .build();
+
+        JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
+        return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
+    }
+
     private SecretKey getSecretKey() {
         byte[] keyBytes = Base64.from(jwtKey).decode();
         return new SecretKeySpec(keyBytes, 0, keyBytes.length,
@@ -123,28 +139,29 @@ public class SecurityUtil {
     }
 
     public Jwt checkValidRefreshToken(String token){
-     NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withSecretKey(
-                getSecretKey()).macAlgorithm(SecurityUtil.JWT_ALGORITHM).build();
-                try {
-                     return jwtDecoder.decode(token);
-                } catch (Exception e) {
-                    System.out.println(">>> Refresh Token error: " + e.getMessage());
-                    throw e;
-                }
+        return checkValidToken(token, REFRESH_TOKEN_TYPE, "Refresh");
     }
 
     public Jwt checkValidPasswordResetToken(String token) {
+        return checkValidToken(token, PASSWORD_RESET_TOKEN_TYPE, "Password Reset");
+    }
+
+    public Jwt checkValidConfirmationToken(String token) {
+        return checkValidToken(token, CONFIRMATION_TOKEN_TYPE, "Confirmation");
+    }
+
+    private Jwt checkValidToken(String token, String expectedPurpose, String tokenName) {
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withSecretKey(
                 getSecretKey()).macAlgorithm(SecurityUtil.JWT_ALGORITHM).build();
         try {
             Jwt jwt = jwtDecoder.decode(token);
             Object purpose = jwt.getClaims().get("purpose");
-            if (!PASSWORD_RESET_TOKEN_TYPE.equals(purpose)) {
-                throw new IllegalArgumentException("Invalid password reset token");
+            if (!expectedPurpose.equals(purpose)) {
+                throw new IllegalArgumentException("Invalid " + expectedPurpose + " token");
             }
             return jwt;
         } catch (Exception e) {
-            System.out.println(">>> Password Reset Token error: " + e.getMessage());
+            System.out.println(">>> " + tokenName + " Token error: " + e.getMessage());
             throw e;
         }
     }
