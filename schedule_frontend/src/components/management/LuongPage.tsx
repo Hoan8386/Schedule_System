@@ -1,81 +1,50 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Award, AlertCircle, RefreshCw, Search } from "lucide-react";
-import {
-  BonusDetailResponse,
-  BonusRecordResponse,
-  DisciplinaryRecordResponse,
-  managerApi,
-} from "@/lib/managerApi";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import { AlertCircle, Award, Pencil, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
+import { BonusDetailResponse, BonusRecordResponse, DisciplinaryRecordResponse, managerApi } from "@/lib/managerApi";
 
-const text = (value: unknown, fallback = "—") =>
-  value === null || value === undefined || value === "" ? fallback : String(value);
-const money = (value: unknown) =>
-  typeof value === "number" ? `${value.toLocaleString("vi-VN")} đ` : text(value);
-const label = (value: unknown) =>
-  text(value).replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+const text = (value: unknown, fallback = "—") => value === null || value === undefined || value === "" ? fallback : String(value);
+const money = (value: unknown) => typeof value === "number" ? `${value.toLocaleString("vi-VN")} đ` : text(value);
+const label = (value: unknown) => text(value).replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+const inputClass = "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100";
+const formValues = (form: HTMLFormElement, numericFields: string[]) => {
+  const values: Record<string, unknown> = Object.fromEntries(new FormData(form).entries());
+  numericFields.forEach((name) => { if (values[name] !== "") values[name] = Number(values[name]); });
+  return values;
+};
+type Kind = "record" | "detail" | "disciplinary";
+type Item = BonusRecordResponse | BonusDetailResponse | DisciplinaryRecordResponse;
+
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  useEffect(() => { const close = (event: KeyboardEvent) => event.key === "Escape" && onClose(); document.addEventListener("keydown", close); return () => document.removeEventListener("keydown", close); }, [onClose]);
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><div role="dialog" aria-modal="true" aria-labelledby="salary-modal-title" className="w-full max-w-lg rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 p-5"><h2 id="salary-modal-title" className="text-lg font-black text-slate-800">{title}</h2><button type="button" aria-label="Đóng cửa sổ" onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button></div>{children}</div></div>;
+}
 
 export default function LuongPage() {
-  const [records, setRecords] = useState<BonusRecordResponse[]>([]);
-  const [details, setDetails] = useState<BonusDetailResponse[]>([]);
-  const [disciplinary, setDisciplinary] = useState<DisciplinaryRecordResponse[]>([]);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [recordResponse, detailResponse, disciplinaryResponse] = await Promise.all([
-        managerApi.getBonusRecords(),
-        managerApi.getBonusDetails(),
-        managerApi.getDisciplinaryRecords(),
-      ]);
-      setRecords(recordResponse.data ?? []);
-      setDetails(detailResponse.data ?? []);
-      setDisciplinary(disciplinaryResponse.data ?? []);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu lương thưởng");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const [records, setRecords] = useState<BonusRecordResponse[]>([]); const [details, setDetails] = useState<BonusDetailResponse[]>([]); const [disciplinary, setDisciplinary] = useState<DisciplinaryRecordResponse[]>([]);
+  const [search, setSearch] = useState(""); const [status, setStatus] = useState("ALL"); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
+  const [modal, setModal] = useState<Kind | null>(null); const [editing, setEditing] = useState<Item | null>(null); const [saving, setSaving] = useState(false);
+  const load = async () => { setLoading(true); setError(""); try { const [a, b, c] = await Promise.all([managerApi.getBonusRecords(), managerApi.getBonusDetails(), managerApi.getDisciplinaryRecords()]); setRecords(a.data ?? []); setDetails(b.data ?? []); setDisciplinary(c.data ?? []); } catch (cause) { setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu lương thưởng"); } finally { setLoading(false); } };
   useEffect(() => { void load(); }, []);
+  const filtered = useMemo(() => records.filter((record) => `${record.employeeId ?? ""} ${record.payrollMonth ?? ""} ${record.status ?? ""}`.toLowerCase().includes(search.toLowerCase()) && (status === "ALL" || record.status === status)), [records, search, status]);
+  const open = (kind: Kind, item?: Item) => { setModal(kind); setEditing(item ?? null); };
+  const remove = async (kind: Kind, item: Item) => { const ids = { record: (item as BonusRecordResponse).bonusRecordId, detail: (item as BonusDetailResponse).bonusDetailId, disciplinary: (item as DisciplinaryRecordResponse).disciplinaryId }; const id = ids[kind]; if (id === undefined || !window.confirm("Bạn có chắc muốn xóa bản ghi này?")) return; try { if (kind === "record") await managerApi.deleteBonusRecord(Number(id)); if (kind === "detail") await managerApi.deleteBonusDetail(Number(id)); if (kind === "disciplinary") await managerApi.deleteDisciplinaryRecord(Number(id)); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Không thể xóa bản ghi"); } };
+  const save = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setSaving(true); setError(""); const values = formValues(event.currentTarget, modal === "record" ? ["employeeId", "totalBonus", "totalPenalty", "totalAmount"] : modal === "detail" ? ["bonusRecordId", "ruleId", "amount"] : ["employeeId", "storeId", "amount"]); try {
+    if (modal === "record") editing && "bonusRecordId" in editing && editing.bonusRecordId ? await managerApi.updateBonusRecord(Number(editing.bonusRecordId), values) : await managerApi.createBonusRecord(values);
+    if (modal === "detail") editing && "bonusDetailId" in editing && editing.bonusDetailId ? await managerApi.updateBonusDetail(Number(editing.bonusDetailId), values) : await managerApi.createBonusDetail(values);
+    if (modal === "disciplinary") editing && "disciplinaryId" in editing && editing.disciplinaryId ? await managerApi.updateDisciplinaryRecord(Number(editing.disciplinaryId), values) : await managerApi.createDisciplinaryRecord(values);
+    setModal(null); setEditing(null); await load();
+  } catch (cause) { setError(cause instanceof Error ? cause.message : "Không thể lưu bản ghi"); } finally { setSaving(false); } };
+  const field = (name: string, title: string, value: unknown, type = "text", required = false) => <label className="space-y-1.5 text-sm font-semibold text-slate-700">{title}{required && <span className="text-rose-500"> *</span>}<input name={name} type={type} defaultValue={text(value, "")} required={required} className={inputClass} /></label>;
+  const form = modal === "record" ? <>{field("employeeId", "Mã nhân viên", (editing as BonusRecordResponse | null)?.employeeId, "number", true)}{field("payrollMonth", "Tháng lương", (editing as BonusRecordResponse | null)?.payrollMonth, "month", true)}<div className="grid grid-cols-2 gap-3">{field("totalBonus", "Tổng thưởng", (editing as BonusRecordResponse | null)?.totalBonus, "number")}{field("totalPenalty", "Tổng phạt", (editing as BonusRecordResponse | null)?.totalPenalty, "number")}</div>{field("totalAmount", "Tổng tiền", (editing as BonusRecordResponse | null)?.totalAmount, "number")}{field("status", "Trạng thái", (editing as BonusRecordResponse | null)?.status ?? "PENDING")}</> : modal === "detail" ? <>{field("bonusRecordId", "Mã bản ghi thưởng", (editing as BonusDetailResponse | null)?.bonusRecordId, "number", true)}{field("ruleId", "Mã quy định", (editing as BonusDetailResponse | null)?.ruleId, "number")}{field("type", "Loại", (editing as BonusDetailResponse | null)?.type, "text", true)}{field("amount", "Số tiền", (editing as BonusDetailResponse | null)?.amount, "number", true)}{field("reason", "Lý do", (editing as BonusDetailResponse | null)?.reason, "text", true)}</> : <><div className="grid grid-cols-2 gap-3">{field("employeeId", "Mã nhân viên", (editing as DisciplinaryRecordResponse | null)?.employeeId, "number", true)}{field("storeId", "Mã cửa hàng", (editing as DisciplinaryRecordResponse | null)?.storeId, "number")}</div>{field("disciplinaryType", "Loại kỷ luật", (editing as DisciplinaryRecordResponse | null)?.disciplinaryType, "text", true)}{field("amount", "Số tiền", (editing as DisciplinaryRecordResponse | null)?.amount, "number")}{field("reason", "Lý do", (editing as DisciplinaryRecordResponse | null)?.reason, "text", true)}{field("status", "Trạng thái", (editing as DisciplinaryRecordResponse | null)?.status ?? "PENDING")}</>;
 
-  const filtered = useMemo(() => records.filter((record) => {
-    const haystack = `${record.employeeId ?? ""} ${record.payrollMonth ?? ""} ${record.status ?? ""}`.toLowerCase();
-    return haystack.includes(search.toLowerCase()) &&
-      (status === "ALL" || record.status === status);
-  }), [records, search, status]);
-  const totalBonus = records.reduce((sum, item) => sum + (item.totalBonus ?? 0), 0);
-  const totalPenalty = records.reduce((sum, item) => sum + (item.totalPenalty ?? 0), 0);
-  const pending = records.filter((item) => item.status === "PENDING").length;
-
-  return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div><h1 className="text-2xl font-black text-slate-800 tracking-tight">Quản lý lương & thưởng</h1><p className="text-xs text-slate-500 mt-1">Dữ liệu tổng hợp trực tiếp từ `bonus_record`, `bonus_detail` và `disciplinary_record`.</p></div>
-        <button onClick={() => void load()} disabled={loading} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold disabled:opacity-50"><RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Làm mới</button>
-      </header>
-      {error && <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700"><AlertCircle className="w-4 h-4" />{error}</div>}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-5"><p className="text-xs text-slate-500">Bản ghi thưởng</p><p className="text-2xl font-black text-slate-800">{records.length}</p></div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-5"><p className="text-xs text-slate-500">Tổng thưởng</p><p className="text-2xl font-black text-emerald-700">{money(totalBonus)}</p></div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-5"><p className="text-xs text-slate-500">Tổng phạt</p><p className="text-2xl font-black text-rose-700">{money(totalPenalty)}</p></div>
-        <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5"><p className="text-xs text-amber-700">Chờ duyệt</p><p className="text-2xl font-black text-amber-800">{pending}</p></div>
-      </div>
-      <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row gap-3"><div className="relative flex-1 max-w-sm"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm mã nhân viên hoặc tháng lương..." className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs outline-hidden focus:border-amber-400" /></div><select value={status} onChange={(event) => setStatus(event.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium"><option value="ALL">Tất cả trạng thái</option><option value="PENDING">Chờ duyệt</option><option value="APPROVED">Đã duyệt</option></select></div>
-        <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-slate-50 text-[11px] uppercase text-slate-400"><tr><th className="px-4 py-3">Nhân viên</th><th className="px-4 py-3">Tháng lương</th><th className="px-4 py-3 text-right">Thưởng</th><th className="px-4 py-3 text-right">Phạt</th><th className="px-4 py-3 text-right">Tổng tiền</th><th className="px-4 py-3">Trạng thái</th></tr></thead><tbody className="divide-y divide-slate-100">{!loading && filtered.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400">Không có bản ghi lương thưởng từ API</td></tr>}{filtered.map((record, index) => <tr key={String(record.bonusRecordId ?? index)}><td className="px-4 py-4 font-bold text-slate-800">#{text(record.employeeId)}</td><td className="px-4 py-4 text-slate-600">{text(record.payrollMonth)}</td><td className="px-4 py-4 text-right font-bold text-emerald-600">{money(record.totalBonus)}</td><td className="px-4 py-4 text-right font-bold text-rose-600">{money(record.totalPenalty)}</td><td className="px-4 py-4 text-right font-black text-slate-900">{money(record.totalAmount)}</td><td className="px-4 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">{label(record.status)}</span></td></tr>)}</tbody></table></div>
-      </section>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5"><div className="flex items-center gap-2 mb-4"><Award className="w-4 h-4 text-amber-600" /><h2 className="font-bold text-slate-800 text-sm">Chi tiết thưởng/phạt</h2></div><div className="space-y-2">{!loading && details.length === 0 && <p className="text-xs text-slate-400">Chưa có chi tiết từ API</p>}{details.map((detail) => <div key={String(detail.bonusDetailId)} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3"><div><p className="text-xs font-bold text-slate-800">{label(detail.type)}</p><p className="text-[11px] text-slate-500">{text(detail.reason)} · Bản ghi #{text(detail.bonusRecordId)}</p></div><span className="font-black text-emerald-600">{money(detail.amount)}</span></div>)}</div></section>
-        <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5"><div className="flex items-center gap-2 mb-4"><AlertCircle className="w-4 h-4 text-rose-600" /><h2 className="font-bold text-slate-800 text-sm">Hồ sơ kỷ luật</h2></div><div className="space-y-2">{!loading && disciplinary.length === 0 && <p className="text-xs text-slate-400">Chưa có hồ sơ kỷ luật từ API</p>}{disciplinary.map((item) => <div key={String(item.disciplinaryId)} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3"><div><p className="text-xs font-bold text-slate-800">Nhân viên #{text(item.employeeId)} · {label(item.disciplinaryType)}</p><p className="text-[11px] text-slate-500">{text(item.reason)}</p></div><span className="font-black text-rose-600">{money(item.amount)}</span></div>)}</div></section>
-      </div>
-    </div>
-  );
+  return <div className="mx-auto max-w-7xl space-y-6 p-6"><header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h1 className="text-2xl font-black tracking-tight text-slate-800">Quản lý lương & thưởng</h1><p className="mt-1 text-xs text-slate-500">Dữ liệu trực tiếp từ bonus_record, bonus_detail và disciplinary_record.</p></div><div className="flex gap-2"><button onClick={() => open("record")} className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-600"><Plus className="h-4 w-4" />Thêm bản ghi</button><button onClick={() => void load()} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Làm mới</button></div></header>
+    {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700"><AlertCircle className="h-4 w-4" />{error}</div>}
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4"><div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs text-slate-500">Bản ghi thưởng</p><p className="text-2xl font-black text-slate-800">{records.length}</p></div><div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs text-slate-500">Tổng thưởng</p><p className="text-2xl font-black text-emerald-700">{money(records.reduce((sum, item) => sum + (item.totalBonus ?? 0), 0))}</p></div><div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs text-slate-500">Tổng phạt</p><p className="text-2xl font-black text-rose-700">{money(records.reduce((sum, item) => sum + (item.totalPenalty ?? 0), 0))}</p></div><div className="rounded-2xl border border-amber-200 bg-amber-50 p-5"><p className="text-xs text-amber-700">Chờ duyệt</p><p className="text-2xl font-black text-amber-800">{records.filter((item) => item.status === "PENDING").length}</p></div></div>
+    <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"><div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 p-4 md:flex-row"><div className="relative max-w-sm flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input aria-label="Tìm bản ghi lương" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm mã nhân viên hoặc tháng lương..." className={`${inputClass} pl-9`} /></div><select aria-label="Lọc trạng thái" value={status} onChange={(event) => setStatus(event.target.value)} className={inputClass}><option value="ALL">Tất cả trạng thái</option><option value="PENDING">Chờ duyệt</option><option value="APPROVED">Đã duyệt</option></select></div><div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-slate-50 text-[11px] uppercase text-slate-400"><tr><th className="px-4 py-3">Nhân viên</th><th className="px-4 py-3">Tháng lương</th><th className="px-4 py-3 text-right">Thưởng</th><th className="px-4 py-3 text-right">Phạt</th><th className="px-4 py-3 text-right">Tổng tiền</th><th className="px-4 py-3">Trạng thái</th><th className="px-4 py-3">Thao tác</th></tr></thead><tbody className="divide-y divide-slate-100">{!loading && filtered.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">Không có bản ghi lương thưởng từ API</td></tr>}{filtered.map((record, index) => <tr key={String(record.bonusRecordId ?? index)}><td className="px-4 py-4 font-bold text-slate-800">#{text(record.employeeId)}</td><td className="px-4 py-4 text-slate-600">{text(record.payrollMonth)}</td><td className="px-4 py-4 text-right font-bold text-emerald-600">{money(record.totalBonus)}</td><td className="px-4 py-4 text-right font-bold text-rose-600">{money(record.totalPenalty)}</td><td className="px-4 py-4 text-right font-black text-slate-900">{money(record.totalAmount)}</td><td className="px-4 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">{label(record.status)}</span></td><td className="px-4 py-4"><div className="flex gap-1"><button aria-label="Sửa bản ghi thưởng" onClick={() => open("record", record)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Pencil className="h-4 w-4" /></button><button aria-label="Xóa bản ghi thưởng" onClick={() => void remove("record", record)} className="rounded-lg p-2 text-rose-500 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button></div></td></tr>)}</tbody></table></div></section>
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2"><section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"><div className="mb-4 flex items-center justify-between"><div className="flex items-center gap-2"><Award className="h-4 w-4 text-amber-600" /><h2 className="text-sm font-bold text-slate-800">Chi tiết thưởng/phạt</h2></div><button aria-label="Thêm chi tiết" onClick={() => open("detail")} className="rounded-lg p-2 text-amber-600 hover:bg-amber-50"><Plus className="h-4 w-4" /></button></div><div className="space-y-2">{!loading && details.length === 0 && <p className="text-xs text-slate-400">Chưa có chi tiết từ API</p>}{details.map((detail) => <div key={String(detail.bonusDetailId)} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3"><div><p className="text-xs font-bold text-slate-800">{label(detail.type)}</p><p className="text-[11px] text-slate-500">{text(detail.reason)} · Bản ghi #{text(detail.bonusRecordId)}</p></div><div className="flex items-center gap-2"><span className="font-black text-emerald-600">{money(detail.amount)}</span><button aria-label="Sửa chi tiết thưởng" onClick={() => open("detail", detail)} className="rounded p-1 text-slate-500"><Pencil className="h-3.5 w-3.5" /></button><button aria-label="Xóa chi tiết thưởng" onClick={() => void remove("detail", detail)} className="rounded p-1 text-rose-500"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}</div></section>
+      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"><div className="mb-4 flex items-center justify-between"><div className="flex items-center gap-2"><AlertCircle className="h-4 w-4 text-rose-600" /><h2 className="text-sm font-bold text-slate-800">Hồ sơ kỷ luật</h2></div><button aria-label="Thêm hồ sơ kỷ luật" onClick={() => open("disciplinary")} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50"><Plus className="h-4 w-4" /></button></div><div className="space-y-2">{!loading && disciplinary.length === 0 && <p className="text-xs text-slate-400">Chưa có hồ sơ kỷ luật từ API</p>}{disciplinary.map((item) => <div key={String(item.disciplinaryId)} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3"><div><p className="text-xs font-bold text-slate-800">Nhân viên #{text(item.employeeId)} · {label(item.disciplinaryType)}</p><p className="text-[11px] text-slate-500">{text(item.reason)}</p></div><div className="flex items-center gap-2"><span className="font-black text-rose-600">{money(item.amount)}</span><button aria-label="Sửa hồ sơ kỷ luật" onClick={() => open("disciplinary", item)} className="rounded p-1 text-slate-500"><Pencil className="h-3.5 w-3.5" /></button><button aria-label="Xóa hồ sơ kỷ luật" onClick={() => void remove("disciplinary", item)} className="rounded p-1 text-rose-500"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}</div></section></div>
+    {modal && <Modal title={`${editing ? "Sửa" : "Thêm"} ${modal === "record" ? "bản ghi thưởng" : modal === "detail" ? "chi tiết thưởng/phạt" : "hồ sơ kỷ luật"}`} onClose={() => !saving && setModal(null)}><form onSubmit={save} className="space-y-4 p-5">{form}<div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setModal(null)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600">Hủy</button><button disabled={saving} className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">{saving ? "Đang lưu..." : "Lưu thay đổi"}</button></div></form></Modal>}
+  </div>;
 }

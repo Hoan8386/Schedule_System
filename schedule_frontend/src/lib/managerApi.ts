@@ -376,18 +376,46 @@ export const managerApi = {
   },
   getSchedulePeriods: () =>
     requestManagerApi<SchedulePeriodResponse[]>("/api/v1/schedule_period"),
+  createSchedulePeriod: (body: Record<string, unknown>) =>
+    requestManagerApi<SchedulePeriodResponse>("/api/v1/schedule_period", { method: "POST", body: JSON.stringify(body) }),
+  updateSchedulePeriod: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<SchedulePeriodResponse>(`/api/v1/schedule_period/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteSchedulePeriod: (id: number) =>
+    requestManagerApi<void>(`/api/v1/schedule_period/${id}`, { method: "DELETE" }),
   getShifts: () => requestManagerApi<ShiftResponse[]>("/api/v1/shift"),
+  createShift: (body: Record<string, unknown>) =>
+    requestManagerApi<ShiftResponse>("/api/v1/shift", { method: "POST", body: JSON.stringify(body) }),
+  updateShift: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<ShiftResponse>(`/api/v1/shift/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteShift: (id: number) =>
+    requestManagerApi<void>(`/api/v1/shift/${id}`, { method: "DELETE" }),
   getShiftsByDate: () =>
     requestManagerApi<ShiftByDateResponse[]>("/api/v1/shift_by_date"),
+  createShiftByDate: (body: Record<string, unknown>) =>
+    requestManagerApi<ShiftByDateResponse>("/api/v1/shift_by_date", { method: "POST", body: JSON.stringify(body) }),
+  updateShiftByDate: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<ShiftByDateResponse>(`/api/v1/shift_by_date/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteShiftByDate: (id: number) =>
+    requestManagerApi<void>(`/api/v1/shift_by_date/${id}`, { method: "DELETE" }),
   getShiftAssignments: () =>
     requestManagerApi<ShiftAssignmentResponse[]>("/api/v1/shift_assignment"),
+  createShiftAssignment: (body: Record<string, unknown>) =>
+    requestManagerApi<ShiftAssignmentResponse>("/api/v1/shift_assignment", { method: "POST", body: JSON.stringify(body) }),
+  updateShiftAssignment: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<ShiftAssignmentResponse>(`/api/v1/shift_assignment/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteShiftAssignment: (id: number) =>
+    requestManagerApi<void>(`/api/v1/shift_assignment/${id}`, { method: "DELETE" }),
   getEmergencyRequests: () =>
     requestManagerApi<EmergencyRequestResponse[]>("/api/v1/emergency_request"),
+  createEmergencyRequest: (body: Record<string, unknown>) =>
+    requestManagerApi<EmergencyRequestResponse>("/api/v1/emergency_request", { method: "POST", body: JSON.stringify(body) }),
   updateEmergencyRequest: (id: number, body: Record<string, unknown>) =>
     requestManagerApi<EmergencyRequestResponse>(`/api/v1/emergency_request/${id}`, {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  deleteEmergencyRequest: (id: number) =>
+    requestManagerApi<void>(`/api/v1/emergency_request/${id}`, { method: "DELETE" }),
   getAttendances: (employeeId?: number) =>
     requestManagerApi<AttendanceResponse[]>(
       employeeId
@@ -403,6 +431,11 @@ export const managerApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  createAttendance: (body: Record<string, unknown>) =>
+    requestManagerApi<AttendanceResponse>("/api/v1/attendance", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   updateAttendance: (id: number, body: Record<string, unknown>) =>
     requestManagerApi<AttendanceResponse>(`/api/v1/attendance/${id}`, {
       method: "PUT",
@@ -411,17 +444,42 @@ export const managerApi = {
   deleteAttendance: (id: number) =>
     requestManagerApi<void>(`/api/v1/attendance/${id}`, { method: "DELETE" }),
   getRules: () => requestManagerApi<RuleResponse[]>("/api/v1/rule"),
+  createRule: (body: Record<string, unknown>) =>
+    requestManagerApi<RuleResponse>("/api/v1/rule", { method: "POST", body: JSON.stringify(body) }),
+  updateRule: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<RuleResponse>(`/api/v1/rule/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteRule: (id: number) =>
+    requestManagerApi<void>(`/api/v1/rule/${id}`, { method: "DELETE" }),
   getViolations: () =>
     requestManagerApi<ViolationResponse[]>("/api/v1/violation"),
+  createViolation: (body: Record<string, unknown>) =>
+    requestManagerApi<ViolationResponse>("/api/v1/violation", { method: "POST", body: JSON.stringify(body) }),
+  updateViolation: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<ViolationResponse>(`/api/v1/violation/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteViolation: (id: number) =>
+    requestManagerApi<void>(`/api/v1/violation/${id}`, { method: "DELETE" }),
   getDisciplinaryRecords: () =>
     requestManagerApi<DisciplinaryRecordResponse[]>("/api/v1/disciplinary_record"),
+  createDisciplinaryRecord: (body: Record<string, unknown>) =>
+    requestManagerApi<DisciplinaryRecordResponse>("/api/v1/disciplinary_record", { method: "POST", body: JSON.stringify(body) }),
+  updateDisciplinaryRecord: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<DisciplinaryRecordResponse>(`/api/v1/disciplinary_record/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteDisciplinaryRecord: (id: number) =>
+    requestManagerApi<void>(`/api/v1/disciplinary_record/${id}`, { method: "DELETE" }),
   getBonusRecords: () =>
     requestManagerApi<BonusRecordResponse[]>("/api/v1/bonus_record"),
+  createBonusRecord: (body: Record<string, unknown>) =>
+    requestManagerApi<BonusRecordResponse>("/api/v1/bonus_record", { method: "POST", body: JSON.stringify(body) }),
+  updateBonusRecord: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<BonusRecordResponse>(`/api/v1/bonus_record/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteBonusRecord: (id: number) =>
+    requestManagerApi<void>(`/api/v1/bonus_record/${id}`, { method: "DELETE" }),
   getBonusDetails: () =>
     requestManagerApi<BonusDetailResponse[]>("/api/v1/bonus_detail"),
-  updateBonusRecord: (id: number, body: Record<string, unknown>) =>
-    requestManagerApi<BonusRecordResponse>(`/api/v1/bonus_record/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(body),
-    }),
+  createBonusDetail: (body: Record<string, unknown>) =>
+    requestManagerApi<BonusDetailResponse>("/api/v1/bonus_detail", { method: "POST", body: JSON.stringify(body) }),
+  updateBonusDetail: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<BonusDetailResponse>(`/api/v1/bonus_detail/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteBonusDetail: (id: number) =>
+    requestManagerApi<void>(`/api/v1/bonus_detail/${id}`, { method: "DELETE" }),
 };
