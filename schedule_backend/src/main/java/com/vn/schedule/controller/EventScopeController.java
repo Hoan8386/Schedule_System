@@ -54,7 +54,7 @@ public class EventScopeController {
     }
 
     private List<EventScopeResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(EventScopeResponse::new).toList();
+        return values.stream().map(value -> new EventScopeResponse(DtoMapper.toMap(value))).toList();
     }
 
     private EventScopeResponse response(Object value) {

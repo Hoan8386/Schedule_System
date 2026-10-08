@@ -54,7 +54,7 @@ public class EmployeeWorkSummaryController {
     }
 
     private List<EmployeeWorkSummaryResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(EmployeeWorkSummaryResponse::new).toList();
+        return values.stream().map(value -> new EmployeeWorkSummaryResponse(DtoMapper.toMap(value))).toList();
     }
 
     private EmployeeWorkSummaryResponse response(Object value) {

@@ -94,7 +94,7 @@ public class AttendanceController {
 
 
     private List<AttendanceResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(AttendanceResponse::new).toList();
+        return values.stream().map(value -> new AttendanceResponse(DtoMapper.toMap(value))).toList();
     }
 
     private AttendanceResponse response(Object value) {

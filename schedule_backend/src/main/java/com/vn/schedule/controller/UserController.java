@@ -54,7 +54,7 @@ public class UserController {
     }
 
     private List<UserResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(UserResponse::new).toList();
+        return values.stream().map(value -> new UserResponse(DtoMapper.toMap(value))).toList();
     }
 
     private UserResponse response(Object value) {

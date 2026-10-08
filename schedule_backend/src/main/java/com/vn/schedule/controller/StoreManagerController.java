@@ -54,7 +54,7 @@ public class StoreManagerController {
     }
 
     private List<StoreManagerResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(StoreManagerResponse::new).toList();
+        return values.stream().map(value -> new StoreManagerResponse(DtoMapper.toMap(value))).toList();
     }
 
     private StoreManagerResponse response(Object value) {

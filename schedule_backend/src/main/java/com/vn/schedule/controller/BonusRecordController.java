@@ -54,7 +54,7 @@ public class BonusRecordController {
     }
 
     private List<BonusRecordResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(BonusRecordResponse::new).toList();
+        return values.stream().map(value -> new BonusRecordResponse(DtoMapper.toMap(value))).toList();
     }
 
     private BonusRecordResponse response(Object value) {

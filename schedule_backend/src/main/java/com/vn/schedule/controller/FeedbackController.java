@@ -54,7 +54,7 @@ public class FeedbackController {
     }
 
     private List<FeedbackResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(FeedbackResponse::new).toList();
+        return values.stream().map(value -> new FeedbackResponse(DtoMapper.toMap(value))).toList();
     }
 
     private FeedbackResponse response(Object value) {

@@ -54,7 +54,7 @@ public class ShiftController {
     }
 
     private List<ShiftResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(ShiftResponse::new).toList();
+        return values.stream().map(value -> new ShiftResponse(DtoMapper.toMap(value))).toList();
     }
 
     private ShiftResponse response(Object value) {

@@ -54,7 +54,7 @@ public class ViolationController {
     }
 
     private List<ViolationResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(ViolationResponse::new).toList();
+        return values.stream().map(value -> new ViolationResponse(DtoMapper.toMap(value))).toList();
     }
 
     private ViolationResponse response(Object value) {

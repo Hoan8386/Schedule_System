@@ -54,7 +54,7 @@ public class OrganizationSettingController {
     }
 
     private List<OrganizationSettingResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(OrganizationSettingResponse::new).toList();
+        return values.stream().map(value -> new OrganizationSettingResponse(DtoMapper.toMap(value))).toList();
     }
 
     private OrganizationSettingResponse response(Object value) {

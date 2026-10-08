@@ -98,7 +98,7 @@ public class ScheduleController {
     }
 
     private List<ScheduleResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(ScheduleResponse::new).toList();
+        return values.stream().map(value -> new ScheduleResponse(DtoMapper.toMap(value))).toList();
     }
 
     private ScheduleResponse response(Object value) {

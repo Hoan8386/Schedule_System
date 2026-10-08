@@ -54,7 +54,7 @@ public class EmergencyRequestController {
     }
 
     private List<EmergencyRequestResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(EmergencyRequestResponse::new).toList();
+        return values.stream().map(value -> new EmergencyRequestResponse(DtoMapper.toMap(value))).toList();
     }
 
     private EmergencyRequestResponse response(Object value) {

@@ -54,7 +54,7 @@ public class SpecialEventController {
     }
 
     private List<SpecialEventResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(SpecialEventResponse::new).toList();
+        return values.stream().map(value -> new SpecialEventResponse(DtoMapper.toMap(value))).toList();
     }
 
     private SpecialEventResponse response(Object value) {

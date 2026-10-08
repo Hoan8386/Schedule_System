@@ -54,7 +54,7 @@ public class SchedulePeriodController {
     }
 
     private List<SchedulePeriodResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(SchedulePeriodResponse::new).toList();
+        return values.stream().map(value -> new SchedulePeriodResponse(DtoMapper.toMap(value))).toList();
     }
 
     private SchedulePeriodResponse response(Object value) {

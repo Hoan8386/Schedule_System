@@ -54,7 +54,7 @@ public class TestOptionController {
     }
 
     private List<TestOptionResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(TestOptionResponse::new).toList();
+        return values.stream().map(value -> new TestOptionResponse(DtoMapper.toMap(value))).toList();
     }
 
     private TestOptionResponse response(Object value) {

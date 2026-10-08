@@ -54,7 +54,7 @@ public class EmployeeStoreController {
     }
 
     private List<EmployeeStoreResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(EmployeeStoreResponse::new).toList();
+        return values.stream().map(value -> new EmployeeStoreResponse(DtoMapper.toMap(value))).toList();
     }
 
     private EmployeeStoreResponse response(Object value) {

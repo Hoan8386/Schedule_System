@@ -54,7 +54,7 @@ public class TestAssignmentController {
     }
 
     private List<TestAssignmentResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(TestAssignmentResponse::new).toList();
+        return values.stream().map(value -> new TestAssignmentResponse(DtoMapper.toMap(value))).toList();
     }
 
     private TestAssignmentResponse response(Object value) {

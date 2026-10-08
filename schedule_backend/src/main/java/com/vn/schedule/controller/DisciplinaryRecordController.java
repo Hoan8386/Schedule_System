@@ -54,7 +54,7 @@ public class DisciplinaryRecordController {
     }
 
     private List<DisciplinaryRecordResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(DisciplinaryRecordResponse::new).toList();
+        return values.stream().map(value -> new DisciplinaryRecordResponse(DtoMapper.toMap(value))).toList();
     }
 
     private DisciplinaryRecordResponse response(Object value) {

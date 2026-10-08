@@ -54,7 +54,7 @@ public class AttachmentController {
     }
 
     private List<AttachmentResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(AttachmentResponse::new).toList();
+        return values.stream().map(value -> new AttachmentResponse(DtoMapper.toMap(value))).toList();
     }
 
     private AttachmentResponse response(Object value) {

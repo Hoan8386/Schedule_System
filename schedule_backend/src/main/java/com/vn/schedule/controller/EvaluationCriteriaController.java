@@ -54,7 +54,7 @@ public class EvaluationCriteriaController {
     }
 
     private List<EvaluationCriteriaResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(EvaluationCriteriaResponse::new).toList();
+        return values.stream().map(value -> new EvaluationCriteriaResponse(DtoMapper.toMap(value))).toList();
     }
 
     private EvaluationCriteriaResponse response(Object value) {

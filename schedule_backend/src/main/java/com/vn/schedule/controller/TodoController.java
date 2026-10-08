@@ -54,7 +54,7 @@ public class TodoController {
     }
 
     private List<TodoResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(TodoResponse::new).toList();
+        return values.stream().map(value -> new TodoResponse(DtoMapper.toMap(value))).toList();
     }
 
     private TodoResponse response(Object value) {

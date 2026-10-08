@@ -54,7 +54,7 @@ public class EmployeeEvaluationController {
     }
 
     private List<EmployeeEvaluationResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(EmployeeEvaluationResponse::new).toList();
+        return values.stream().map(value -> new EmployeeEvaluationResponse(DtoMapper.toMap(value))).toList();
     }
 
     private EmployeeEvaluationResponse response(Object value) {

@@ -54,7 +54,7 @@ public class RegulationsRuleController {
     }
 
     private List<RegulationsRuleResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(RegulationsRuleResponse::new).toList();
+        return values.stream().map(value -> new RegulationsRuleResponse(DtoMapper.toMap(value))).toList();
     }
 
     private RegulationsRuleResponse response(Object value) {

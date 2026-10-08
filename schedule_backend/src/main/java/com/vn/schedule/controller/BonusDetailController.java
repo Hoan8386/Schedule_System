@@ -54,7 +54,7 @@ public class BonusDetailController {
     }
 
     private List<BonusDetailResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(BonusDetailResponse::new).toList();
+        return values.stream().map(value -> new BonusDetailResponse(DtoMapper.toMap(value))).toList();
     }
 
     private BonusDetailResponse response(Object value) {

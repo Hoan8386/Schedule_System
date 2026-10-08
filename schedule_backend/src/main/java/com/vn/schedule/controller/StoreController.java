@@ -74,7 +74,7 @@ public class StoreController {
     }
 
     private List<StoreResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(StoreResponse::new).toList();
+        return values.stream().map(value -> new StoreResponse(DtoMapper.toMap(value))).toList();
     }
 
     private StoreResponse response(Object value) {

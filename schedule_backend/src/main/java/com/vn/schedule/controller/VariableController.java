@@ -54,7 +54,7 @@ public class VariableController {
     }
 
     private List<VariableResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(VariableResponse::new).toList();
+        return values.stream().map(value -> new VariableResponse(DtoMapper.toMap(value))).toList();
     }
 
     private VariableResponse response(Object value) {

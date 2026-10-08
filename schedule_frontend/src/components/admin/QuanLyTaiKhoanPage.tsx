@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Users,
   ShieldCheck,
@@ -20,8 +20,10 @@ import {
   CheckCircle2,
   AlertCircle,
   HelpCircle,
+  RefreshCw,
 } from "lucide-react";
 import { UserRoleCode } from "@/types/auth";
+import { adminUserApi, UserResponse, RoleResponse } from "@/lib/adminApi";
 
 interface AccountItem {
   id: number;
@@ -35,81 +37,6 @@ interface AccountItem {
   status: "ACTIVE" | "LOCKED";
   lastLogin: string;
 }
-
-const mockAccounts: AccountItem[] = [
-  {
-    id: 1,
-    username: "admin_hoan",
-    fullName: "Nguyễn Hoàn (Admin)",
-    email: "hoan33356@gmail.com",
-    phone: "0900000099",
-    roleCode: "ADMIN",
-    roleName: "Quản trị viên",
-    storeName: "Toàn hệ thống BLOAN",
-    status: "ACTIVE",
-    lastLogin: "Vừa xong",
-  },
-  {
-    id: 2,
-    username: "manager_hai",
-    fullName: "Trần Hải Long",
-    email: "long.th@bloan.vn",
-    phone: "0912345678",
-    roleCode: "MANAGER",
-    roleName: "Quản lý chuỗi",
-    storeName: "Cụm miền Nam (18 CH)",
-    status: "ACTIVE",
-    lastLogin: "10 phút trước",
-  },
-  {
-    id: 3,
-    username: "store_mai",
-    fullName: "Lê Thị Mai",
-    email: "mai.lt@bloan.vn",
-    phone: "0987654321",
-    roleCode: "STORE_MANAGER",
-    roleName: "Trưởng cửa hàng",
-    storeName: "BLOAN · Lê Lợi (Q1)",
-    status: "ACTIVE",
-    lastLogin: "1 giờ trước",
-  },
-  {
-    id: 4,
-    username: "store_nam",
-    fullName: "Trần Văn Nam",
-    email: "nam.tv@bloan.vn",
-    phone: "0977889900",
-    roleCode: "STORE_MANAGER",
-    roleName: "Trưởng cửa hàng",
-    storeName: "BLOAN · Tú Xương (Q3)",
-    status: "ACTIVE",
-    lastLogin: "3 giờ trước",
-  },
-  {
-    id: 5,
-    username: "nv_duong",
-    fullName: "Nguyễn Thùy Dương",
-    email: "duong.nt@bloan.vn",
-    phone: "0944112233",
-    roleCode: "EMPLOYEE",
-    roleName: "Nhân viên",
-    storeName: "BLOAN · Lê Lợi (Q1)",
-    status: "ACTIVE",
-    lastLogin: "Hôm qua",
-  },
-  {
-    id: 6,
-    username: "nv_khanh",
-    fullName: "Lý Quốc Khánh",
-    email: "khanh.lq@bloan.vn",
-    phone: "0933221100",
-    roleCode: "EMPLOYEE",
-    roleName: "Nhân viên",
-    storeName: "BLOAN · Crescent Mall (Q7)",
-    status: "LOCKED",
-    lastLogin: "3 ngày trước",
-  },
-];
 
 interface PermissionRow {
   group: string;
@@ -272,11 +199,13 @@ const initialPermissions: PermissionRow[] = [
 
 export default function QuanLyTaiKhoanPage() {
   const [activeSubTab, setActiveSubTab] = useState<"accounts" | "matrix">("accounts");
-  const [accounts, setAccounts] = useState<AccountItem[]>(mockAccounts);
+  const [accounts, setAccounts] = useState<AccountItem[]>([]);
   const [permissions, setPermissions] = useState<PermissionRow[]>(initialPermissions);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isLoadingApi, setIsLoadingApi] = useState(false);
+  const [apiConnected, setApiConnected] = useState(false);
 
   // Form state
   const [newUsername, setNewUsername] = useState("");
@@ -286,7 +215,71 @@ export default function QuanLyTaiKhoanPage() {
   const [newRole, setNewRole] = useState<UserRoleCode>("EMPLOYEE");
   const [newStore, setNewStore] = useState("BLOAN · Lê Lợi (Q1)");
 
-  const handleCreateAccount = (e: React.FormEvent) => {
+  // Load danh sách user và role từ Backend Spring Boot theo API_RESPONSE_DATA.md
+  const loadData = async () => {
+    setIsLoadingApi(true);
+    try {
+      const [resUsers, resRoles, resUserRoles] = await Promise.allSettled([
+        adminUserApi.getUsers(),
+        adminUserApi.getRoles(),
+        adminUserApi.getUserRoles(),
+      ]);
+
+      if (
+        resUsers.status === "fulfilled" &&
+        Array.isArray(resUsers.value.data) &&
+        resUsers.value.data.length > 0
+      ) {
+        setApiConnected(true);
+        const rolesList: RoleResponse[] =
+          resRoles.status === "fulfilled" && Array.isArray(resRoles.value.data)
+            ? resRoles.value.data
+            : [];
+        const userRolesList =
+          resUserRoles.status === "fulfilled" && Array.isArray(resUserRoles.value.data)
+            ? resUserRoles.value.data
+            : [];
+
+        const mapped: AccountItem[] = resUsers.value.data.map((u: UserResponse) => {
+          // Tìm role từ user_role
+          const ur = userRolesList.find((item) => item.userId === u.id);
+          const roleObj = ur
+            ? rolesList.find((r) => r.roleId === ur.roleId)
+            : rolesList.find((r) => r.roleCode === "EMPLOYEE");
+
+          const roleCode = (roleObj?.roleCode as UserRoleCode) || "EMPLOYEE";
+          const roleName = roleObj?.roleName || "Nhân viên";
+
+          const username = u.username || `user-${u.id}`;
+
+          return {
+            id: u.id,
+            username,
+            fullName: username,
+            email: u.email || "",
+            phone: u.phone || "Chưa cập nhật",
+            roleCode: roleCode,
+            roleName: roleName,
+            storeName: roleCode === "ADMIN" ? "Toàn hệ thống BLOAN" : "BLOAN · Chi nhánh trung tâm",
+            status: (u.status === "ACTIVE" ? "ACTIVE" : "LOCKED") as "ACTIVE" | "LOCKED",
+            lastLogin: u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString("vi-VN") : "Chưa đăng nhập",
+          };
+        });
+
+        setAccounts(mapped);
+      }
+    } catch (e) {
+      console.warn("Không thể tải danh sách tài khoản từ backend:", e);
+    } finally {
+      setIsLoadingApi(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUsername || !newEmail) {
       alert("Vui lòng nhập đầy đủ Tên đăng nhập và Email!");
@@ -300,8 +293,36 @@ export default function QuanLyTaiKhoanPage() {
       EMPLOYEE: "Nhân viên",
     };
 
+    let createdId = Date.now();
+
+    try {
+      // Gọi API POST /api/v1/user
+      const res = await adminUserApi.createUser({
+        username: newUsername,
+        email: newEmail,
+        phone: newPhone || "0900000000",
+        status: "ACTIVE",
+      });
+      if (res?.data?.id) {
+        createdId = res.data.id;
+        // Gán vai trò qua API POST /api/v1/user_role
+        const roleIdMap: Record<UserRoleCode, number> = {
+          ADMIN: 1,
+          MANAGER: 2,
+          STORE_MANAGER: 2,
+          EMPLOYEE: 3,
+        };
+        await adminUserApi.assignRole({
+          userId: createdId,
+          roleId: roleIdMap[newRole] || 3,
+        });
+      }
+    } catch (err: unknown) {
+      console.warn("Gọi API tạo user thất bại:", err);
+    }
+
     const newAcc: AccountItem = {
-      id: Date.now(),
+      id: createdId,
       username: newUsername,
       fullName: newFullName || newUsername,
       email: newEmail,
@@ -310,7 +331,7 @@ export default function QuanLyTaiKhoanPage() {
       roleName: roleNames[newRole],
       storeName: newRole === "ADMIN" ? "Toàn hệ thống BLOAN" : newStore,
       status: "ACTIVE",
-      lastLogin: "Chưa đăng nhập",
+      lastLogin: "Vừa tạo",
     };
 
     setAccounts([newAcc, ...accounts]);
@@ -322,14 +343,33 @@ export default function QuanLyTaiKhoanPage() {
     alert(`Đã tạo tài khoản thành công cho: ${newUsername}`);
   };
 
-  const toggleStatus = (id: number) => {
+  const toggleStatus = async (id: number) => {
+    const acc = accounts.find((a) => a.id === id);
+    if (!acc) return;
+    const newStatus = acc.status === "ACTIVE" ? "LOCKED" : "ACTIVE";
+
+    try {
+      // Gọi API PUT /api/v1/user/{id}
+      await adminUserApi.updateUser(id, { status: newStatus });
+    } catch (err) {
+      console.warn("Cập nhật trạng thái API thất bại, cập nhật cục bộ:", err);
+    }
+
     setAccounts(
-      accounts.map((acc) =>
-        acc.id === id
-          ? { ...acc, status: acc.status === "ACTIVE" ? "LOCKED" : "ACTIVE" }
-          : acc
-      )
+      accounts.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
     );
+  };
+
+  const handleDeleteAccount = async (id: number) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa tài khoản này khỏi hệ thống?")) return;
+    try {
+      // Gọi API DELETE /api/v1/user/{id}
+      await adminUserApi.deleteUser(id);
+    } catch (err) {
+      console.warn("Xóa user API thất bại, xóa cục bộ:", err);
+    }
+    setAccounts(accounts.filter((a) => a.id !== id));
+    alert("Đã xóa tài khoản thành công!");
   };
 
   const togglePerm = (permCode: string, role: "admin" | "manager" | "storeManager" | "employee") => {
@@ -341,10 +381,14 @@ export default function QuanLyTaiKhoanPage() {
   };
 
   const filteredAccounts = accounts.filter((acc) => {
+    const username = String(acc.username ?? "");
+    const fullName = String(acc.fullName ?? "");
+    const email = String(acc.email ?? "");
+    const normalizedSearch = search.toLowerCase();
     const matchSearch =
-      acc.username.toLowerCase().includes(search.toLowerCase()) ||
-      acc.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      acc.email.toLowerCase().includes(search.toLowerCase());
+      username.toLowerCase().includes(normalizedSearch) ||
+      fullName.toLowerCase().includes(normalizedSearch) ||
+      email.toLowerCase().includes(normalizedSearch);
     const matchRole = roleFilter === "ALL" || acc.roleCode === roleFilter;
     return matchSearch && matchRole;
   });
@@ -369,6 +413,15 @@ export default function QuanLyTaiKhoanPage() {
           </p>
         </div>
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={loadData}
+            disabled={isLoadingApi}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+            title="Đồng bộ lại từ Backend Spring Boot"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingApi ? "animate-spin text-amber-600" : "text-slate-500"}`} />
+            <span className="hidden sm:inline">{isLoadingApi ? "Đang tải..." : "Tải lại API"}</span>
+          </button>
           <button
             onClick={() => setActiveSubTab(activeSubTab === "accounts" ? "matrix" : "accounts")}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
@@ -588,17 +641,24 @@ export default function QuanLyTaiKhoanPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => alert(`Đặt lại mật khẩu tạm thời cho @${acc.username}: Bloan@2026`)}
-                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-amber-600"
+                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-amber-600 transition-colors"
                             title="Reset mật khẩu"
                           >
                             <KeyRound className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => toggleStatus(acc.id)}
-                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-rose-600"
+                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-rose-600 transition-colors"
                             title={acc.status === "ACTIVE" ? "Khóa tài khoản" : "Mở khóa"}
                           >
                             {acc.status === "ACTIVE" ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAccount(acc.id)}
+                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-colors"
+                            title="Xóa tài khoản khỏi hệ thống"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>

@@ -54,7 +54,7 @@ public class ShiftAssignmentController {
     }
 
     private List<ShiftAssignmentResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(ShiftAssignmentResponse::new).toList();
+        return values.stream().map(value -> new ShiftAssignmentResponse(DtoMapper.toMap(value))).toList();
     }
 
     private ShiftAssignmentResponse response(Object value) {

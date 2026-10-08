@@ -54,7 +54,7 @@ public class AuditLogController {
     }
 
     private List<AuditLogResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(AuditLogResponse::new).toList();
+        return values.stream().map(value -> new AuditLogResponse(DtoMapper.toMap(value))).toList();
     }
 
     private AuditLogResponse response(Object value) {

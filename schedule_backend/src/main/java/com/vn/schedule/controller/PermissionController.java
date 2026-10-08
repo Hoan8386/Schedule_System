@@ -54,7 +54,7 @@ public class PermissionController {
     }
 
     private List<PermissionResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(PermissionResponse::new).toList();
+        return values.stream().map(value -> new PermissionResponse(DtoMapper.toMap(value))).toList();
     }
 
     private PermissionResponse response(Object value) {

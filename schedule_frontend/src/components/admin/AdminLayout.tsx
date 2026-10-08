@@ -3,17 +3,11 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import {
-  LayoutDashboard,
   ShieldCheck,
   Palette,
   Code,
   FileDigit,
   Mail,
-  Users,
-  Store,
-  Clock,
-  Wallet,
-  TrendingUp,
   HelpCircle,
   LogOut,
   Bell,
@@ -22,17 +16,11 @@ import {
   Search,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import AdminDashboardPage from "@/components/admin/AdminDashboardPage";
 import QuanLyTaiKhoanPage from "@/components/admin/QuanLyTaiKhoanPage";
 import ThongTinThuongHieuPage from "@/components/admin/ThongTinThuongHieuPage";
 import QuanLyApiPage from "@/components/admin/QuanLyApiPage";
 import CauHinhSinhMaPage from "@/components/admin/CauHinhSinhMaPage";
 import QuanLyEmailThongBaoPage from "@/components/admin/QuanLyEmailThongBaoPage";
-import NhanSuPage from "@/components/management/NhanSuPage";
-import CuaHangPage from "@/components/management/CuaHangPage";
-import ChamCongPage from "@/components/management/ChamCongPage";
-import LuongPage from "@/components/management/LuongPage";
-import ThongKePage from "@/components/management/ThongKePage";
 
 interface MenuItem {
   id: string;
@@ -41,39 +29,26 @@ interface MenuItem {
   badge?: string | number;
 }
 
-const adminCoreMenuItems: MenuItem[] = [
-  { id: "dashboard", label: "Bàn làm việc Admin", icon: LayoutDashboard },
-  { id: "taikhoan", label: "Quản lý tài khoản (phân quyền)", icon: ShieldCheck, badge: "156" },
+const adminMenuItems: MenuItem[] = [
+  { id: "taikhoan", label: "Quản lý tài khoản (phân quyền)", icon: ShieldCheck, badge: "RBAC" },
   { id: "thuonghieu", label: "Quản lý thông tin cửa hàng (logo, màu sắc)", icon: Palette },
-  { id: "api", label: "Quản lý API & Thiết bị", icon: Code, badge: "Active" },
+  { id: "api", label: "Quản lý API", icon: Code, badge: "Endpoints" },
   { id: "sinhma", label: "Cấu hình sinh mã tự động", icon: FileDigit },
-  { id: "email_thongbao", label: "Quản lý thông báo & Gửi Email", icon: Mail },
-];
-
-const operationsMenuItems: MenuItem[] = [
-  { id: "nhansu", label: "Dữ liệu nhân sự chuỗi", icon: Users },
-  { id: "cuahang", label: "Mạng lưới cửa hàng", icon: Store },
-  { id: "chamcong", label: "Đối soát chấm công", icon: Clock },
-  { id: "luong", label: "Quỹ lương & Thưởng", icon: Wallet },
-  { id: "thongke", label: "Báo cáo tổng hợp", icon: TrendingUp },
+  { id: "email_thongbao", label: "Quản lý thông báo gửi email/thông báo", icon: Mail },
 ];
 
 export default function AdminLayout() {
   const { user, logout, switchRole } = useAuth();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("taikhoan");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const allItems = [...adminCoreMenuItems, ...operationsMenuItems];
-
   const getBreadcrumbTitle = () => {
-    const item = allItems.find((m) => m.id === activeTab);
-    return item ? item.label : "Bàn làm việc Admin";
+    const item = adminMenuItems.find((m) => m.id === activeTab);
+    return item ? item.label : "Quản lý tài khoản (phân quyền)";
   };
 
   const renderPage = () => {
     switch (activeTab) {
-      case "dashboard":
-        return <AdminDashboardPage onNavigate={setActiveTab} />;
       case "taikhoan":
         return <QuanLyTaiKhoanPage />;
       case "thuonghieu":
@@ -84,19 +59,8 @@ export default function AdminLayout() {
         return <CauHinhSinhMaPage />;
       case "email_thongbao":
         return <QuanLyEmailThongBaoPage />;
-      // Operation oversight pages
-      case "nhansu":
-        return <NhanSuPage />;
-      case "cuahang":
-        return <CuaHangPage />;
-      case "chamcong":
-        return <ChamCongPage />;
-      case "luong":
-        return <LuongPage />;
-      case "thongke":
-        return <ThongKePage />;
       default:
-        return <AdminDashboardPage onNavigate={setActiveTab} />;
+        return <QuanLyTaiKhoanPage />;
     }
   };
 
@@ -152,16 +116,16 @@ export default function AdminLayout() {
 
           {/* Scrollable Navigation Items */}
           <nav className="px-2 space-y-4 mt-1 overflow-y-auto flex-1">
-            {/* Section 1: Admin Core Functions */}
+            {/* 5 Trang Quản Trị Hệ Thống */}
             <div>
-              <p className="px-3 text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <p className="px-3 text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-2 flex items-center justify-between">
                 <span>Quản trị hệ thống</span>
-                <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-black">
-                  ADMIN
+                <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-black">
+                  5 CHỨC NĂNG
                 </span>
               </p>
-              <div className="space-y-0.5">
-                {adminCoreMenuItems.map((item) => {
+              <div className="space-y-1">
+                {adminMenuItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   return (
@@ -170,56 +134,29 @@ export default function AdminLayout() {
                       onClick={() => setActiveTab(item.id)}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                         isActive
-                          ? "bg-amber-50/80 text-amber-800 font-bold border border-amber-200/60 shadow-xs"
+                          ? "bg-amber-500 text-slate-900 font-bold shadow-sm shadow-amber-200"
                           : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900"
                       }`}
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         <Icon
                           className={`w-4 h-4 shrink-0 ${
-                            isActive ? "text-amber-600" : "text-slate-400"
+                            isActive ? "text-slate-900 font-bold" : "text-slate-400"
                           }`}
                         />
                         <span className="truncate">{item.label}</span>
                       </div>
                       {item.badge && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 shrink-0">
+                        <span
+                          className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
+                            isActive
+                              ? "bg-slate-900 text-amber-300"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
                           {item.badge}
                         </span>
                       )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Section 2: Chain Oversight */}
-            <div>
-              <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                Giám sát chuỗi (Oversight)
-              </p>
-              <div className="space-y-0.5">
-                {operationsMenuItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                        isActive
-                          ? "bg-amber-50/80 text-amber-800 font-bold border border-amber-200/60 shadow-xs"
-                          : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <Icon
-                          className={`w-4 h-4 shrink-0 ${
-                            isActive ? "text-amber-600" : "text-slate-400"
-                          }`}
-                        />
-                        <span className="truncate">{item.label}</span>
-                      </div>
                     </button>
                   );
                 })}

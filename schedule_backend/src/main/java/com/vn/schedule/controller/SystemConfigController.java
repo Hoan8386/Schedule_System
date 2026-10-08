@@ -54,7 +54,7 @@ public class SystemConfigController {
     }
 
     private List<SystemConfigResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(SystemConfigResponse::new).toList();
+        return values.stream().map(value -> new SystemConfigResponse(DtoMapper.toMap(value))).toList();
     }
 
     private SystemConfigResponse response(Object value) {

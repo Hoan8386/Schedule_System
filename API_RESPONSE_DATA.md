@@ -348,3 +348,660 @@ array.
 - Login response: `schedule_backend/src/main/java/com/vn/schedule/dto/response/ResLoginDTO.java`
 - Mapper entity: `schedule_backend/src/main/java/com/vn/schedule/dto/DtoMapper.java`
 - Endpoint implementations: `schedule_backend/src/main/java/com/vn/schedule/controller/`
+
+---
+
+## 13. USER API (`/api/v1/user`)
+
+Quản lý tài khoản người dùng hệ thống.
+Controller: `UserController.java` | Service: `UserService.java` | Entity: `User.java`
+
+### 13.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/user` | Lấy danh sách toàn bộ user | Không | `200` | `UserResponse[]` |
+| `GET` | `/api/v1/user/{id}` | Lấy chi tiết user theo ID | Không | `200` | `UserResponse` |
+| `POST` | `/api/v1/user` | Tạo mới user | `UserRequest` (JSON) | `201` | `UserResponse` |
+| `PUT` | `/api/v1/user/{id}` | Cập nhật user theo ID | `UserRequest` (JSON) | `200` | `UserResponse` |
+| `DELETE` | `/api/v1/user/{id}` | Xóa user theo ID | Không | `204` | Không có body |
+
+### 13.2 Cấu trúc dữ liệu `UserResponse`
+
+| Field | Kiểu dữ liệu | Nullable | Mô tả |
+|---|---|:---:|---|
+| `id` | `number` | Không | ID duy nhất của user (Primary Key). |
+| `username` | `string` | Không | Tên đăng nhập (duy nhất, tối đa 100 ký tự). |
+| `email` | `string` | Có | Địa chỉ email (duy nhất). |
+| `phone` | `string` | Có | Số điện thoại (duy nhất). |
+| `status` | `string` | Không | Trạng thái tài khoản (ví dụ: `ACTIVE`, `INACTIVE`, `BLOCKED`). |
+| `lastLoginAt` | `string` (ISO 8601) | Có | Thời điểm đăng nhập gần nhất (ví dụ: `2026-10-07T14:30:00`). |
+| `createdAt` | `string` (ISO 8601) | Có | Thời điểm tạo tài khoản. |
+| `updatedAt` | `string` (ISO 8601) | Có | Thời điểm cập nhật tài khoản gần nhất. |
+
+> [!IMPORTANT]
+> - Trường `passwordHash` / `password` **hoàn toàn bị loại bỏ** trong response bởi `DtoMapper` và `@JsonIgnore`, frontend không bao giờ nhận được mật khẩu.
+> - Khóa chính của user trong response là **`id`** (kiểu số nguyên).
+
+### 13.3 Request Body cho POST / PUT (`UserRequest`)
+
+```json
+{
+  "username": "hoan_admin",
+  "passwordHash": "$2a$10$xyz...",
+  "email": "hoan@example.com",
+  "phone": "0987654321",
+  "status": "ACTIVE"
+}
+```
+
+### 13.4 Ví dụ Response thực tế
+
+#### `GET /api/v1/user` (200 OK)
+```json
+{
+  "statusCode": 200,
+  "error": null,
+  "message": "Lấy danh sách dữ liệu",
+  "data": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "phone": "0901234567",
+      "status": "ACTIVE",
+      "lastLoginAt": "2026-10-08T08:30:00",
+      "createdAt": "2026-09-01T10:00:00",
+      "updatedAt": "2026-10-08T08:30:00"
+    },
+    {
+      "id": 2,
+      "username": "manager_store1",
+      "email": "manager1@example.com",
+      "phone": "0912345678",
+      "status": "ACTIVE",
+      "lastLoginAt": null,
+      "createdAt": "2026-09-10T14:15:00",
+      "updatedAt": "2026-09-10T14:15:00"
+    }
+  ]
+}
+```
+
+#### `GET /api/v1/user/1` (200 OK)
+```json
+{
+  "statusCode": 200,
+  "error": null,
+  "message": "Lấy thông tin chi tiết",
+  "data": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "phone": "0901234567",
+    "status": "ACTIVE",
+    "lastLoginAt": "2026-10-08T08:30:00",
+    "createdAt": "2026-09-01T10:00:00",
+    "updatedAt": "2026-10-08T08:30:00"
+  }
+}
+```
+
+#### `POST /api/v1/user` (201 Created)
+```json
+{
+  "statusCode": 201,
+  "error": null,
+  "message": "Tạo mới dữ liệu",
+  "data": {
+    "id": 3,
+    "username": "hoan_admin",
+    "email": "hoan@example.com",
+    "phone": "0987654321",
+    "status": "ACTIVE",
+    "lastLoginAt": null,
+    "createdAt": "2026-10-08T20:00:00",
+    "updatedAt": null
+  }
+}
+```
+
+#### `DELETE /api/v1/user/3` (204 No Content)
+- HTTP Status: `204`
+- Response Body: Không có nội dung (Empty).
+
+---
+
+## 14. ROLE API (`/api/v1/role`)
+
+Quản lý danh mục các vai trò trong hệ thống (ADMIN, MANAGER, EMPLOYEE, ...).
+Controller: `RoleController.java` | Service: `RoleService.java` | Entity: `Role.java`
+
+### 14.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/role` | Lấy danh sách toàn bộ role | Không | `200` | `RoleResponse[]` |
+| `GET` | `/api/v1/role/{id}` | Lấy chi tiết role theo ID | Không | `200` | `RoleResponse` |
+| `POST` | `/api/v1/role` | Tạo mới role | `RoleRequest` (JSON) | `201` | `RoleResponse` |
+| `PUT` | `/api/v1/role/{id}` | Cập nhật role theo ID | `RoleRequest` (JSON) | `200` | `RoleResponse` |
+| `DELETE` | `/api/v1/role/{id}` | Xóa role theo ID | Không | `204` | Không có body |
+
+### 14.2 Cấu trúc dữ liệu `RoleResponse`
+
+| Field | Kiểu dữ liệu | Nullable | Mô tả |
+|---|---|:---:|---|
+| `roleId` | `number` | Không | **Khóa chính của role (LƯU Ý: tên trường là `roleId`, KHÔNG PHẢI `id`).** |
+| `roleCode` | `string` | Không | Mã định danh vai trò (duy nhất, ví dụ: `ADMIN`, `MANAGER`, `EMPLOYEE`). |
+| `roleName` | `string` | Không | Tên hiển thị vai trò (ví dụ: `Quản trị viên hệ thống`). |
+| `description` | `string` | Có | Mô tả chức năng của vai trò. |
+| `status` | `string` | Có | Trạng thái (ví dụ: `ACTIVE`, `INACTIVE`). |
+
+> [!WARNING]
+> **Điểm bẫy Frontend cần chú ý:**
+> Khóa chính của Role trả về qua API là **`roleId`** chứ **KHÔNG PHẢI `id`** (do getter trong entity là `getRoleId()`). Frontend khi render bảng, key selector hay edit/delete URL phải truyền `item.roleId`.
+
+### 14.3 Request Body cho POST / PUT (`RoleRequest`)
+
+```json
+{
+  "roleCode": "SHIFT_LEADER",
+  "roleName": "Trưởng ca làm việc",
+  "description": "Quản lý và phân ca cho nhân viên trong ca trực",
+  "status": "ACTIVE"
+}
+```
+
+### 14.4 Ví dụ Response thực tế
+
+#### `GET /api/v1/role` (200 OK)
+```json
+{
+  "statusCode": 200,
+  "error": null,
+  "message": "Lấy danh sách dữ liệu",
+  "data": [
+    {
+      "roleId": 1,
+      "roleCode": "ADMIN",
+      "roleName": "Quản trị viên",
+      "description": "Toàn quyền quản trị hệ thống",
+      "status": "ACTIVE"
+    },
+    {
+      "roleId": 2,
+      "roleCode": "MANAGER",
+      "roleName": "Quản lý cửa hàng",
+      "description": "Quản lý nhân viên và lịch làm việc của chi nhánh",
+      "status": "ACTIVE"
+    },
+    {
+      "roleId": 3,
+      "roleCode": "EMPLOYEE",
+      "roleName": "Nhân viên",
+      "description": "Nhân viên xem ca và chấm công",
+      "status": "ACTIVE"
+    }
+  ]
+}
+```
+
+#### `GET /api/v1/role/1` (200 OK)
+```json
+{
+  "statusCode": 200,
+  "error": null,
+  "message": "Lấy thông tin chi tiết",
+  "data": {
+    "roleId": 1,
+    "roleCode": "ADMIN",
+    "roleName": "Quản trị viên",
+    "description": "Toàn quyền quản trị hệ thống",
+    "status": "ACTIVE"
+  }
+}
+```
+
+#### `POST /api/v1/role` (201 Created)
+```json
+{
+  "statusCode": 201,
+  "error": null,
+  "message": "Tạo mới dữ liệu",
+  "data": {
+    "roleId": 4,
+    "roleCode": "SHIFT_LEADER",
+    "roleName": "Trưởng ca làm việc",
+    "description": "Quản lý và phân ca cho nhân viên trong ca trực",
+    "status": "ACTIVE"
+  }
+}
+```
+
+---
+
+## 15. PERMISSION API (`/api/v1/permission`)
+
+Quản lý danh mục quyền hạn (từng hành động/API cụ thể).
+Controller: `PermissionController.java` | Service: `PermissionService.java` | Entity: `Permission.java`
+
+### 15.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/permission` | Lấy danh sách toàn bộ quyền | Không | `200` | `PermissionResponse[]` |
+| `GET` | `/api/v1/permission/{id}` | Lấy chi tiết quyền theo ID | Không | `200` | `PermissionResponse` |
+| `POST` | `/api/v1/permission` | Tạo mới quyền | `PermissionRequest` (JSON) | `201` | `PermissionResponse` |
+| `PUT` | `/api/v1/permission/{id}` | Cập nhật quyền theo ID | `PermissionRequest` (JSON) | `200` | `PermissionResponse` |
+| `DELETE` | `/api/v1/permission/{id}` | Xóa quyền theo ID | Không | `204` | Không có body |
+
+### 15.2 Cấu trúc dữ liệu `PermissionResponse`
+
+| Field | Kiểu dữ liệu | Nullable | Mô tả |
+|---|---|:---:|---|
+| `permissionId` | `number` | Không | **Khóa chính của permission (LƯU Ý: tên trường là `permissionId`, KHÔNG PHẢI `id`).** |
+| `permissionCode` | `string` | Không | Mã định danh quyền (duy nhất, ví dụ: `USER_VIEW`, `USER_CREATE`). |
+| `permissionName` | `string` | Không | Tên hiển thị quyền (ví dụ: `Xem danh sách người dùng`). |
+| `description` | `string` | Có | Mô tả chi tiết quyền hạn. |
+| `apiPath` | `string` | Có | Đường dẫn API áp dụng quyền (ví dụ: `/api/v1/user`, `/api/v1/shift/**`). |
+| `method` | `string` | Có | HTTP method tương ứng (ví dụ: `GET`, `POST`, `PUT`, `DELETE`). |
+
+> [!WARNING]
+> **Điểm bẫy Frontend cần chú ý:**
+> Khóa chính của Permission trả về qua API là **`permissionId`** chứ **KHÔNG PHẢI `id`** (do getter trong entity là `getPermissionId()`).
+
+### 15.3 Request Body cho POST / PUT (`PermissionRequest`)
+
+```json
+{
+  "permissionCode": "USER_CREATE",
+  "permissionName": "Tạo người dùng mới",
+  "description": "Cho phép thêm tài khoản người dùng vào hệ thống",
+  "apiPath": "/api/v1/user",
+  "method": "POST"
+}
+```
+
+### 15.4 Ví dụ Response thực tế
+
+#### `GET /api/v1/permission` (200 OK)
+```json
+{
+  "statusCode": 200,
+  "error": null,
+  "message": "Lấy danh sách dữ liệu",
+  "data": [
+    {
+      "permissionId": 1,
+      "permissionCode": "USER_VIEW",
+      "permissionName": "Xem danh sách người dùng",
+      "description": "Xem danh sách và chi tiết người dùng",
+      "apiPath": "/api/v1/user",
+      "method": "GET"
+    },
+    {
+      "permissionId": 2,
+      "permissionCode": "USER_CREATE",
+      "permissionName": "Tạo người dùng mới",
+      "description": "Cho phép tạo mới tài khoản",
+      "apiPath": "/api/v1/user",
+      "method": "POST"
+    },
+    {
+      "permissionId": 3,
+      "permissionCode": "USER_UPDATE",
+      "permissionName": "Cập nhật người dùng",
+      "description": "Cho phép chỉnh sửa thông tin tài khoản",
+      "apiPath": "/api/v1/user/*",
+      "method": "PUT"
+    },
+    {
+      "permissionId": 4,
+      "permissionCode": "USER_DELETE",
+      "permissionName": "Xóa người dùng",
+      "description": "Cho phép xóa tài khoản khỏi hệ thống",
+      "apiPath": "/api/v1/user/*",
+      "method": "DELETE"
+    }
+  ]
+}
+```
+
+#### `GET /api/v1/permission/2` (200 OK)
+```json
+{
+  "statusCode": 200,
+  "error": null,
+  "message": "Lấy thông tin chi tiết",
+  "data": {
+    "permissionId": 2,
+    "permissionCode": "USER_CREATE",
+    "permissionName": "Tạo người dùng mới",
+    "description": "Cho phép tạo mới tài khoản",
+    "apiPath": "/api/v1/user",
+    "method": "POST"
+  }
+}
+```
+
+---
+
+## 16. USER_ROLE API (`/api/v1/user_role`)
+
+Bảng liên kết phân quyền vai trò cho tài khoản người dùng (quan hệ nhiều-nhiều User <-> Role).
+Controller: `UserRoleController.java` | Service: `UserRoleService.java` | Entity: `UserRole.java`
+
+> [!CAUTION]
+> **ĐẶC THÙ RẤT QUAN TRỌNG VỀ API ROUTING:**
+> 1. Đây là bảng có **khóa chính kết hợp (Composite Key)** gồm `userId` và `roleId`.
+> 2. **KHÔNG CÓ** endpoint `GET /api/v1/user_role/{id}`.
+> 3. Endpoint `PUT` là **`PUT /api/v1/user_role`** (KHÔNG có `{id}` trên URL, toàn bộ thông tin truyền qua Request Body).
+> 4. Endpoint `DELETE` là **`DELETE /api/v1/user_role`** (KHÔNG có `{id}` trên URL, thông tin khóa chính truyền qua **Request Body JSON**).
+
+### 16.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/user_role` | Lấy danh sách toàn bộ liên kết user - role | Không | `200` | `UserRoleResponse[]` |
+| `POST` | `/api/v1/user_role` | Gán role cho user | `UserRoleRequest` (JSON) | `201` | `UserRoleResponse` |
+| `PUT` | `/api/v1/user_role` | Cập nhật thông tin gán role | `UserRoleRequest` (JSON) | `200` | `UserRoleResponse` |
+| `DELETE` | `/api/v1/user_role` | Xóa liên kết role khỏi user | `UserRoleRequest` (JSON Body) | `204` | Không có body |
+
+### 16.2 Cấu trúc dữ liệu `UserRoleResponse`
+
+| Field | Kiểu dữ liệu | Nullable | Mô tả |
+|---|---|:---:|---|
+| `userId` | `number` | Không | ID của User (Khóa chính phần 1). |
+| `roleId` | `number` | Không | ID của Role (Khóa chính phần 2). |
+| `assignedBy` | `number` | Có | ID của user (thường là Admin) thực hiện gán quyền. |
+| `assignedAt` | `string` (ISO 8601) | Có | Thời điểm gán quyền (ví dụ: `2026-10-08T10:00:00`). |
+
+### 16.3 Request Body cho POST / PUT / DELETE (`UserRoleRequest`)
+
+#### Khi tạo mới / gán quyền (POST):
+```json
+{
+  "userId": 1,
+  "roleId": 2,
+  "assignedBy": 1
+}
+```
+
+#### Khi xóa liên kết gán quyền (DELETE):
+```json
+{
+  "userId": 1,
+  "roleId": 2
+}
+```
+
+> [!TIP]
+> **Cách gọi DELETE từ Frontend:**
+> - **Axios:**
+>   ```typescript
+>   await axios.delete('/api/v1/user_role', {
+>     data: { userId: 1, roleId: 2 }
+>   });
+>   ```
+> - **Fetch API:**
+>   ```typescript
+>   await fetch('/api/v1/user_role', {
+>     method: 'DELETE',
+>     headers: { 'Content-Type': 'application/json' },
+>     body: JSON.stringify({ userId: 1, roleId: 2 })
+>   });
+>   ```
+
+### 16.4 Ví dụ Response thực tế
+
+#### `GET /api/v1/user_role` (200 OK)
+```json
+{
+  "statusCode": 200,
+  "error": null,
+  "message": "Lấy danh sách dữ liệu",
+  "data": [
+    {
+      "userId": 1,
+      "roleId": 1,
+      "assignedBy": 1,
+      "assignedAt": "2026-09-01T10:00:00"
+    },
+    {
+      "userId": 2,
+      "roleId": 2,
+      "assignedBy": 1,
+      "assignedAt": "2026-09-10T14:15:00"
+    }
+  ]
+}
+```
+
+#### `POST /api/v1/user_role` (201 Created)
+```json
+{
+  "statusCode": 201,
+  "error": null,
+  "message": "Tạo mới dữ liệu",
+  "data": {
+    "userId": 3,
+    "roleId": 3,
+    "assignedBy": 1,
+    "assignedAt": "2026-10-08T20:15:00"
+  }
+}
+```
+
+---
+
+## 17. ROLE_PERMISSION API (`/api/v1/role_permission`)
+
+Bảng liên kết gán quyền cho vai trò (quan hệ nhiều-nhiều Role <-> Permission).
+Controller: `RolePermissionController.java` | Service: `RolePermissionService.java` | Entity: `RolePermission.java`
+
+> [!CAUTION]
+> **ĐẶC THÙ RẤT QUAN TRỌNG VỀ API ROUTING:**
+> 1. Bảng có **khóa chính kết hợp (Composite Key)** gồm `roleId` và `permissionId`.
+> 2. **KHÔNG CÓ** endpoint `GET /api/v1/role_permission/{id}`.
+> 3. Endpoint `PUT` là **`PUT /api/v1/role_permission`** (KHÔNG có `{id}` trên URL, nhận dữ liệu qua body).
+> 4. Endpoint `DELETE` là **`DELETE /api/v1/role_permission`** (KHÔNG có `{id}` trên URL, thông tin khóa chính truyền qua **Request Body JSON**).
+
+### 17.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/role_permission` | Lấy danh sách toàn bộ liên kết role - permission | Không | `200` | `RolePermissionResponse[]` |
+| `POST` | `/api/v1/role_permission` | Gán permission cho role | `RolePermissionRequest` (JSON) | `201` | `RolePermissionResponse` |
+| `PUT` | `/api/v1/role_permission` | Cập nhật gán permission cho role | `RolePermissionRequest` (JSON) | `200` | `RolePermissionResponse` |
+| `DELETE` | `/api/v1/role_permission` | Gỡ permission khỏi role | `RolePermissionRequest` (JSON Body) | `204` | Không có body |
+
+### 17.2 Cấu trúc dữ liệu `RolePermissionResponse`
+
+| Field | Kiểu dữ liệu | Nullable | Mô tả |
+|---|---|:---:|---|
+| `roleId` | `number` | Không | ID của Role (Khóa chính phần 1). |
+| `permissionId` | `number` | Không | ID của Permission (Khóa chính phần 2). |
+
+*(Đối tượng này chỉ có đúng 2 trường `roleId` và `permissionId`).*
+
+### 17.3 Request Body cho POST / PUT / DELETE (`RolePermissionRequest`)
+
+```json
+{
+  "roleId": 2,
+  "permissionId": 1
+}
+```
+
+> [!TIP]
+> **Cách gọi DELETE từ Frontend:**
+> - **Axios:**
+>   ```typescript
+>   await axios.delete('/api/v1/role_permission', {
+>     data: { roleId: 2, permissionId: 1 }
+>   });
+>   ```
+> - **Fetch API:**
+>   ```typescript
+>   await fetch('/api/v1/role_permission', {
+>     method: 'DELETE',
+>     headers: { 'Content-Type': 'application/json' },
+>     body: JSON.stringify({ roleId: 2, permissionId: 1 })
+>   });
+>   ```
+
+### 17.4 Ví dụ Response thực tế
+
+#### `GET /api/v1/role_permission` (200 OK)
+```json
+{
+  "statusCode": 200,
+  "error": null,
+  "message": "Lấy danh sách dữ liệu",
+  "data": [
+    {
+      "roleId": 1,
+      "permissionId": 1
+    },
+    {
+      "roleId": 1,
+      "permissionId": 2
+    },
+    {
+      "roleId": 2,
+      "permissionId": 1
+    }
+  ]
+}
+```
+
+#### `POST /api/v1/role_permission` (201 Created)
+```json
+{
+  "statusCode": 201,
+  "error": null,
+  "message": "Tạo mới dữ liệu",
+  "data": {
+    "roleId": 2,
+    "permissionId": 3
+  }
+}
+```
+
+---
+
+## 18. Tổng hợp & TypeScript Interfaces cho Frontend
+
+### 18.1 Bảng so sánh 5 Resource
+
+| Resource | Base Path | Primary Key Name | Có GET /{id}? | Kiểu gọi DELETE |
+|---|---|---|:---:|---|
+| **USER** | `/api/v1/user` | `id` | Có | `DELETE /api/v1/user/{id}` |
+| **ROLE** | `/api/v1/role` | `roleId` | Có | `DELETE /api/v1/role/{id}` |
+| **PERMISSION** | `/api/v1/permission` | `permissionId` | Có | `DELETE /api/v1/permission/{id}` |
+| **USER_ROLE** | `/api/v1/user_role` | `userId` + `roleId` | **Không** | `DELETE /api/v1/user_role` với `{ userId, roleId }` trong body |
+| **ROLE_PERMISSION** | `/api/v1/role_permission` | `roleId` + `permissionId` | **Không** | `DELETE /api/v1/role_permission` với `{ roleId, permissionId }` trong body |
+
+### 18.2 TypeScript Definitions sẵn sàng sử dụng
+
+Frontend có thể copy trực tiếp đoạn code sau vào dự án (ví dụ file `types/auth-rbac.ts`):
+
+```typescript
+// Envelope chuẩn của hệ thống
+export interface ApiResponse<T> {
+  statusCode: number;
+  error: string | null;
+  message: string | string[];
+  data: T;
+}
+
+// 1. USER
+export interface UserResponse {
+  id: number;
+  username: string;
+  email: string | null;
+  phone: string | null;
+  status: string;
+  lastLoginAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface UserCreateRequest {
+  username: string;
+  passwordHash: string;
+  email?: string;
+  phone?: string;
+  status?: string;
+}
+
+export interface UserUpdateRequest {
+  username?: string;
+  passwordHash?: string;
+  email?: string;
+  phone?: string;
+  status?: string;
+  lastLoginAt?: string;
+}
+
+// 2. ROLE
+export interface RoleResponse {
+  roleId: number; // LƯU Ý: roleId, không phải id
+  roleCode: string;
+  roleName: string;
+  description: string | null;
+  status: string | null;
+}
+
+export interface RoleRequest {
+  roleCode: string;
+  roleName: string;
+  description?: string;
+  status?: string;
+}
+
+// 3. PERMISSION
+export interface PermissionResponse {
+  permissionId: number; // LƯU Ý: permissionId, không phải id
+  permissionCode: string;
+  permissionName: string;
+  description: string | null;
+  apiPath: string | null;
+  method: string | null;
+}
+
+export interface PermissionRequest {
+  permissionCode: string;
+  permissionName: string;
+  description?: string;
+  apiPath?: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | string;
+}
+
+// 4. USER_ROLE
+export interface UserRoleResponse {
+  userId: number;
+  roleId: number;
+  assignedBy: number | null;
+  assignedAt: string | null;
+}
+
+export interface UserRoleRequest {
+  userId: number;
+  roleId: number;
+  assignedBy?: number;
+  assignedAt?: string;
+}
+
+// 5. ROLE_PERMISSION
+export interface RolePermissionResponse {
+  roleId: number;
+  permissionId: number;
+}
+
+export interface RolePermissionRequest {
+  roleId: number;
+  permissionId: number;
+}
+```
+

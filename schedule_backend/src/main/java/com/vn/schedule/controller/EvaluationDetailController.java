@@ -54,7 +54,7 @@ public class EvaluationDetailController {
     }
 
     private List<EvaluationDetailResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(EvaluationDetailResponse::new).toList();
+        return values.stream().map(value -> new EvaluationDetailResponse(DtoMapper.toMap(value))).toList();
     }
 
     private EvaluationDetailResponse response(Object value) {

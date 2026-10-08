@@ -54,7 +54,7 @@ public class PayrollDetailController {
     }
 
     private List<PayrollDetailResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(PayrollDetailResponse::new).toList();
+        return values.stream().map(value -> new PayrollDetailResponse(DtoMapper.toMap(value))).toList();
     }
 
     private PayrollDetailResponse response(Object value) {

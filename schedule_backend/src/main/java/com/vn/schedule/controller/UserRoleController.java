@@ -48,7 +48,7 @@ public class UserRoleController {
     }
 
     private List<UserRoleResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(UserRoleResponse::new).toList();
+        return values.stream().map(value -> new UserRoleResponse(DtoMapper.toMap(value))).toList();
     }
 
     private UserRoleResponse response(Object value) {

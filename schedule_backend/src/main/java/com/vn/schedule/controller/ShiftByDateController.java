@@ -54,7 +54,7 @@ public class ShiftByDateController {
     }
 
     private List<ShiftByDateResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(ShiftByDateResponse::new).toList();
+        return values.stream().map(value -> new ShiftByDateResponse(DtoMapper.toMap(value))).toList();
     }
 
     private ShiftByDateResponse response(Object value) {

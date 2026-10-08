@@ -54,7 +54,7 @@ public class NotificationController {
     }
 
     private List<NotificationResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(NotificationResponse::new).toList();
+        return values.stream().map(value -> new NotificationResponse(DtoMapper.toMap(value))).toList();
     }
 
     private NotificationResponse response(Object value) {
