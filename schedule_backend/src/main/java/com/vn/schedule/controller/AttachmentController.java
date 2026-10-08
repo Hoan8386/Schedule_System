@@ -3,8 +3,8 @@ package com.vn.schedule.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
+import com.vn.schedule.domain.Attachment;
 import com.vn.schedule.dto.*;
 import com.vn.schedule.service.AttachmentService;
 
@@ -37,15 +37,6 @@ public class AttachmentController {
     @ApiMessage("Tạo mới dữ liệu")
     public ResponseEntity<AttachmentResponse> create(@RequestBody AttachmentRequest body) {
         return ResponseEntity.status(HttpStatus.CREATED).body(response(service.create(body)));
-    }
-
-    @PostMapping("/upload")
-    @ApiMessage("Tải ảnh lên Cloudflare R2")
-    public ResponseEntity<AttachmentResponse> upload(
-            @RequestPart("file") MultipartFile file,
-            @RequestParam(value = "uploadedBy", required = false) Integer uploadedBy) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(response(service.uploadImage(file, uploadedBy)));
     }
 
     @PutMapping("/{id}")

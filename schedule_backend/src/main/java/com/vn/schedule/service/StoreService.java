@@ -4,6 +4,8 @@ import com.vn.schedule.domain.Store;
 import com.vn.schedule.repository.StoreRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.dto.StoreRequest;
+import java.time.LocalDateTime;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +57,7 @@ public class StoreService {
         Store entity = new Store();
         entity.setStoreCode(body.storeCode());
         entity.setStoreName(body.storeName());
+        entity.setLogoId(body.logoId());
         entity.setAddress(body.address());
         entity.setPhone(body.phone());
         entity.setStatus(body.status());
@@ -65,6 +68,7 @@ public class StoreService {
     private void applyFields(Store entity, StoreRequest body) {
         entity.setStoreCode(body.storeCode());
         entity.setStoreName(body.storeName());
+        entity.setLogoId(body.logoId());
         entity.setAddress(body.address());
         entity.setPhone(body.phone());
         entity.setStatus(body.status());

@@ -1,16 +1,14 @@
 package com.vn.schedule.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.vn.schedule.domain.Store;
 import com.vn.schedule.dto.*;
 import com.vn.schedule.repository.StoreRepository;
-import com.vn.schedule.service.AttachmentService;
 
 import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
@@ -19,11 +17,9 @@ import com.vn.schedule.util.anotation.ApiMessage;
 @RequestMapping("/api/v1/stores")
 public class StoreController {
     private final StoreRepository stores;
-    private final AttachmentService attachments;
 
-    public StoreController(StoreRepository stores, AttachmentService attachments) {
+    public StoreController(StoreRepository stores) {
         this.stores = stores;
-        this.attachments = attachments;
     }
 
     @GetMapping
@@ -39,47 +35,29 @@ public class StoreController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"))));
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping
 
     @ApiMessage("Tạo mới dữ liệu")
-    public ResponseEntity<StoreResponse> create(
-            @RequestParam String storeCode,
-            @RequestParam String storeName,
-            @RequestParam(required = false) String address,
-            @RequestParam(required = false) String phone,
-            @RequestParam String status,
-            @RequestParam(required = false) String note,
-            @RequestPart("logo") MultipartFile logo) {
-        StoreRequest request = new StoreRequest(storeCode, storeName, address, phone, status, note);
+    public ResponseEntity<StoreResponse> create(@Valid @RequestBody StoreRequest request) {
         Store store = new Store();
         apply(store, request);
-        store.setLogoId(attachments.uploadImage(logo, null).getAttachmentId());
         store.setId(null);
         return ResponseEntity.status(HttpStatus.CREATED).body(response(stores.save(store)));
     }
 
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping("/{id}")
     @ApiMessage("Cập nhật dữ liệu")
-    public ResponseEntity<StoreResponse> update(
-            @PathVariable Integer id,
-            @RequestParam String storeCode,
-            @RequestParam String storeName,
-            @RequestParam(required = false) String address,
-            @RequestParam(required = false) String phone,
-            @RequestParam String status,
-            @RequestParam(required = false) String note,
-            @RequestPart("logo") MultipartFile logo) {
-        StoreRequest request = new StoreRequest(storeCode, storeName, address, phone, status, note);
+    public ResponseEntity<StoreResponse> update(@PathVariable Integer id, @Valid @RequestBody StoreRequest request) {
         Store store = stores.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
         apply(store, request);
-        store.setLogoId(attachments.uploadImage(logo, null).getAttachmentId());
         return ResponseEntity.ok(response(stores.save(store)));
     }
 
     private void apply(Store store, StoreRequest request) {
         store.setStoreCode(request.storeCode());
         store.setStoreName(request.storeName());
+        store.setLogoId(request.logoId());
         store.setAddress(request.address());
         store.setPhone(request.phone());
         store.setStatus(request.status());
