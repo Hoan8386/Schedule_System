@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Todo;
 import com.vn.schedule.repository.TodoRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.TodoRequest;
+import com.vn.schedule.dto.request.TodoRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

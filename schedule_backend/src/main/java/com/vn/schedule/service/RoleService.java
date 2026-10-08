@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Role;
 import com.vn.schedule.repository.RoleRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.RoleRequest;
+import com.vn.schedule.dto.request.RoleRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.AuditLog;
 import com.vn.schedule.repository.AuditLogRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.AuditLogRequest;
+import com.vn.schedule.dto.request.AuditLogRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

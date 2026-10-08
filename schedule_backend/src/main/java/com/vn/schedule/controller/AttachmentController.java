@@ -8,6 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.vn.schedule.domain.Attachment;
 import com.vn.schedule.dto.*;
+import com.vn.schedule.dto.request.*;
+import com.vn.schedule.dto.response.*;
 import com.vn.schedule.service.AttachmentService;
 import com.vn.schedule.service.R2StorageService;
 import java.time.LocalDateTime;

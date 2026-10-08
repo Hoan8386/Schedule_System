@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.vn.schedule.domain.User;
-import com.vn.schedule.dto.AuthRegisterRequest;
-import com.vn.schedule.dto.AuthResetPasswordRequest;
+import com.vn.schedule.dto.request.AuthRegisterRequest;
+import com.vn.schedule.dto.request.AuthResetPasswordRequest;
 import com.vn.schedule.dto.response.ResLoginDTO;
 import com.vn.schedule.repository.UserRepository;
 import com.vn.schedule.util.ApiException;

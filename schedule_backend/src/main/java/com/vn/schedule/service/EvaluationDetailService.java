@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.EvaluationDetail;
 import com.vn.schedule.repository.EvaluationDetailRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.EvaluationDetailRequest;
+import com.vn.schedule.dto.request.EvaluationDetailRequest;
 import java.math.BigDecimal;
 
 import org.springframework.http.HttpStatus;

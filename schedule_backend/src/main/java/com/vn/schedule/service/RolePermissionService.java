@@ -4,7 +4,7 @@ import com.vn.schedule.domain.RolePermission;
 import com.vn.schedule.domain.RolePermissionId;
 import com.vn.schedule.repository.RolePermissionRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.RolePermissionRequest;
+import com.vn.schedule.dto.request.RolePermissionRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

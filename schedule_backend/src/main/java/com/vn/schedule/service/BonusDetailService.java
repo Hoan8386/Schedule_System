@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.BonusDetail;
 import com.vn.schedule.repository.BonusDetailRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.BonusDetailRequest;
+import com.vn.schedule.dto.request.BonusDetailRequest;
 import java.math.BigDecimal;
 
 import org.springframework.http.HttpStatus;

@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Attachment;
 import com.vn.schedule.repository.AttachmentRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.AttachmentRequest;
+import com.vn.schedule.dto.request.AttachmentRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

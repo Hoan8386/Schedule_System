@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.TestResult;
 import com.vn.schedule.repository.TestResultRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.TestResultRequest;
+import com.vn.schedule.dto.request.TestResultRequest;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 

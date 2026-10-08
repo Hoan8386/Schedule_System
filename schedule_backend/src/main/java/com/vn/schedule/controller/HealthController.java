@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.vn.schedule.dto.HealthResponse;
+import com.vn.schedule.dto.response.HealthResponse;
 
 import java.time.Instant;
 import com.vn.schedule.util.anotation.ApiMessage;

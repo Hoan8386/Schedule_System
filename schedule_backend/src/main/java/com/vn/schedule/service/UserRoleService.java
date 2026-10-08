@@ -4,7 +4,7 @@ import com.vn.schedule.domain.UserRole;
 import com.vn.schedule.domain.UserRoleId;
 import com.vn.schedule.repository.UserRoleRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.UserRoleRequest;
+import com.vn.schedule.dto.request.UserRoleRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

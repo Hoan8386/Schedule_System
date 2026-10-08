@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.TestQuestion;
 import com.vn.schedule.repository.TestQuestionRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.TestQuestionRequest;
+import com.vn.schedule.dto.request.TestQuestionRequest;
 import java.math.BigDecimal;
 
 import org.springframework.http.HttpStatus;

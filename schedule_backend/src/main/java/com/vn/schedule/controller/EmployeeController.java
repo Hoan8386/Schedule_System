@@ -2,8 +2,8 @@ package com.vn.schedule.controller;
 
 import org.springframework.http.ResponseEntity;
 
-import com.vn.schedule.dto.EmployeeRequest;
-import com.vn.schedule.dto.EmployeeResponse;
+import com.vn.schedule.dto.request.EmployeeRequest;
+import com.vn.schedule.dto.response.EmployeeResponse;
 import com.vn.schedule.service.EmployeeService;
 
 import org.springframework.web.bind.annotation.*;

@@ -3,13 +3,13 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Attendance;
 import com.vn.schedule.domain.Employee;
 import com.vn.schedule.domain.ShiftByDate;
-import com.vn.schedule.dto.AttendanceResponse;
+import com.vn.schedule.dto.response.AttendanceResponse;
 import com.vn.schedule.repository.AttendanceRepository;
 import com.vn.schedule.repository.EmployeeRepository;
 import com.vn.schedule.repository.ShiftByDateRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.AttendanceRequest;
-import com.vn.schedule.dto.CheckInRequest;
+import com.vn.schedule.dto.request.AttendanceRequest;
+import com.vn.schedule.dto.request.CheckInRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

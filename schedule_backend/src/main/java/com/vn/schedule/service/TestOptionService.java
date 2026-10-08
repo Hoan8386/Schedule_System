@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.TestOption;
 import com.vn.schedule.repository.TestOptionRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.TestOptionRequest;
+import com.vn.schedule.dto.request.TestOptionRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

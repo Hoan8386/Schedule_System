@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Store;
 import com.vn.schedule.repository.StoreRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.StoreRequest;
+import com.vn.schedule.dto.request.StoreRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

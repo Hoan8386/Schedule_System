@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.User;
 import com.vn.schedule.repository.UserRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.UserRequest;
+import com.vn.schedule.dto.request.UserRequest;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

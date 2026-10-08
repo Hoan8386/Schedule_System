@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.StoreManager;
 import com.vn.schedule.repository.StoreManagerRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.StoreManagerRequest;
+import com.vn.schedule.dto.request.StoreManagerRequest;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 

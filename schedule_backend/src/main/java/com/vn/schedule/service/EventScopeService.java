@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.EventScope;
 import com.vn.schedule.repository.EventScopeRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.EventScopeRequest;
+import com.vn.schedule.dto.request.EventScopeRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

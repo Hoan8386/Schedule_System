@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.EmployeeEvaluation;
 import com.vn.schedule.repository.EmployeeEvaluationRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.EmployeeEvaluationRequest;
+import com.vn.schedule.dto.request.EmployeeEvaluationRequest;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.math.BigDecimal;

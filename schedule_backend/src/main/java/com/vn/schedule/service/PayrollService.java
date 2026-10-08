@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Payroll;
 import com.vn.schedule.repository.PayrollRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.PayrollRequest;
+import com.vn.schedule.dto.request.PayrollRequest;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.math.BigDecimal;

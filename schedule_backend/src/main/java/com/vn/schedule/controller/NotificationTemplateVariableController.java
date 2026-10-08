@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.vn.schedule.domain.NotificationTemplateVariable;
 import com.vn.schedule.dto.*;
+import com.vn.schedule.dto.request.*;
+import com.vn.schedule.dto.response.*;
 import com.vn.schedule.service.NotificationTemplateVariableService;
 
 import java.util.List;

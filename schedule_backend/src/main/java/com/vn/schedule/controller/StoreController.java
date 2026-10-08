@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.vn.schedule.domain.Store;
-import com.vn.schedule.dto.StoreRequest;
-import com.vn.schedule.dto.StoreResponse;
+import com.vn.schedule.dto.request.StoreRequest;
+import com.vn.schedule.dto.response.StoreResponse;
 import com.vn.schedule.repository.StoreRepository;
 import com.vn.schedule.repository.AttachmentRepository;
 import com.vn.schedule.service.R2StorageService;

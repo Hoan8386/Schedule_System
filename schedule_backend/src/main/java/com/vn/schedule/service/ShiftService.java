@@ -5,7 +5,7 @@ import com.vn.schedule.domain.Store;
 import com.vn.schedule.repository.ShiftRepository;
 import com.vn.schedule.repository.StoreRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.ShiftRequest;
+import com.vn.schedule.dto.request.ShiftRequest;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 

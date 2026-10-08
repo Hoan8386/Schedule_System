@@ -7,7 +7,7 @@ import com.vn.schedule.repository.ShiftAssignmentRepository;
 import com.vn.schedule.repository.EmployeeRepository;
 import com.vn.schedule.repository.ShiftByDateRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.ShiftAssignmentRequest;
+import com.vn.schedule.dto.request.ShiftAssignmentRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

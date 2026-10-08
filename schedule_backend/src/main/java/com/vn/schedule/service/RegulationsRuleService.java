@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.RegulationsRule;
 import com.vn.schedule.repository.RegulationsRuleRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.RegulationsRuleRequest;
+import com.vn.schedule.dto.request.RegulationsRuleRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

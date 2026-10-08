@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.SpecialEvent;
 import com.vn.schedule.repository.SpecialEventRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.SpecialEventRequest;
+import com.vn.schedule.dto.request.SpecialEventRequest;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 

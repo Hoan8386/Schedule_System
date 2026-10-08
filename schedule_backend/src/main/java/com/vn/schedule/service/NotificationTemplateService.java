@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.NotificationTemplate;
 import com.vn.schedule.repository.NotificationTemplateRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.NotificationTemplateRequest;
+import com.vn.schedule.dto.request.NotificationTemplateRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

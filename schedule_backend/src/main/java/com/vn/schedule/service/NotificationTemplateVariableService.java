@@ -4,7 +4,7 @@ import com.vn.schedule.domain.NotificationTemplateVariable;
 import com.vn.schedule.domain.NotificationTemplateVariableId;
 import com.vn.schedule.repository.NotificationTemplateVariableRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.NotificationTemplateVariableRequest;
+import com.vn.schedule.dto.request.NotificationTemplateVariableRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.OrganizationSetting;
 import com.vn.schedule.repository.OrganizationSettingRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.OrganizationSettingRequest;
+import com.vn.schedule.dto.request.OrganizationSettingRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

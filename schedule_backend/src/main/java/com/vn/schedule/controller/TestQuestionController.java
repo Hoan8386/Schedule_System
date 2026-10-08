@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.vn.schedule.domain.TestQuestion;
 import com.vn.schedule.dto.*;
+import com.vn.schedule.dto.request.*;
+import com.vn.schedule.dto.response.*;
 import com.vn.schedule.service.TestQuestionService;
 
 import java.util.List;

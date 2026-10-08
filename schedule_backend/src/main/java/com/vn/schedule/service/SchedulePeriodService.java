@@ -5,7 +5,7 @@ import com.vn.schedule.domain.Store;
 import com.vn.schedule.repository.SchedulePeriodRepository;
 import com.vn.schedule.repository.StoreRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.SchedulePeriodRequest;
+import com.vn.schedule.dto.request.SchedulePeriodRequest;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 

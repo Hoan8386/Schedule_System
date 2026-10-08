@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.EmergencyRequest;
 import com.vn.schedule.repository.EmergencyRequestRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.EmergencyRequestRequest;
+import com.vn.schedule.dto.request.EmergencyRequestRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

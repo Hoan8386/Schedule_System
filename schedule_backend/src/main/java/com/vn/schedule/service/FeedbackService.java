@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Feedback;
 import com.vn.schedule.repository.FeedbackRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.FeedbackRequest;
+import com.vn.schedule.dto.request.FeedbackRequest;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 

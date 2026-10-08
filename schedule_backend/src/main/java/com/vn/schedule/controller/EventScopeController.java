@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.vn.schedule.domain.EventScope;
 import com.vn.schedule.dto.*;
+import com.vn.schedule.dto.request.*;
+import com.vn.schedule.dto.response.*;
 import com.vn.schedule.service.EventScopeService;
 
 import java.util.List;

@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.BonusRecord;
 import com.vn.schedule.repository.BonusRecordRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.BonusRecordRequest;
+import com.vn.schedule.dto.request.BonusRecordRequest;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.math.BigDecimal;

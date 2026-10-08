@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Rule;
 import com.vn.schedule.repository.RuleRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.RuleRequest;
+import com.vn.schedule.dto.request.RuleRequest;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 

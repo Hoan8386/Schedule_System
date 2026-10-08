@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Permission;
 import com.vn.schedule.repository.PermissionRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.PermissionRequest;
+import com.vn.schedule.dto.request.PermissionRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

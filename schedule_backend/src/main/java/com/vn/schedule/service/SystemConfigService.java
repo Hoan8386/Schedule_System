@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.SystemConfig;
 import com.vn.schedule.repository.SystemConfigRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.SystemConfigRequest;
+import com.vn.schedule.dto.request.SystemConfigRequest;
 import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;

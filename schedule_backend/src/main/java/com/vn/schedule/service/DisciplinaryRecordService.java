@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.DisciplinaryRecord;
 import com.vn.schedule.repository.DisciplinaryRecordRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.DisciplinaryRecordRequest;
+import com.vn.schedule.dto.request.DisciplinaryRecordRequest;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 

@@ -3,7 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Variable;
 import com.vn.schedule.repository.VariableRepository;
 import com.vn.schedule.util.ApiException;
-import com.vn.schedule.dto.VariableRequest;
+import com.vn.schedule.dto.request.VariableRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
