@@ -1,11 +1,23 @@
 package com.vn.schedule.dto;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-public class EmployeeResponse extends LinkedHashMap<String, Object> {
-    public EmployeeResponse() { }
-    public EmployeeResponse(Object values) {
-        if (values instanceof Map<?, ?> map) { map.forEach((key, value) -> put(String.valueOf(key), value)); }
-    }
+public record EmployeeResponse(
+        Integer id,
+        Integer userId,
+        String employeeCode,
+        String fullName,
+        LocalDate dateOfBirth,
+        String gender,
+        String email,
+        String phone,
+        String address,
+        Integer idCardFrontId,
+        Integer idCardBackId,
+        LocalDate hireDate,
+        String status,
+        String note,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt) {
 }

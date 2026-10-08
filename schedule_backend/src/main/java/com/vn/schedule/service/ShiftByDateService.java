@@ -8,6 +8,7 @@ import com.vn.schedule.repository.SchedulePeriodRepository;
 import com.vn.schedule.repository.ShiftRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.dto.ShiftByDateRequest;
+import com.vn.schedule.dto.ShiftByDateResponse;
 import java.time.LocalTime;
 import java.time.LocalDate;
 import java.math.BigDecimal;
@@ -31,24 +32,30 @@ public class ShiftByDateService {
         this.schedulePeriodRepository = schedulePeriodRepository;
     }
 
-    public List<ShiftByDate> findAll() {
-        return repository.findAll();
+    @Transactional(readOnly = true)
+    public List<ShiftByDateResponse> findAll() {
+        return repository.findAll().stream().map(this::toResponse).toList();
     }
 
     public ShiftByDate findById(Integer id) {
         return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
     }
 
-    @Transactional
-    public ShiftByDate create(ShiftByDateRequest body) {
-        return repository.save(toEntity(body));
+    @Transactional(readOnly = true)
+    public ShiftByDateResponse findResponseById(Integer id) {
+        return toResponse(findById(id));
     }
 
     @Transactional
-    public ShiftByDate update(Integer id, ShiftByDateRequest body) {
+    public ShiftByDateResponse create(ShiftByDateRequest body) {
+        return toResponse(repository.save(toEntity(body)));
+    }
+
+    @Transactional
+    public ShiftByDateResponse update(Integer id, ShiftByDateRequest body) {
         ShiftByDate current = findById(id);
         applyFields(current, body);
-        return repository.save(current);
+        return toResponse(repository.save(current));
     }
 
     @Transactional
@@ -115,5 +122,41 @@ public class ShiftByDateService {
             return number.intValue();
         }
         throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " is required");
+    }
+
+    private ShiftByDateResponse toResponse(ShiftByDate item) {
+        Shift shift = item.getShift();
+        SchedulePeriod period = item.getSchedulePeriod();
+        return new ShiftByDateResponse(
+                item.getId(),
+                shift == null ? null : new ShiftByDateResponse.ShiftSummary(
+                        shift.getId(),
+                        shift.getShiftCode(),
+                        shift.getShiftName(),
+                        shift.getStartTime(),
+                        shift.getEndTime(),
+                        shift.getMaxCapacity(),
+                        shift.getPayRate(),
+                        shift.getStatus()),
+                shift == null ? null : shift.getId(),
+                period == null ? null : new ShiftByDateResponse.SchedulePeriodSummary(
+                        period.getId(),
+                        period.getPeriodName(),
+                        period.getPeriodType(),
+                        period.getStartDate(),
+                        period.getEndDate(),
+                        period.getStatus(),
+                        period.getRegistrationOpenAt(),
+                        period.getRegistrationCloseAt()),
+                period == null ? null : period.getId(),
+                item.getWorkDate(),
+                item.getCapacity(),
+                item.getShiftName(),
+                item.getStartTime(),
+                item.getEndTime(),
+                item.getMaxCapacity(),
+                item.getPayRate(),
+                item.getStatus(),
+                item.getManagerNote());
     }
 }

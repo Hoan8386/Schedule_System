@@ -15,6 +15,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 @Service
 public class R2StorageService {
@@ -77,6 +78,25 @@ public class R2StorageService {
             return;
         }
         client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
+    }
+
+    public String publicUrlFor(String key) {
+        return publicUrl(key);
+    }
+
+    public byte[] download(String key) {
+        S3Client client = clientProvider.getIfAvailable();
+        if (client == null || bucket.isBlank() || key == null || key.isBlank()) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Lưu trữ R2 chưa được cấu hình");
+        }
+        try {
+            return client.getObjectAsBytes(GetObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build()).asByteArray();
+        } catch (RuntimeException exception) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy ảnh trên Cloudflare R2");
+        }
     }
 
     private String publicUrl(String key) {

@@ -7,9 +7,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.vn.schedule.domain.Store;
-import com.vn.schedule.dto.*;
+import com.vn.schedule.dto.StoreRequest;
+import com.vn.schedule.dto.StoreResponse;
 import com.vn.schedule.repository.StoreRepository;
+import com.vn.schedule.repository.AttachmentRepository;
+import com.vn.schedule.service.R2StorageService;
 
+import java.util.Base64;
 import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
@@ -17,9 +21,13 @@ import com.vn.schedule.util.anotation.ApiMessage;
 @RequestMapping("/api/v1/stores")
 public class StoreController {
     private final StoreRepository stores;
+    private final AttachmentRepository attachments;
+    private final R2StorageService storage;
 
-    public StoreController(StoreRepository stores) {
+    public StoreController(StoreRepository stores, AttachmentRepository attachments, R2StorageService storage) {
         this.stores = stores;
+        this.attachments = attachments;
+        this.storage = storage;
     }
 
     @GetMapping
@@ -74,10 +82,30 @@ public class StoreController {
     }
 
     private List<StoreResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(value -> new StoreResponse(DtoMapper.toMap(value))).toList();
+        return values.stream().map(this::response).toList();
     }
 
     private StoreResponse response(Object value) {
-        return new StoreResponse(DtoMapper.toMap(value));
+        Store store = (Store) value;
+        StoreResponse response = new StoreResponse();
+        response.setId(store.getId());
+        response.setStoreCode(store.getStoreCode());
+        response.setStoreName(store.getStoreName());
+        response.setAddress(store.getAddress());
+        response.setPhone(store.getPhone());
+        response.setStatus(store.getStatus());
+        response.setNote(store.getNote());
+        response.setCreatedAt(store.getCreatedAt());
+        response.setUpdatedAt(store.getUpdatedAt());
+
+        if (store.getLogoId() != null) {
+            attachments.findById(store.getLogoId()).ifPresent(attachment -> {
+                byte[] image = storage.download(attachment.getFilePath());
+                response.setLogoContentType(attachment.getFileType());
+                response.setLogoImage("data:" + attachment.getFileType() + ";base64,"
+                        + Base64.getEncoder().encodeToString(image));
+            });
+        }
+        return response;
     }
 }

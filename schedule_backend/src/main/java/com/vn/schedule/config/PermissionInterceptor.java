@@ -1,6 +1,7 @@
 package com.vn.schedule.config;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,6 +82,12 @@ public class PermissionInterceptor implements HandlerInterceptor {
         String apiPath = routePattern == null || "/**".equals(routePattern)
                 ? requestURI
                 : request.getContextPath() + routePattern;
+
+        // Keep permission lookup stable for the binary attachment route even
+        // when an interceptor runs before Spring exposes the handler pattern.
+        if (Pattern.matches("/api/v1/attachment/file/[^/]+", requestURI)) {
+            apiPath = "/api/v1/attachment/file/{id}";
+        }
 
         List<Integer> roleIds = userRoleRepository
                 .findByUserId(user.getId())

@@ -50,6 +50,11 @@ public class AttachmentService {
     }
 
     @Transactional
+    public Attachment saveEntity(Attachment attachment) {
+        return repository.save(attachment);
+    }
+
+    @Transactional
     public void deleteBody(AttachmentRequest body) {
         repository.delete(toEntity(body));
     }

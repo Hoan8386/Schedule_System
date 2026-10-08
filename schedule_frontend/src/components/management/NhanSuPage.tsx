@@ -1,480 +1,339 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Edit, Plus, RefreshCw, Search, Trash2, Users, X } from "lucide-react";
 import {
-  Users,
-  UserCheck,
-  UserMinus,
-  Plane,
-  Shuffle,
-  Pencil,
-  Trash2,
-  RefreshCw,
-  Search,
-  Filter,
-  Upload,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  TrendingUp,
-} from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+  EmployeeResponse,
+  EmployeeRequest,
+  EmployeeStoreResponse,
+  StoreManagerResponse,
+  StoreResponse,
+  managerApi,
+} from "@/lib/managerApi";
 
-const statsCards = [
-  {
-    label: "Tổng nhân sự toàn chuỗi",
-    value: "1,248",
-    sub: "+12 nhân sự tháng này",
-    subColor: "text-emerald-600",
-    icon: Users,
-    iconColor: "text-blue-600",
-    iconBg: "bg-blue-50",
-  },
-  {
-    label: "Nhân viên chính thức",
-    value: "842",
-    sub: "Chiếm 67.5% tổng số",
-    subColor: "text-slate-500",
-    icon: UserCheck,
-    iconColor: "text-emerald-600",
-    iconBg: "bg-emerald-50",
-  },
-  {
-    label: "Part-time / Thời vụ",
-    value: "406",
-    sub: "Chiếm 32.5% tổng số",
-    subColor: "text-slate-500",
-    icon: UserMinus,
-    iconColor: "text-amber-600",
-    iconBg: "bg-amber-50",
-  },
-  {
-    label: "Nghỉ phép hôm nay",
-    value: "14",
-    sub: "Cần sắp xếp bù ca",
-    subColor: "text-rose-500",
-    icon: Plane,
-    iconColor: "text-rose-600",
-    iconBg: "bg-rose-50",
-  },
-];
+const value = (input: unknown, fallback = "Chưa cập nhật") =>
+  input === null || input === undefined || String(input).trim() === ""
+    ? fallback
+    : String(input);
 
-const staffData = [
-  {
-    id: "NV-2023-001",
-    name: "Nguyễn Thị Thu Hà",
-    avatar: "TH",
-    role: "CỬA HÀNG TRƯỞNG",
-    roleColor: "bg-blue-50 text-blue-700 border border-blue-200",
-    stores: ["BLOAN · Lê Lợi (Q1)", "BLOAN · Tú Xương (Q3)"],
-    phone: "0987-123-456",
-    startDate: "12/05/2021",
-    active: true,
-  },
-  {
-    id: "NV-2023-042",
-    name: "Phạm Hoàng Nam",
-    avatar: "PN",
-    role: "NHÂN VIÊN CHÍNH THỨC",
-    roleColor: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    stores: ["BLOAN · Giga Mall (Thủ Đức)"],
-    phone: "0901-555-888",
-    startDate: "10/01/2023",
-    active: true,
-  },
-  {
-    id: "NV-2023-015",
-    name: "Lê Mai Anh",
-    avatar: "LA",
-    role: "PART-TIME",
-    roleColor: "bg-amber-50 text-amber-700 border border-amber-200",
-    stores: ["BLOAN · Crescent Mall (Q7)", "BLOAN · Nguyễn Trãi"],
-    phone: "0933-444-222",
-    startDate: "15/08/2023",
-    active: false,
-    statusLabel: "NGHỈ PHÉP",
-  },
-  {
-    id: "NV-2023-008",
-    name: "Trần Thế Vinh",
-    avatar: "TV",
-    role: "NHÂN VIÊN CHÍNH THỨC",
-    roleColor: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    stores: ["BLOAN · CMT8 (Tân Bình)"],
-    phone: "0912-333-777",
-    startDate: "01/02/2022",
-    active: true,
-  },
-  {
-    id: "NV-2023-099",
-    name: "Hoàng Minh Trí",
-    avatar: "MT",
-    role: "PART-TIME",
-    roleColor: "bg-amber-50 text-amber-700 border border-amber-200",
-    stores: ["BLOAN · Quang Trung (Gò Vấp)"],
-    phone: "0944-888-999",
-    startDate: "18/03/2024",
-    active: true,
-  },
-];
+const date = (input: string | null | undefined) =>
+  input ? new Date(input).toLocaleDateString("vi-VN") : "Chưa cập nhật";
 
-const activityLog = [
-  {
-    name: "Hoàng Anh Thư",
-    action: "được phân bổ thêm vào",
-    store: "BLOAN · Quang Trung (Gò Vấp)",
-    time: "20 phút trước",
-    by: "Admin Hoàn",
-    storeColor: "text-amber-700 bg-amber-50 border border-amber-200",
-  },
-  {
-    name: "Lý Quốc Khánh",
-    action: "chuyển trạng thái sang",
-    store: "Đã nghỉ việc",
-    time: "1 giờ trước",
-    by: "Quản lý Vùng",
-    storeColor: "text-rose-700 bg-rose-50 border border-rose-200",
-  },
-  {
-    name: "Đỗ Hải Yến",
-    action: "thăng chức lên",
-    store: "Trưởng Cửa Hàng",
-    time: "3 giờ trước",
-    by: "Admin Hoàn",
-    storeColor: "text-blue-700 bg-blue-50 border border-blue-200",
-  },
-];
+const statusName = (status: string | null | undefined) =>
+  ({ ACTIVE: "ĐANG LÀM VIỆC", INACTIVE: "TẠM NGƯNG", RESIGNED: "ĐÃ NGHỈ VIỆC" }[
+    status?.toUpperCase() ?? ""
+  ] ?? value(status, "CHƯA CẬP NHẬT"));
 
-const weeklyData = [
-  { week: "Tuần 1", thucTe: 180, keHoach: 200 },
-  { week: "Tuần 2", thucTe: 210, keHoach: 200 },
-  { week: "Tuần 3", thucTe: 240, keHoach: 220 },
-  { week: "Tuần 4", thucTe: 195, keHoach: 200 },
-];
+const emptyEmployeeForm: EmployeeRequest = {
+  userId: 0,
+  employeeCode: "",
+  fullName: "",
+  email: "",
+  phone: "",
+  address: "",
+  hireDate: "",
+  status: "ACTIVE",
+  note: "",
+};
 
 export default function NhanSuPage() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
+  const [stores, setStores] = useState<StoreResponse[]>([]);
+  const [assignments, setAssignments] = useState<EmployeeStoreResponse[]>([]);
+  const [managers, setManagers] = useState<StoreManagerResponse[]>([]);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [editingEmployee, setEditingEmployee] = useState<EmployeeResponse | null>(null);
+  const [employeeForm, setEmployeeForm] = useState<EmployeeRequest>(emptyEmployeeForm);
+  const [employeeFormOpen, setEmployeeFormOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [assignmentStoreId, setAssignmentStoreId] = useState("ALL");
+  const [assignmentRole, setAssignmentRole] = useState<"ALL" | "MANAGER" | "EMPLOYEE">("ALL");
+  const [assignmentStatus, setAssignmentStatus] = useState("ALL");
+  const [assignmentPrimary, setAssignmentPrimary] = useState("ALL");
+  const [employeeStoreForm, setEmployeeStoreForm] = useState({
+    storeId: 0,
+    startDate: "",
+    isPrimary: true,
+    status: "ACTIVE",
+  });
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [employeeResponse, storeResponse, assignmentResponse, managerResponse] =
+        await Promise.all([
+          managerApi.getEmployees(status === "ALL" ? undefined : status),
+          managerApi.getStores(),
+          managerApi.getEmployeeStores({
+            storeId: assignmentStoreId === "ALL" ? undefined : Number(assignmentStoreId),
+            role: assignmentRole === "ALL" ? undefined : assignmentRole,
+            status: assignmentStatus === "ALL" ? undefined : assignmentStatus,
+            primary: assignmentPrimary === "ALL" ? undefined : assignmentPrimary === "true",
+          }),
+          managerApi.getStoreManagers(),
+        ]);
+      setEmployees(Array.isArray(employeeResponse.data) ? employeeResponse.data : []);
+      setStores(Array.isArray(storeResponse.data) ? storeResponse.data : []);
+      setAssignments(Array.isArray(assignmentResponse.data) ? assignmentResponse.data : []);
+      setManagers(Array.isArray(managerResponse.data) ? managerResponse.data : []);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Không thể tải dữ liệu nhân sự");
+      setEmployees([]);
+      setStores([]);
+      setAssignments([]);
+      setManagers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [status, assignmentStoreId, assignmentRole, assignmentStatus, assignmentPrimary]);
+
+  const openEmployeeForm = (employee?: EmployeeResponse) => {
+    setEditingEmployee(employee ?? null);
+    setEmployeeFormOpen(true);
+    setEmployeeForm({
+      userId: employee?.userId ?? 0,
+      employeeCode: employee?.employeeCode ?? "",
+      fullName: employee?.fullName ?? "",
+      dateOfBirth: employee?.dateOfBirth ?? "",
+      gender: employee?.gender ?? "",
+      email: employee?.email ?? "",
+      phone: employee?.phone ?? "",
+      address: employee?.address ?? "",
+      hireDate: employee?.hireDate ?? "",
+      status: employee?.status ?? "ACTIVE",
+      note: employee?.note ?? "",
+    });
+    const currentAssignment = employee
+      ? (assignmentsByEmployee.get(employee.id) ?? []).find(
+          (assignment) => assignment.status?.toUpperCase() === "ACTIVE"
+        ) ?? assignmentsByEmployee.get(employee.id)?.[0]
+      : undefined;
+    setEmployeeStoreForm({
+      storeId: currentAssignment?.storeId ?? stores[0]?.id ?? 0,
+      startDate: currentAssignment?.startDate ?? employee?.hireDate ?? "",
+      isPrimary: currentAssignment?.isPrimary ?? true,
+      status: currentAssignment?.status ?? "ACTIVE",
+    });
+  };
+
+  const saveEmployee = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!employeeForm.userId) {
+      setError("Vui lòng nhập userId đã tồn tại để liên kết hồ sơ nhân viên.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const employeeResponse = editingEmployee
+        ? await managerApi.updateEmployee(editingEmployee.id, employeeForm)
+        : await managerApi.createEmployee(employeeForm);
+      if (employeeStoreForm.storeId) {
+        const currentAssignment = editingEmployee
+          ? (assignmentsByEmployee.get(editingEmployee.id) ?? []).find(
+              (assignment) => assignment.status?.toUpperCase() === "ACTIVE"
+            ) ?? assignmentsByEmployee.get(editingEmployee.id)?.[0]
+          : undefined;
+        const assignmentPayload = {
+          employeeId: editingEmployee?.id ?? employeeResponse.data.id,
+          storeId: employeeStoreForm.storeId,
+          startDate: employeeStoreForm.startDate || null,
+          endDate: null,
+          isPrimary: employeeStoreForm.isPrimary,
+          status: employeeStoreForm.status,
+          assignedBy: null,
+        };
+        if (currentAssignment) {
+          await managerApi.updateEmployeeStore(
+            currentAssignment.employeeStoreId,
+            assignmentPayload
+          );
+        } else {
+          await managerApi.createEmployeeStore(assignmentPayload);
+        }
+      }
+      setEmployeeFormOpen(false);
+      setEditingEmployee(null);
+      await loadData();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Không thể lưu nhân viên");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteEmployee = async (employee: EmployeeResponse) => {
+    if (!window.confirm(`Xóa hồ sơ "${value(employee.fullName)}"?`)) return;
+    setError("");
+    try {
+      await managerApi.deleteEmployee(employee.id);
+      await loadData();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Không thể xóa nhân viên");
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadData(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadData]);
+
+  const storeMap = useMemo(() => new Map(stores.map((store) => [store.id, store])), [stores]);
+  const filteredEmployees = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return employees.filter((employee) => {
+      const matchesSearch =
+        !keyword ||
+        [employee.employeeCode, employee.fullName, employee.phone, employee.email]
+          .map((field) => value(field, "").toLowerCase())
+          .some((field) => field.includes(keyword));
+      const hasAssignmentFilter =
+        assignmentStoreId !== "ALL" ||
+        assignmentRole !== "ALL" ||
+        assignmentStatus !== "ALL" ||
+        assignmentPrimary !== "ALL";
+      const matchesAssignment =
+        !hasAssignmentFilter ||
+        assignments.some((assignment) => assignment.employeeId === employee.id);
+      return matchesSearch && matchesAssignment;
+    });
+  }, [
+    employees,
+    search,
+    assignments,
+    assignmentStoreId,
+    assignmentRole,
+    assignmentStatus,
+    assignmentPrimary,
+  ]);
+
+  const assignmentsByEmployee = useMemo(() => {
+    const map = new Map<number, EmployeeStoreResponse[]>();
+    assignments.forEach((assignment) => {
+      const current = map.get(assignment.employeeId) ?? [];
+      current.push(assignment);
+      map.set(assignment.employeeId, current);
+    });
+    return map;
+  }, [assignments]);
+
+  const managerIds = useMemo(
+    () => new Set(managers.map((manager) => manager.employeeId)),
+    [managers]
+  );
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">
-            Quản lý nhân sự chuỗi
-          </h1>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Quản lý nhân sự</h1>
           <p className="text-xs text-slate-500 mt-1">
-            Quản lý danh sách nhân sự, chức vụ, điều phối chi nhánh và theo dõi nhân lực toàn hệ thống Ăn Vặt BLOAN.
+            Dữ liệu được lấy trực tiếp từ API EMPLOYEE, EMPLOYEE_STORE và STORE_MANAGER.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => alert("Mở trình nhập danh sách nhân viên từ Excel...")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
-          >
-            <Upload className="w-4 h-4 text-slate-500" />
-            <span>Import danh sách</span>
-          </button>
-          <button
-            onClick={() => alert("Mở form thêm hồ sơ nhân viên mới...")}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Thêm nhân viên</span>
-          </button>
+        <div className="flex gap-2">
+          <button onClick={() => openEmployeeForm()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-900 text-xs font-bold"><Plus className="w-4 h-4" /> Thêm nhân viên</button>
+          <button onClick={() => void loadData()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold"><RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Làm mới</button>
         </div>
+        {employeeFormOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+            <form onSubmit={saveEmployee} className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-800">{editingEmployee ? "Sửa nhân viên" : "Thêm nhân viên"}</h2><button type="button" onClick={() => setEmployeeFormOpen(false)} className="text-slate-400 text-xl">×</button></div>
+              <p className="text-xs text-slate-500">`userId` phải là tài khoản đã tồn tại trong hệ thống.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {([["userId", "User ID"], ["employeeCode", "Mã nhân viên"], ["fullName", "Họ và tên"], ["email", "Email"], ["phone", "Số điện thoại"], ["address", "Địa chỉ"], ["hireDate", "Ngày bắt đầu"], ["dateOfBirth", "Ngày sinh"], ["gender", "Giới tính"], ["note", "Ghi chú"]] as const).map(([field, label]) => <label key={field} className="text-xs font-bold text-slate-600">{label}<input required={field === "userId" || field === "employeeCode" || field === "fullName"} type={field === "userId" ? "number" : field.toLowerCase().includes("date") ? "date" : "text"} value={employeeForm[field] ?? ""} onChange={(event) => setEmployeeForm({ ...employeeForm, [field]: field === "userId" ? Number(event.target.value) : event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal" /></label>)}
+                <label className="text-xs font-bold text-slate-600">Trạng thái<select value={employeeForm.status} onChange={(event) => setEmployeeForm({ ...employeeForm, status: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option><option value="RESIGNED">RESIGNED</option></select></label>
+                <label className="text-xs font-bold text-slate-600">Cửa hàng đang làm
+                  <select value={employeeStoreForm.storeId} onChange={(event) => setEmployeeStoreForm({ ...employeeStoreForm, storeId: Number(event.target.value) })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal">
+                    <option value={0}>Chưa phân công</option>
+                    {stores.map((store) => <option key={store.id} value={store.id}>{value(store.storeName)} - {value(store.storeCode)}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-bold text-slate-600">Ngày bắt đầu phân công<input type="date" value={employeeStoreForm.startDate} onChange={(event) => setEmployeeStoreForm({ ...employeeStoreForm, startDate: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal" /></label>
+                <label className="text-xs font-bold text-slate-600">Trạng thái phân công<select value={employeeStoreForm.status} onChange={(event) => setEmployeeStoreForm({ ...employeeStoreForm, status: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option></select></label>
+              </div>
+              <div className="flex justify-end gap-2"><button type="button" onClick={() => setEmployeeFormOpen(false)} className="rounded-xl border px-4 py-2 text-sm">Hủy</button><button disabled={saving} className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold disabled:opacity-50">{saving ? "Đang lưu..." : "Lưu"}</button></div>
+            </form>
+          </div>
+        ) : null}
       </div>
 
-      {/* 4 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statsCards.map((card, i) => {
-          const Icon = card.icon;
-          return (
-            <div
-              key={i}
-              className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between"
-            >
-              <div>
-                <span className="text-xs font-semibold text-slate-500">
-                  {card.label}
-                </span>
-                <div className="text-2xl sm:text-3xl font-black text-slate-800 mt-1 tracking-tight">
-                  {card.value}
-                </div>
-                <p className={`text-[11px] mt-1 font-semibold ${card.subColor}`}>
-                  {card.sub}
-                </p>
-              </div>
-              <div
-                className={`w-10 h-10 rounded-xl ${card.iconBg} ${card.iconColor} flex items-center justify-center shrink-0`}
-              >
-                <Icon className="w-5 h-5" />
-              </div>
-            </div>
-          );
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { label: "Tổng nhân sự", count: employees.length },
+          { label: "Đang làm việc", count: employees.filter((employee) => employee.status?.toUpperCase() === "ACTIVE").length },
+          { label: "Đang giữ vai trò quản lý", count: managerIds.size },
+        ].map(({ label, count }) => {
+          return <div key={label} className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between"><div><span className="text-xs font-semibold text-slate-500">{label}</span><div className="text-3xl font-black text-slate-800 mt-1">{count}</div></div><div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><Users className="w-5 h-5" /></div></div>;
         })}
       </div>
 
-      {/* Filter and Table Card */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        {/* Filters */}
-        <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <div className="p-4 bg-slate-50/50 border-b border-slate-100 overflow-x-auto">
+          <div className="flex min-w-max flex-nowrap items-center gap-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Tìm theo tên, Mã NV, số điện thoại..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl outline-hidden hover:border-slate-300 focus:border-amber-400 transition-all font-medium text-slate-800"
-            />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm tên, mã, email, số điện thoại..." className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <select className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300">
-              <option>Tất cả cửa hàng (24)</option>
-              <option>BLOAN · Lê Lợi (Q1)</option>
-              <option>BLOAN · Tú Xương (Q3)</option>
-              <option>BLOAN · Giga Mall (Thủ Đức)</option>
-              <option>BLOAN · Quang Trung</option>
-            </select>
-
-            <select className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300">
-              <option>Tất cả chức vụ</option>
-              <option>Cửa hàng trưởng</option>
-              <option>Nhân viên chính thức</option>
-              <option>Part-time</option>
-            </select>
-
-            <select className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300">
-              <option>Tất cả trạng thái</option>
-              <option>Đang làm việc</option>
-              <option>Nghỉ phép</option>
-              <option>Đã nghỉ việc</option>
-            </select>
-
-            <button
-              onClick={() => alert("Đang làm mới dữ liệu nhân sự...")}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-2xs"
-              title="Làm mới"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/60 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="px-5 py-3 w-10 text-center">
-                  <input type="checkbox" className="rounded accent-amber-500" />
-                </th>
-                <th className="px-5 py-3">Nhân viên</th>
-                <th className="px-5 py-3">Chức vụ</th>
-                <th className="px-5 py-3">Cửa hàng phụ trách</th>
-                <th className="px-5 py-3">Số điện thoại</th>
-                <th className="px-5 py-3">Ngày bắt đầu</th>
-                <th className="px-5 py-3">Trạng thái</th>
-                <th className="px-5 py-3 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {staffData.map((staff) => (
-                <tr key={staff.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-5 py-4 text-center">
-                    <input type="checkbox" className="rounded accent-amber-500" />
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center border border-amber-200/80 shrink-0 shadow-2xs">
-                        {staff.avatar}
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-800 text-sm">{staff.name}</p>
-                        <p className="text-[11px] text-slate-400 font-medium">Mã: {staff.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${staff.roleColor}`}>
-                      {staff.role}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex flex-wrap gap-1.5">
-                      {staff.stores.map((s, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200/60"
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 font-medium text-slate-600">{staff.phone}</td>
-                  <td className="px-5 py-4 text-slate-500 font-medium">{staff.startDate}</td>
-                  <td className="px-5 py-4">
-                    {staff.statusLabel ? (
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                        {staff.statusLabel}
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        HOẠT ĐỘNG
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => alert(`Điều phối cửa hàng cho: ${staff.name}`)}
-                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-amber-600 transition-colors"
-                        title="Điều phối ca/cửa hàng"
-                      >
-                        <Shuffle className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => alert(`Sửa thông tin: ${staff.name}`)}
-                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-blue-50 text-slate-500 hover:text-blue-600 transition-colors"
-                        title="Chỉnh sửa"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => alert(`Xóa hồ sơ: ${staff.name}`)}
-                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-colors"
-                        title="Xóa"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="px-5 py-3.5 bg-slate-50/30 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <p>
-            Hiển thị <span className="font-bold text-slate-700">1 – 5</span> của{" "}
-            <span className="font-bold text-slate-700">1,248</span> nhân sự toàn chuỗi
-          </p>
-          <div className="flex items-center gap-1.5">
-            <button className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 disabled:opacity-40">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            {["1", "2", "3", "..."].map((p, i) => (
-              <button
-                key={i}
-                className={`w-8 h-8 rounded-lg font-bold transition-colors ${
-                  p === "1"
-                    ? "bg-amber-500 text-slate-900 shadow-2xs"
-                    : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-            <button className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom section: activity log + chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                <Clock className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-slate-800 text-sm">Lịch sử điều phối gần đây</h3>
-            </div>
-            <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-              Toàn hệ thống
-            </span>
-          </div>
-
-          <div className="space-y-3.5">
-            {activityLog.map((log, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/60 border border-slate-100">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-200">
-                  {log.name.split(" ").slice(-1)[0].slice(0, 2).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-700 leading-relaxed">
-                    <span className="font-bold text-slate-800">{log.name}</span> {log.action}{" "}
-                    <span className={`font-bold px-2 py-0.5 rounded-md text-[11px] ${log.storeColor}`}>
-                      {log.store}
-                    </span>
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1 font-medium">
-                    {log.time} • Thực hiện bởi: <span className="text-slate-600 font-semibold">{log.by}</span>
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-
+          <select value={status} onChange={(event) => setStatus(event.target.value)} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+            <option value="ALL">Trạng thái: Tất cả</option><option value="ACTIVE">Đang làm việc</option><option value="INACTIVE">Tạm ngưng</option><option value="RESIGNED">Đã nghỉ việc</option>
+          </select>
+          <select value={assignmentStoreId} onChange={(event) => setAssignmentStoreId(event.target.value)} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+            <option value="ALL">Cửa hàng: Tất cả</option>
+            {stores.map((store) => <option key={store.id} value={store.id}>{value(store.storeName)}</option>)}
+          </select>
+          <select value={assignmentRole} onChange={(event) => setAssignmentRole(event.target.value as "ALL" | "MANAGER" | "EMPLOYEE")} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+            <option value="ALL">Vai trò: Tất cả</option><option value="MANAGER">Quản lý</option><option value="EMPLOYEE">Nhân viên</option>
+          </select>
+          <select value={assignmentStatus} onChange={(event) => setAssignmentStatus(event.target.value)} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+            <option value="ALL">Phân công: Tất cả</option><option value="ACTIVE">Đang phân công</option><option value="INACTIVE">Ngừng phân công</option>
+          </select>
+          <select value={assignmentPrimary} onChange={(event) => setAssignmentPrimary(event.target.value)} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+            <option value="ALL">Chính/phụ: Tất cả</option><option value="true">Cửa hàng chính</option><option value="false">Cửa hàng phụ</option>
+          </select>
           <button
-            onClick={() => alert("Xem toàn bộ lịch sử biến động nhân sự...")}
-            className="mt-4 w-full py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors text-center"
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setStatus("ALL");
+              setAssignmentStoreId("ALL");
+              setAssignmentRole("ALL");
+              setAssignmentStatus("ALL");
+              setAssignmentPrimary("ALL");
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100"
           >
-            Xem tất cả lịch sử biến động →
+            <X className="h-3.5 w-3.5" />
+            Xóa bộ lọc
           </button>
         </div>
-
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4" />
-                </div>
-                <h3 className="font-bold text-slate-800 text-sm">Kế hoạch ca so với thực tế</h3>
-              </div>
-              <span className="text-xs font-bold text-slate-400">Tháng này</span>
-            </div>
-            <p className="text-xs text-slate-500 mb-4">
-              Đối chiếu số lượng ca thực tế và kế hoạch điều phối theo 4 tuần gần nhất.
-            </p>
-
-            <ResponsiveContainer width="100%" height={170}>
-              <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis dataKey="week" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: "1px solid #e2e8f0",
-                    fontSize: 12,
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.05)",
-                  }}
-                />
-                <Bar dataKey="thucTe" fill="#f59e0b" radius={[6, 6, 0, 0]} name="Thực tế" />
-                <Bar dataKey="keHoach" fill="#e2e8f0" radius={[6, 6, 0, 0]} name="Kế hoạch" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="flex items-center justify-center gap-6 pt-3 border-t border-slate-100">
-            <span className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-              <span className="w-3 h-3 rounded-md bg-amber-500 inline-block" /> Thực tế
-            </span>
-            <span className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-              <span className="w-3 h-3 rounded-md bg-slate-200 inline-block" /> Kế hoạch
-            </span>
-          </div>
         </div>
+        {error && <div className="m-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+        {loading ? <div className="p-10 text-center text-sm text-slate-500">Đang tải dữ liệu nhân sự...</div> : filteredEmployees.length === 0 ? <div className="p-10 text-center text-sm text-slate-500">Không có dữ liệu nhân sự từ API.</div> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-50/60 text-[11px] font-bold text-slate-400 uppercase"><tr><th className="px-5 py-3">Nhân viên</th><th className="px-5 py-3">Email / điện thoại</th><th className="px-5 py-3">Cửa hàng phụ trách</th><th className="px-5 py-3">Ngày bắt đầu</th><th className="px-5 py-3">Trạng thái</th><th className="px-5 py-3">Thao tác</th></tr></thead>
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {filteredEmployees.map((employee) => {
+                  const employeeAssignments = assignmentsByEmployee.get(employee.id) ?? [];
+                  return <tr key={employee.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 font-bold flex items-center justify-center">{value(employee.fullName, "?").slice(0, 1).toUpperCase()}</div><div><b className="text-sm text-slate-800">{value(employee.fullName)}</b><span className="block text-[11px] text-slate-400 font-mono">Mã: {value(employee.employeeCode)} {managerIds.has(employee.id) ? " · QUẢN LÝ" : ""}</span></div></div></td>
+                    <td className="px-5 py-4 text-slate-600">{value(employee.email)}<span className="block text-slate-400">{value(employee.phone)}</span></td>
+                    <td className="px-5 py-4"><div className="flex flex-wrap gap-1.5">{employeeAssignments.length ? employeeAssignments.map((assignment) => <span key={assignment.employeeStoreId} className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200/60">{value(storeMap.get(assignment.storeId)?.storeName, `Store #${assignment.storeId}`)}</span>) : <span className="text-slate-400">Chưa phân bổ</span>}</div></td>
+                    <td className="px-5 py-4 text-slate-500">{date(employee.hireDate)}</td>
+                    <td className="px-5 py-4"><span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${employee.status?.toUpperCase() === "ACTIVE" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600 border border-slate-200"}`}>{statusName(employee.status)}</span></td>
+                    <td className="px-5 py-4"><div className="flex gap-1"><button onClick={() => openEmployeeForm(employee)} className="p-2 rounded-lg border border-slate-200 text-slate-600" title="Sửa"><Edit className="w-3.5 h-3.5" /></button><button onClick={() => void deleteEmployee(employee)} className="p-2 rounded-lg border border-rose-200 text-rose-700" title="Xóa"><Trash2 className="w-3.5 h-3.5" /></button></div></td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

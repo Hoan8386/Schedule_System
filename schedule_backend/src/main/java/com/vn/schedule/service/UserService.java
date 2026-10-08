@@ -67,12 +67,25 @@ public class UserService {
     }
 
     private void applyFields(User entity, UserRequest body) {
-        entity.setId((Integer) body.get("id"));
-        entity.setUsername((String) body.get("username"));
-        entity.setPasswordHash((String) body.get("passwordHash"));
-        entity.setEmail((String) body.get("email"));
-        entity.setPhone((String) body.get("phone"));
-        entity.setStatus((String) body.get("status"));
-        entity.setLastLoginAt((LocalDateTime) body.get("lastLoginAt"));
+        // The path variable is the resource identity. Never overwrite it with
+        // an optional request field, especially when a partial update is sent.
+        if (body.get("username") != null) {
+            entity.setUsername((String) body.get("username"));
+        }
+        if (body.get("passwordHash") != null) {
+            entity.setPasswordHash((String) body.get("passwordHash"));
+        }
+        if (body.get("email") != null) {
+            entity.setEmail((String) body.get("email"));
+        }
+        if (body.get("phone") != null) {
+            entity.setPhone((String) body.get("phone"));
+        }
+        if (body.get("status") != null) {
+            entity.setStatus((String) body.get("status"));
+        }
+        if (body.get("lastLoginAt") instanceof LocalDateTime lastLoginAt) {
+            entity.setLastLoginAt(lastLoginAt);
+        }
     }
 }

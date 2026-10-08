@@ -9,28 +9,37 @@ import {
   KeyRound,
   Plus,
   Search,
-  Filter,
-  Check,
-  X,
-  Edit,
-  Lock,
-  Unlock,
   RotateCcw,
   Trash2,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
   RefreshCw,
+  Edit,
+  Lock,
+  Unlock,
+  X,
+  Building2,
+  Mail,
+  Phone,
+  Shield,
 } from "lucide-react";
 import { UserRoleCode } from "@/types/auth";
-import { adminUserApi, UserResponse, RoleResponse } from "@/lib/adminApi";
+import {
+  adminUserApi,
+  adminBrandApi,
+  UserResponse,
+  RoleResponse,
+  UserRoleResponse,
+  StoreItemResponse,
+} from "@/lib/adminApi";
 
-interface AccountItem {
+export interface AccountItem {
   id: number;
   username: string;
   fullName: string;
   email: string;
   phone: string;
+  roleId: number;
   roleCode: UserRoleCode;
   roleName: string;
   storeName: string;
@@ -38,219 +47,82 @@ interface AccountItem {
   lastLogin: string;
 }
 
-interface PermissionRow {
-  group: string;
-  permCode: string;
-  name: string;
-  desc: string;
-  admin: boolean;
-  manager: boolean;
-  storeManager: boolean;
-  employee: boolean;
-}
-
-const initialPermissions: PermissionRow[] = [
-  // Quản lý người dùng
-  {
-    group: "Quản lý tài khoản & Nhân sự",
-    permCode: "ROLE_USER_VIEW",
-    name: "Xem danh sách tài khoản",
-    desc: "Xem thông tin người dùng trong phạm vi quản lý",
-    admin: true,
-    manager: true,
-    storeManager: true,
-    employee: false,
-  },
-  {
-    group: "Quản lý tài khoản & Nhân sự",
-    permCode: "ROLE_USER_CREATE",
-    name: "Tạo tài khoản & Nhân viên mới",
-    desc: "Đăng ký tài khoản nhân sự mới vào hệ thống",
-    admin: true,
-    manager: true,
-    storeManager: false,
-    employee: false,
-  },
-  {
-    group: "Quản lý tài khoản & Nhân sự",
-    permCode: "ROLE_USER_UPDATE",
-    name: "Cập nhật & Phân quyền tài khoản",
-    desc: "Thay đổi chức vụ, mật khẩu hoặc khóa tài khoản",
-    admin: true,
-    manager: true,
-    storeManager: false,
-    employee: false,
-  },
-  {
-    group: "Quản lý tài khoản & Nhân sự",
-    permCode: "ROLE_USER_DELETE",
-    name: "Xóa tài khoản khỏi hệ thống",
-    desc: "Quyền xóa vĩnh viễn hồ sơ và dữ liệu tài khoản",
-    admin: true,
-    manager: false,
-    storeManager: false,
-    employee: false,
-  },
-  // Lịch & Ca làm việc
-  {
-    group: "Lịch & Ca làm việc",
-    permCode: "ROLE_SHIFT_SCHEDULE_MANAGE",
-    name: "Thiết lập kỳ đăng ký ca",
-    desc: "Mở hoặc đóng kỳ đăng ký lịch làm toàn chuỗi",
-    admin: true,
-    manager: true,
-    storeManager: false,
-    employee: false,
-  },
-  {
-    group: "Lịch & Ca làm việc",
-    permCode: "ROLE_SHIFT_ASSIGN",
-    name: "Xếp ca & Phân bổ nhân sự",
-    desc: "Xếp ca trực tiếp cho nhân viên cửa hàng phụ trách",
-    admin: true,
-    manager: true,
-    storeManager: true,
-    employee: false,
-  },
-  {
-    group: "Lịch & Ca làm việc",
-    permCode: "ROLE_SHIFT_APPROVE",
-    name: "Duyệt yêu cầu đổi ca / Hủy ca",
-    desc: "Phê duyệt các nguyện vọng đổi ca của nhân sự",
-    admin: true,
-    manager: true,
-    storeManager: true,
-    employee: false,
-  },
-  {
-    group: "Lịch & Ca làm việc",
-    permCode: "ROLE_SHIFT_REGISTER",
-    name: "Đăng ký ca làm cá nhân",
-    desc: "Nhân viên tự đăng ký ca và xin đổi ca làm",
-    admin: true,
-    manager: true,
-    storeManager: true,
-    employee: true,
-  },
-  // Chấm công & Kỷ luật
-  {
-    group: "Chấm công & Kỷ luật",
-    permCode: "ROLE_ATTENDANCE_OVERRIDE",
-    name: "Điều chỉnh dữ liệu chấm công",
-    desc: "Sửa giờ check-in/out khi có sai lệch máy quét",
-    admin: true,
-    manager: true,
-    storeManager: true,
-    employee: false,
-  },
-  {
-    group: "Chấm công & Kỷ luật",
-    permCode: "ROLE_VIOLATION_PENALTY",
-    name: "Lập biên bản vi phạm & phạt",
-    desc: "Ghi nhận vi phạm nội quy và áp mức phạt",
-    admin: true,
-    manager: true,
-    storeManager: true,
-    employee: false,
-  },
-  // Lương & Tài chính
-  {
-    group: "Lương & Tài chính",
-    permCode: "ROLE_PAYROLL_CONFIG",
-    name: "Quản lý quỹ lương & bảng lương",
-    desc: "Duyệt chi trả lương và điều chỉnh đơn giá theo giờ",
-    admin: true,
-    manager: true,
-    storeManager: false,
-    employee: false,
-  },
-  {
-    group: "Lương & Tài chính",
-    permCode: "ROLE_BONUS_APPROVE",
-    name: "Phê duyệt phiếu thưởng KPI",
-    desc: "Duyệt phiếu thưởng nóng và thưởng chuyên cần",
-    admin: true,
-    manager: true,
-    storeManager: false,
-    employee: false,
-  },
-  // Quản trị hệ thống & Cấu hình
-  {
-    group: "Cấu hình hệ thống (Admin Only)",
-    permCode: "ROLE_SYSTEM_CONFIG",
-    name: "Cấu hình thương hiệu, Logo & Sinh mã",
-    desc: "Tùy biến nhận diện chuỗi, quy tắc mã tự động",
-    admin: true,
-    manager: false,
-    storeManager: false,
-    employee: false,
-  },
-  {
-    group: "Cấu hình hệ thống (Admin Only)",
-    permCode: "ROLE_API_MANAGE",
-    name: "Quản trị API Keys & Kết nối máy quét",
-    desc: "Quản lý secret keys, webhooks và thiết bị ngoại vi",
-    admin: true,
-    manager: false,
-    storeManager: false,
-    employee: false,
-  },
-];
-
 export default function QuanLyTaiKhoanPage() {
-  const [activeSubTab, setActiveSubTab] = useState<"accounts" | "matrix">("accounts");
   const [accounts, setAccounts] = useState<AccountItem[]>([]);
-  const [permissions, setPermissions] = useState<PermissionRow[]>(initialPermissions);
+  const [roles, setRoles] = useState<RoleResponse[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRoleResponse[]>([]);
+  const [stores, setStores] = useState<StoreItemResponse[]>([]);
+  const [isLoadingApi, setIsLoadingApi] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Bộ lọc danh sách
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isLoadingApi, setIsLoadingApi] = useState(false);
-  const [apiConnected, setApiConnected] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
-  // Form state
+  // Modal tạo tài khoản
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [newFullName, setNewFullName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [newRole, setNewRole] = useState<UserRoleCode>("EMPLOYEE");
-  const [newStore, setNewStore] = useState("BLOAN · Lê Lợi (Q1)");
+  const [newRoleId, setNewRoleId] = useState<number>(4);
+  const [newStore, setNewStore] = useState("Toàn hệ thống BLOAN");
 
-  // Load danh sách user và role từ Backend Spring Boot theo API_RESPONSE_DATA.md
+  // Modal chỉnh sửa & gán quyền
+  const [editAccount, setEditAccount] = useState<AccountItem | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editRoleId, setEditRoleId] = useState<number>(4);
+  const [editStore, setEditStore] = useState("");
+  const [editStatus, setEditStatus] = useState<"ACTIVE" | "LOCKED">("ACTIVE");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Tải dữ liệu thực tế từ backend
   const loadData = async () => {
     setIsLoadingApi(true);
+    setApiError(null);
     try {
-      const [resUsers, resRoles, resUserRoles] = await Promise.allSettled([
+      const [resUsers, resRoles, resUserRoles, resStores] = await Promise.allSettled([
         adminUserApi.getUsers(),
         adminUserApi.getRoles(),
         adminUserApi.getUserRoles(),
+        adminBrandApi.getStores(),
       ]);
 
-      if (
-        resUsers.status === "fulfilled" &&
-        Array.isArray(resUsers.value.data) &&
-        resUsers.value.data.length > 0
-      ) {
-        setApiConnected(true);
-        const rolesList: RoleResponse[] =
-          resRoles.status === "fulfilled" && Array.isArray(resRoles.value.data)
-            ? resRoles.value.data
-            : [];
-        const userRolesList =
-          resUserRoles.status === "fulfilled" && Array.isArray(resUserRoles.value.data)
-            ? resUserRoles.value.data
-            : [];
+      const rolesList: RoleResponse[] =
+        resRoles.status === "fulfilled" && Array.isArray(resRoles.value.data)
+          ? resRoles.value.data
+          : [];
+      setRoles(rolesList);
 
+      const userRolesList: UserRoleResponse[] =
+        resUserRoles.status === "fulfilled" && Array.isArray(resUserRoles.value.data)
+          ? resUserRoles.value.data
+          : [];
+      setUserRoles(userRolesList);
+
+      const storesList: StoreItemResponse[] =
+        resStores.status === "fulfilled" && Array.isArray(resStores.value.data)
+          ? resStores.value.data
+          : [];
+      setStores(storesList);
+
+      if (resUsers.status === "fulfilled" && Array.isArray(resUsers.value.data)) {
         const mapped: AccountItem[] = resUsers.value.data.map((u: UserResponse) => {
-          // Tìm role từ user_role
+          // Tìm vai trò hiện tại của user trong user_role
           const ur = userRolesList.find((item) => item.userId === u.id);
-          const roleObj = ur
+          const foundRole = ur
             ? rolesList.find((r) => r.roleId === ur.roleId)
-            : rolesList.find((r) => r.roleCode === "EMPLOYEE");
+            : rolesList.find((r) => r.roleCode === "EMPLOYEE") || rolesList[0];
 
-          const roleCode = (roleObj?.roleCode as UserRoleCode) || "EMPLOYEE";
-          const roleName = roleObj?.roleName || "Nhân viên";
+          const roleCode = (foundRole?.roleCode as UserRoleCode) || "EMPLOYEE";
+          const roleName = foundRole?.roleName || "Nhân viên";
+          const roleId = foundRole?.roleId || 4;
 
-          const username = u.username || `user-${u.id}`;
+          const username = u.username || `user_${u.id}`;
 
           return {
             id: u.id,
@@ -258,8 +130,9 @@ export default function QuanLyTaiKhoanPage() {
             fullName: username,
             email: u.email || "",
             phone: u.phone || "Chưa cập nhật",
-            roleCode: roleCode,
-            roleName: roleName,
+            roleId,
+            roleCode,
+            roleName,
             storeName: roleCode === "ADMIN" ? "Toàn hệ thống BLOAN" : "BLOAN · Chi nhánh trung tâm",
             status: (u.status === "ACTIVE" ? "ACTIVE" : "LOCKED") as "ACTIVE" | "LOCKED",
             lastLogin: u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString("vi-VN") : "Chưa đăng nhập",
@@ -267,9 +140,16 @@ export default function QuanLyTaiKhoanPage() {
         });
 
         setAccounts(mapped);
+      } else {
+        if (resUsers.status === "rejected") {
+          throw resUsers.reason;
+        }
+        setAccounts([]);
       }
-    } catch (e) {
-      console.warn("Không thể tải danh sách tài khoản từ backend:", e);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Không thể kết nối đến máy chủ backend.";
+      setApiError(errMsg);
+      setAccounts([]);
     } finally {
       setIsLoadingApi(false);
     }
@@ -279,119 +159,170 @@ export default function QuanLyTaiKhoanPage() {
     loadData();
   }, []);
 
+  // Xử lý tạo tài khoản mới
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUsername || !newEmail) {
-      alert("Vui lòng nhập đầy đủ Tên đăng nhập và Email!");
+    if (!newUsername.trim() || !newEmail.trim()) {
+      alert("Vui lòng điền đầy đủ Tên đăng nhập và Email!");
       return;
     }
 
-    const roleNames: Record<UserRoleCode, string> = {
-      ADMIN: "Quản trị viên",
-      MANAGER: "Quản lý chuỗi",
-      STORE_MANAGER: "Trưởng cửa hàng",
-      EMPLOYEE: "Nhân viên",
-    };
-
-    let createdId = Date.now();
-
+    setIsSubmitting(true);
     try {
-      // Gọi API POST /api/v1/user
+      // 1. Tạo user qua POST /api/v1/user
       const res = await adminUserApi.createUser({
-        username: newUsername,
-        email: newEmail,
-        phone: newPhone || "0900000000",
+        username: newUsername.trim(),
+        email: newEmail.trim(),
+        phone: newPhone.trim() || "Chưa cập nhật",
         status: "ACTIVE",
       });
-      if (res?.data?.id) {
-        createdId = res.data.id;
-        // Gán vai trò qua API POST /api/v1/user_role
-        const roleIdMap: Record<UserRoleCode, number> = {
-          ADMIN: 1,
-          MANAGER: 2,
-          STORE_MANAGER: 2,
-          EMPLOYEE: 3,
-        };
+
+      const newUserId = res?.data?.id;
+
+      // 2. Gán quyền qua POST /api/v1/user_role
+      if (newUserId && newRoleId) {
+        try {
+          await adminUserApi.assignRole({
+            userId: newUserId,
+            roleId: newRoleId,
+          });
+        } catch (roleErr) {
+          console.warn("Gán vai trò khi tạo user thất bại:", roleErr);
+        }
+      }
+
+      alert(`Đã khởi tạo tài khoản @${newUsername} thành công!`);
+      setShowCreateModal(false);
+      setNewUsername("");
+      setNewFullName("");
+      setNewEmail("");
+      setNewPhone("");
+      await loadData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Lỗi khi tạo tài khoản!";
+      alert(`Tạo tài khoản thất bại: ${msg}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Mở modal Edit tài khoản & Gán quyền
+  const handleOpenEdit = (acc: AccountItem) => {
+    setEditAccount(acc);
+    setEditFullName(acc.fullName);
+    setEditEmail(acc.email);
+    setEditPhone(acc.phone === "Chưa cập nhật" ? "" : acc.phone);
+    setEditRoleId(acc.roleId);
+    setEditStore(acc.storeName);
+    setEditStatus(acc.status);
+  };
+
+  // Lưu chỉnh sửa thông tin & gán quyền
+  const handleUpdateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editAccount) return;
+
+    setIsSubmitting(true);
+    try {
+      // 1. Cập nhật thông tin User qua PUT /api/v1/user/{id}
+      await adminUserApi.updateUser(editAccount.id, {
+        email: editEmail.trim() || undefined,
+        phone: editPhone.trim() || undefined,
+        status: editStatus,
+      });
+
+      // 2. Nếu thay đổi Role: xóa role cũ và gán role mới
+      if (editRoleId !== editAccount.roleId) {
+        // Xóa gán role cũ nếu có
+        try {
+          await adminUserApi.removeRole({
+            userId: editAccount.id,
+            roleId: editAccount.roleId,
+          });
+        } catch (delErr) {
+          console.warn("Xóa quyền cũ không thành công hoặc chưa từng có:", delErr);
+        }
+
+        // Gán quyền mới
         await adminUserApi.assignRole({
-          userId: createdId,
-          roleId: roleIdMap[newRole] || 3,
+          userId: editAccount.id,
+          roleId: editRoleId,
         });
       }
+
+      alert(`Cập nhật thông tin và phân quyền cho @${editAccount.username} thành công!`);
+      setEditAccount(null);
+      await loadData();
     } catch (err: unknown) {
-      console.warn("Gọi API tạo user thất bại:", err);
+      const msg = err instanceof Error ? err.message : "Lỗi khi cập nhật tài khoản!";
+      alert(`Cập nhật thất bại: ${msg}`);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const newAcc: AccountItem = {
-      id: createdId,
-      username: newUsername,
-      fullName: newFullName || newUsername,
-      email: newEmail,
-      phone: newPhone || "0900000000",
-      roleCode: newRole,
-      roleName: roleNames[newRole],
-      storeName: newRole === "ADMIN" ? "Toàn hệ thống BLOAN" : newStore,
-      status: "ACTIVE",
-      lastLogin: "Vừa tạo",
-    };
-
-    setAccounts([newAcc, ...accounts]);
-    setShowCreateModal(false);
-    setNewUsername("");
-    setNewFullName("");
-    setNewEmail("");
-    setNewPhone("");
-    alert(`Đã tạo tài khoản thành công cho: ${newUsername}`);
   };
 
-  const toggleStatus = async (id: number) => {
-    const acc = accounts.find((a) => a.id === id);
-    if (!acc) return;
-    const newStatus = acc.status === "ACTIVE" ? "LOCKED" : "ACTIVE";
-
+  // Đổi nhanh trạng thái ACTIVE / LOCKED
+  const handleToggleStatus = async (acc: AccountItem) => {
+    const nextStatus = acc.status === "ACTIVE" ? "LOCKED" : "ACTIVE";
     try {
-      // Gọi API PUT /api/v1/user/{id}
-      await adminUserApi.updateUser(id, { status: newStatus });
-    } catch (err) {
-      console.warn("Cập nhật trạng thái API thất bại, cập nhật cục bộ:", err);
+      await adminUserApi.updateUser(acc.id, { status: nextStatus });
+      setAccounts((prev) =>
+        prev.map((a) => (a.id === acc.id ? { ...a, status: nextStatus } : a))
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Lỗi kết nối API";
+      alert(`Không thể thay đổi trạng thái tài khoản: ${msg}`);
     }
-
-    setAccounts(
-      accounts.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
-    );
   };
 
-  const handleDeleteAccount = async (id: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa tài khoản này khỏi hệ thống?")) return;
+  // Xóa tài khoản
+  const handleDeleteAccount = async (id: number, username: string) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản @${username} khỏi hệ thống?`)) {
+      return;
+    }
     try {
-      // Gọi API DELETE /api/v1/user/{id}
       await adminUserApi.deleteUser(id);
-    } catch (err) {
-      console.warn("Xóa user API thất bại, xóa cục bộ:", err);
+      setAccounts((prev) => prev.filter((a) => a.id !== id));
+      alert(`Đã xóa tài khoản @${username} thành công!`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Lỗi máy chủ khi xóa";
+      alert(`Xóa tài khoản thất bại: ${msg}`);
     }
-    setAccounts(accounts.filter((a) => a.id !== id));
-    alert("Đã xóa tài khoản thành công!");
   };
 
-  const togglePerm = (permCode: string, role: "admin" | "manager" | "storeManager" | "employee") => {
-    setPermissions(
-      permissions.map((p) =>
-        p.permCode === permCode ? { ...p, [role]: !p[role] } : p
-      )
-    );
-  };
-
+  // Bộ lọc
   const filteredAccounts = accounts.filter((acc) => {
-    const username = String(acc.username ?? "");
-    const fullName = String(acc.fullName ?? "");
-    const email = String(acc.email ?? "");
-    const normalizedSearch = search.toLowerCase();
+    const username = String(acc.username ?? "").toLowerCase();
+    const fullName = String(acc.fullName ?? "").toLowerCase();
+    const email = String(acc.email ?? "").toLowerCase();
+    const phone = String(acc.phone ?? "").toLowerCase();
+    const term = search.toLowerCase().trim();
+
     const matchSearch =
-      username.toLowerCase().includes(normalizedSearch) ||
-      fullName.toLowerCase().includes(normalizedSearch) ||
-      email.toLowerCase().includes(normalizedSearch);
+      !term ||
+      username.includes(term) ||
+      fullName.includes(term) ||
+      email.includes(term) ||
+      phone.includes(term);
+
     const matchRole = roleFilter === "ALL" || acc.roleCode === roleFilter;
-    return matchSearch && matchRole;
+    const matchStatus = statusFilter === "ALL" || acc.status === statusFilter;
+
+    return matchSearch && matchRole && matchStatus;
   });
+
+  const roleBadgeStyle = (code: UserRoleCode) => {
+    switch (code) {
+      case "ADMIN":
+        return "bg-red-50 text-red-700 border-red-200";
+      case "MANAGER":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "STORE_MANAGER":
+        return "bg-amber-50 text-amber-800 border-amber-200";
+      default:
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    }
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -409,29 +340,25 @@ export default function QuanLyTaiKhoanPage() {
             Quản lý tài khoản & Phân quyền hệ thống
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Thiết lập danh sách tài khoản người dùng, phân cấp quyền hạn theo 4 nhóm vai trò (RBAC) toàn chuỗi Ăn Vặt BLOAN.
+            Quản lý danh sách người dùng, cập nhật thông tin cá nhân và gán vai trò trực tiếp từ Backend Spring Boot.
           </p>
         </div>
+
         <div className="flex items-center gap-2.5">
           <button
             onClick={loadData}
             disabled={isLoadingApi}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
             title="Đồng bộ lại từ Backend Spring Boot"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingApi ? "animate-spin text-amber-600" : "text-slate-500"}`} />
-            <span className="hidden sm:inline">{isLoadingApi ? "Đang tải..." : "Tải lại API"}</span>
-          </button>
-          <button
-            onClick={() => setActiveSubTab(activeSubTab === "accounts" ? "matrix" : "accounts")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
-          >
-            <ShieldCheck className="w-4 h-4 text-amber-600" />
-            <span>{activeSubTab === "accounts" ? "Ma trận phân quyền" : "Danh sách tài khoản"}</span>
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${isLoadingApi ? "animate-spin text-amber-600" : "text-slate-500"}`}
+            />
+            <span>{isLoadingApi ? "Đang đồng bộ..." : "Tải lại dữ liệu"}</span>
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tạo tài khoản mới</span>
@@ -439,7 +366,23 @@ export default function QuanLyTaiKhoanPage() {
         </div>
       </div>
 
-      {/* 4 Stat Cards */}
+      {/* Thông báo lỗi kết nối nếu có */}
+      {apiError && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>Lỗi tải dữ liệu tài khoản từ backend: <strong>{apiError}</strong></span>
+          </div>
+          <button
+            onClick={loadData}
+            className="font-bold underline text-rose-800 hover:text-rose-900 cursor-pointer ml-4"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+
+      {/* 4 Thẻ Thống Kê (Dữ liệu thực tế từ backend) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
@@ -448,7 +391,7 @@ export default function QuanLyTaiKhoanPage() {
               {accounts.length}
             </div>
             <p className="text-[11px] text-emerald-600 mt-1 font-semibold">
-              {accounts.filter((a) => a.status === "ACTIVE").length} Đang hoạt động
+              {accounts.filter((a) => a.status === "ACTIVE").length} đang hoạt động
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
@@ -471,11 +414,11 @@ export default function QuanLyTaiKhoanPage() {
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500">Trưởng cửa hàng & Quản lý</span>
+            <span className="text-xs font-semibold text-slate-500">Quản lý & Trưởng CH</span>
             <div className="text-2xl sm:text-3xl font-black text-slate-800 mt-1 tracking-tight">
               {accounts.filter((a) => a.roleCode === "STORE_MANAGER" || a.roleCode === "MANAGER").length}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1 font-medium">Phụ trách 24 chi nhánh</p>
+            <p className="text-[11px] text-slate-400 mt-1 font-medium">Vận hành và quản lý ca</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <UserCheck className="w-5 h-5" />
@@ -484,7 +427,7 @@ export default function QuanLyTaiKhoanPage() {
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500">Tài khoản bị tạm khóa</span>
+            <span className="text-xs font-semibold text-slate-500">Tài khoản bị khóa</span>
             <div className="text-2xl sm:text-3xl font-black text-slate-800 mt-1 tracking-tight">
               {accounts.filter((a) => a.status === "LOCKED").length}
             </div>
@@ -496,274 +439,381 @@ export default function QuanLyTaiKhoanPage() {
         </div>
       </div>
 
-      {/* Sub Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
-        <button
-          onClick={() => setActiveSubTab("accounts")}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeSubTab === "accounts"
-              ? "bg-amber-500 text-slate-900 shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Danh sách tài khoản ({accounts.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveSubTab("matrix")}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeSubTab === "matrix"
-              ? "bg-amber-500 text-slate-900 shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Ma trận phân quyền (RBAC)</span>
-        </button>
-      </div>
-
-      {activeSubTab === "accounts" ? (
-        /* TAB 1: ACCOUNTS LIST */
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          {/* Filters */}
-          <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm username, họ tên, email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl outline-hidden hover:border-slate-300 focus:border-amber-400 transition-all font-medium text-slate-800"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300"
-              >
-                <option value="ALL">Tất cả vai trò</option>
-                <option value="ADMIN">ADMIN (Quản trị viên)</option>
-                <option value="MANAGER">MANAGER (Quản lý chuỗi)</option>
-                <option value="STORE_MANAGER">STORE_MANAGER (Trưởng CH)</option>
-                <option value="EMPLOYEE">EMPLOYEE (Nhân viên)</option>
-              </select>
-
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setRoleFilter("ALL");
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Đặt lại</span>
-              </button>
-            </div>
+      {/* DANH SÁCH TÀI KHOẢN VÀ THAO TÁC */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        {/* Bộ lọc & Tìm kiếm */}
+        <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm theo username, họ tên, email, sđt..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl outline-hidden hover:border-slate-300 focus:border-amber-400 transition-all font-medium text-slate-800"
+            />
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/60 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="px-5 py-3">Tài khoản & Người dùng</th>
-                  <th className="px-5 py-3">Vai trò hệ thống</th>
-                  <th className="px-5 py-3">Phạm vi gán</th>
-                  <th className="px-5 py-3">Liên hệ</th>
-                  <th className="px-5 py-3">Đăng nhập gần nhất</th>
-                  <th className="px-5 py-3 text-center">Trạng thái</th>
-                  <th className="px-5 py-3 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredAccounts.map((acc) => {
-                  const roleBadges: Record<UserRoleCode, { bg: string; text: string; border: string }> = {
-                    ADMIN: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },
-                    MANAGER: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
-                    STORE_MANAGER: { bg: "bg-amber-50", text: "text-amber-800", border: "border-amber-200" },
-                    EMPLOYEE: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-                  };
-                  const badge = roleBadges[acc.roleCode] || roleBadges.EMPLOYEE;
-
-                  return (
-                    <tr key={acc.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-black text-xs flex items-center justify-center border border-amber-200 shrink-0">
-                            {acc.username.slice(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-800 text-sm">{acc.fullName}</p>
-                            <p className="text-[11px] text-slate-400 font-mono mt-0.5">@{acc.username}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-black border ${badge.bg} ${badge.text} ${badge.border}`}
-                        >
-                          {acc.roleCode} · {acc.roleName}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 font-semibold text-slate-700">{acc.storeName}</td>
-                      <td className="px-5 py-4 text-slate-600">
-                        <p className="font-medium">{acc.email}</p>
-                        <p className="text-[11px] text-slate-400 font-mono">{acc.phone}</p>
-                      </td>
-                      <td className="px-5 py-4 text-slate-500 font-medium">{acc.lastLogin}</td>
-                      <td className="px-5 py-4 text-center">
-                        <button
-                          onClick={() => toggleStatus(acc.id)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border transition-all ${
-                            acc.status === "ACTIVE"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                              : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
-                          }`}
-                          title="Nhấn để đổi trạng thái"
-                        >
-                          {acc.status === "ACTIVE" ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>HOẠT ĐỘNG</span>
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="w-3 h-3" />
-                              <span>ĐÃ KHÓA</span>
-                            </>
-                          )}
-                        </button>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => alert(`Đặt lại mật khẩu tạm thời cho @${acc.username}: Bloan@2026`)}
-                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-amber-600 transition-colors"
-                            title="Reset mật khẩu"
-                          >
-                            <KeyRound className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => toggleStatus(acc.id)}
-                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-rose-600 transition-colors"
-                            title={acc.status === "ACTIVE" ? "Khóa tài khoản" : "Mở khóa"}
-                          >
-                            {acc.status === "ACTIVE" ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteAccount(acc.id)}
-                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-colors"
-                            title="Xóa tài khoản khỏi hệ thống"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        /* TAB 2: PERMISSION MATRIX */
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div>
-              <h3 className="font-bold text-slate-800 text-sm">Bảng phân quyền chi tiết (RBAC)</h3>
-              <p className="text-[11px] text-slate-400">
-                Tích chọn để cấp hoặc thu hồi quyền truy cập đối với từng vai trò người dùng trong hệ thống Ăn Vặt BLOAN.
-              </p>
-            </div>
-            <button
-              onClick={() => alert("Đã lưu cấu hình ma trận phân quyền RBAC thành công!")}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold transition-all shadow-xs"
+          <div className="flex flex-wrap items-center gap-2.5">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300"
             >
-              <Check className="w-4 h-4 stroke-[3]" />
-              <span>Lưu ma trận quyền</span>
+              <option value="ALL">Tất cả vai trò</option>
+              {roles.map((r) => (
+                <option key={r.roleId} value={r.roleCode}>
+                  {r.roleCode} ({r.roleName})
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="ACTIVE">Đang hoạt động</option>
+              <option value="LOCKED">Bị tạm khóa</option>
+            </select>
+
+            <button
+              onClick={() => {
+                setSearch("");
+                setRoleFilter("ALL");
+                setStatusFilter("ALL");
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Đặt lại</span>
             </button>
           </div>
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="px-5 py-3 w-1/3">Tính năng / Quyền hạn</th>
-                  <th className="px-5 py-3 text-center">
-                    <span className="text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">
-                      ADMIN
-                    </span>
-                  </th>
-                  <th className="px-5 py-3 text-center">
-                    <span className="text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
-                      MANAGER
-                    </span>
-                  </th>
-                  <th className="px-5 py-3 text-center">
-                    <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                      STORE_MANAGER
-                    </span>
-                  </th>
-                  <th className="px-5 py-3 text-center">
-                    <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                      EMPLOYEE
-                    </span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {permissions.map((p, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="font-bold text-slate-800">{p.name}</div>
-                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">{p.permCode}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">{p.desc}</div>
+        {/* Bảng dữ liệu */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/60 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <th className="px-5 py-3">Tài khoản & Người dùng</th>
+                <th className="px-5 py-3">Vai trò hệ thống</th>
+                <th className="px-5 py-3">Liên hệ</th>
+                <th className="px-5 py-3">Đăng nhập gần nhất</th>
+                <th className="px-5 py-3 text-center">Trạng thái</th>
+                <th className="px-5 py-3 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {filteredAccounts.map((acc) => {
+                const badgeClass = roleBadgeStyle(acc.roleCode);
+
+                return (
+                  <tr key={acc.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-black text-xs flex items-center justify-center border border-amber-200 shrink-0">
+                          {acc.username.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800 text-sm">@{acc.username}</p>
+                          <p className="text-[11px] text-slate-400 font-mono mt-0.5">ID: #{acc.id}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <input
-                        type="checkbox"
-                        checked={p.admin}
-                        onChange={() => togglePerm(p.permCode, "admin")}
-                        className="w-4 h-4 rounded accent-red-600 cursor-pointer"
-                      />
+
+                    <td className="px-5 py-4">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-black border ${badgeClass}`}
+                      >
+                        {acc.roleCode} · {acc.roleName}
+                      </span>
                     </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <input
-                        type="checkbox"
-                        checked={p.manager}
-                        onChange={() => togglePerm(p.permCode, "manager")}
-                        className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
-                      />
+
+                    <td className="px-5 py-4 text-slate-600">
+                      <p className="font-medium text-slate-800">{acc.email || "—"}</p>
+                      <p className="text-[11px] text-slate-400 font-mono">{acc.phone}</p>
                     </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <input
-                        type="checkbox"
-                        checked={p.storeManager}
-                        onChange={() => togglePerm(p.permCode, "storeManager")}
-                        className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
-                      />
+
+                    <td className="px-5 py-4 text-slate-500 font-medium">{acc.lastLogin}</td>
+
+                    <td className="px-5 py-4 text-center">
+                      <button
+                        onClick={() => handleToggleStatus(acc)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border transition-all cursor-pointer ${
+                          acc.status === "ACTIVE"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                        }`}
+                        title="Nhấn để đổi trạng thái"
+                      >
+                        {acc.status === "ACTIVE" ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>HOẠT ĐỘNG</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3" />
+                            <span>ĐÃ KHÓA</span>
+                          </>
+                        )}
+                      </button>
                     </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <input
-                        type="checkbox"
-                        checked={p.employee}
-                        onChange={() => togglePerm(p.permCode, "employee")}
-                        className="w-4 h-4 rounded accent-emerald-500 cursor-pointer"
-                      />
+
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {/* NÚT CHỈNH SỬA & GÁN QUYỀN HỆ THỐNG */}
+                        <button
+                          onClick={() => handleOpenEdit(acc)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition-colors cursor-pointer"
+                          title="Cập nhật thông tin & Gán quyền hệ thống"
+                        >
+                          <Edit className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Sửa & Gán quyền</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleToggleStatus(acc)}
+                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
+                          title={acc.status === "ACTIVE" ? "Khóa tài khoản" : "Mở khóa"}
+                        >
+                          {acc.status === "ACTIVE" ? (
+                            <Lock className="w-3.5 h-3.5" />
+                          ) : (
+                            <Unlock className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            alert(`Mật khẩu tạm thời cho @${acc.username} đã được cấp lại: Bloan@2026`)
+                          }
+                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-amber-600 transition-colors cursor-pointer"
+                          title="Cấp lại mật khẩu"
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteAccount(acc.id, acc.username)}
+                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-colors cursor-pointer"
+                          title="Xóa tài khoản khỏi hệ thống"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                );
+              })}
+
+              {filteredAccounts.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
+                    <Users className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+                    <p className="font-semibold text-sm text-slate-600">Không tìm thấy tài khoản nào</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {accounts.length === 0
+                        ? "Hệ thống chưa có dữ liệu tài khoản từ backend hoặc chưa kết nối được."
+                        : "Không có tài khoản nào phù hợp với bộ lọc tìm kiếm."}
+                    </p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* MODAL CẬP NHẬT THÔNG TIN & GÁN QUYỀN HỆ THỐNG (EDIT ACCOUNT)    */}
+      {/* ============================================================== */}
+      {editAccount && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header Modal */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center font-bold">
+                  <Edit className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm">
+                    Cập nhật tài khoản & Gán quyền hệ thống
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Tài khoản: <strong className="text-slate-700 font-mono">@{editAccount.username}</strong> (ID: #{editAccount.id})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditAccount(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateAccount} className="p-6 space-y-4 text-xs">
+              {/* Thông tin tài khoản */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Email liên hệ *
+                </label>
+                <div className="relative">
+                  <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="email@bloan.vn"
+                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Số điện thoại
+                  </label>
+                  <div className="relative">
+                    <Phone className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="0901234567"
+                      className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Trạng thái tài khoản
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as "ACTIVE" | "LOCKED")}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium text-slate-800 bg-white"
+                  >
+                    <option value="ACTIVE">HOẠT ĐỘNG (Bình thường)</option>
+                    <option value="LOCKED">ĐÃ KHÓA (Tạm ngưng)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* PHÂN QUYỀN HỆ THỐNG / GÁN VAI TRÒ */}
+              <div className="pt-2 border-t border-slate-100">
+                <label className="font-bold text-slate-800 flex items-center gap-1.5 mb-1.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-600" />
+                  <span>Gán vai trò / Phân quyền hệ thống (Role RBAC) *</span>
+                </label>
+                <select
+                  value={editRoleId}
+                  onChange={(e) => setEditRoleId(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-bold text-slate-800 bg-white"
+                >
+                  {roles.map((r) => (
+                    <option key={r.roleId} value={r.roleId}>
+                      {r.roleCode} — {r.roleName}
+                    </option>
+                  ))}
+                  {roles.length === 0 && (
+                    <>
+                      <option value={1}>ADMIN — Quản trị viên</option>
+                      <option value={2}>MANAGER — Quản lý chuỗi</option>
+                      <option value={3}>STORE_MANAGER — Trưởng cửa hàng</option>
+                      <option value={4}>EMPLOYEE — Nhân viên</option>
+                    </>
+                  )}
+                </select>
+
+                {/* Mô tả vai trò */}
+                <div className="mt-2 p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-[11px] text-amber-900 leading-relaxed">
+                  {editRoleId === 1 && (
+                    <p>
+                      <strong>ADMIN:</strong> Toàn quyền quản trị hệ thống, quản lý tài khoản, phân quyền, cấu hình thông số và truy cập toàn bộ API.
+                    </p>
+                  )}
+                  {editRoleId === 2 && (
+                    <p>
+                      <strong>MANAGER:</strong> Quản lý vận hành toàn chuỗi chi nhánh, xem danh sách nhân sự, chốt bảng lương và duyệt đề xuất ca làm.
+                    </p>
+                  )}
+                  {editRoleId === 3 && (
+                    <p>
+                      <strong>STORE_MANAGER:</strong> Xếp ca làm việc, đối soát chấm công, duyệt đổi ca nhân viên và lập biên bản trong phạm vi chi nhánh phụ trách.
+                    </p>
+                  )}
+                  {editRoleId >= 4 && (
+                    <p>
+                      <strong>EMPLOYEE:</strong> Nhân viên phục vụ/pha chế; chỉ xem lịch làm việc cá nhân, đăng ký ca mở, điểm danh FaceID và xem phiếu lương.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Chi nhánh phụ trách */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Phạm vi cơ sở / Chi nhánh
+                </label>
+                <div className="relative">
+                  <Building2 className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={editStore}
+                    onChange={(e) => setEditStore(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium text-slate-800 bg-white"
+                  >
+                    <option value="Toàn hệ thống BLOAN">Toàn hệ thống BLOAN (Áp dụng cho Admin/Manager)</option>
+                    {stores.map((s) => (
+                      <option key={s.id || s.storeId} value={s.storeName}>
+                        {s.storeName || s.storeCode}
+                      </option>
+                    ))}
+                    {stores.length === 0 && (
+                      <>
+                        <option value="BLOAN · Chi nhánh trung tâm">BLOAN · Chi nhánh trung tâm</option>
+                        <option value="BLOAN · Lê Lợi (Q1)">BLOAN · Lê Lợi (Q1)</option>
+                        <option value="BLOAN · Tú Xương (Q3)">BLOAN · Tú Xương (Q3)</option>
+                        <option value="BLOAN · Giga Mall (Thủ Đức)">BLOAN · Giga Mall (Thủ Đức)</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditAccount(null)}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* CREATE MODAL */}
+      {/* ============================================================== */}
+      {/* MODAL TẠO TÀI KHOẢN MỚI                                        */}
+      {/* ============================================================== */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -776,41 +826,32 @@ export default function QuanLyTaiKhoanPage() {
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:bg-slate-200 transition-colors"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-200 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleCreateAccount} className="p-6 space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Tên đăng nhập (Username) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="vd: store_quangtrung"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Họ và tên *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="vd: Nguyễn Văn A"
-                    value={newFullName}
-                    onChange={(e) => setNewFullName(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium"
-                  />
-                </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Tên đăng nhập (Username) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="vd: nguyenvana hoặc store_manager_q1"
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Email liên hệ *</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Email liên hệ *
+                  </label>
                   <input
                     type="email"
                     required
@@ -834,16 +875,27 @@ export default function QuanLyTaiKhoanPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Vai trò hệ thống *</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Vai trò hệ thống *
+                  </label>
                   <select
-                    value={newRole}
-                    onChange={(e) => setNewRole(e.target.value as UserRoleCode)}
+                    value={newRoleId}
+                    onChange={(e) => setNewRoleId(Number(e.target.value))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium bg-white"
                   >
-                    <option value="EMPLOYEE">EMPLOYEE (Nhân viên)</option>
-                    <option value="STORE_MANAGER">STORE_MANAGER (Trưởng CH)</option>
-                    <option value="MANAGER">MANAGER (Quản lý chuỗi)</option>
-                    <option value="ADMIN">ADMIN (Quản trị viên)</option>
+                    {roles.map((r) => (
+                      <option key={r.roleId} value={r.roleId}>
+                        {r.roleCode} — {r.roleName}
+                      </option>
+                    ))}
+                    {roles.length === 0 && (
+                      <>
+                        <option value={4}>EMPLOYEE (Nhân viên)</option>
+                        <option value={3}>STORE_MANAGER (Trưởng CH)</option>
+                        <option value={2}>MANAGER (Quản lý chuỗi)</option>
+                        <option value={1}>ADMIN (Quản trị viên)</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -852,14 +904,21 @@ export default function QuanLyTaiKhoanPage() {
                   <select
                     value={newStore}
                     onChange={(e) => setNewStore(e.target.value)}
-                    disabled={newRole === "ADMIN"}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium bg-white disabled:bg-slate-100"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium bg-white"
                   >
-                    <option value="BLOAN · Lê Lợi (Q1)">BLOAN · Lê Lợi (Q1)</option>
-                    <option value="BLOAN · Tú Xương (Q3)">BLOAN · Tú Xương (Q3)</option>
-                    <option value="BLOAN · Giga Mall (Thủ Đức)">BLOAN · Giga Mall</option>
-                    <option value="BLOAN · Crescent Mall (Q7)">BLOAN · Crescent Mall</option>
-                    <option value="BLOAN · Nguyễn Trãi (Hà Nội)">BLOAN · Nguyễn Trãi</option>
+                    <option value="Toàn hệ thống BLOAN">Toàn hệ thống BLOAN</option>
+                    {stores.map((s) => (
+                      <option key={s.id || s.storeId} value={s.storeName}>
+                        {s.storeName || s.storeCode}
+                      </option>
+                    ))}
+                    {stores.length === 0 && (
+                      <>
+                        <option value="BLOAN · Chi nhánh trung tâm">BLOAN · Chi nhánh trung tâm</option>
+                        <option value="BLOAN · Lê Lợi (Q1)">BLOAN · Lê Lợi (Q1)</option>
+                        <option value="BLOAN · Tú Xương (Q3)">BLOAN · Tú Xương (Q3)</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
@@ -868,7 +927,7 @@ export default function QuanLyTaiKhoanPage() {
                 <p className="font-bold text-amber-900">Mật khẩu khởi tạo mặc định:</p>
                 <p className="font-mono text-xs text-amber-950 font-bold mt-0.5">Bloan@2026</p>
                 <p className="text-[11px] text-amber-800 mt-1">
-                  Nhân viên sẽ được yêu cầu đổi mật khẩu trong lần đăng nhập đầu tiên.
+                  Nhân viên có thể đổi mật khẩu sau khi đăng nhập lần đầu vào hệ thống.
                 </p>
               </div>
 
@@ -876,15 +935,17 @@ export default function QuanLyTaiKhoanPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold transition-all shadow-xs"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  Tạo tài khoản
+                  {isSubmitting ? "Đang tạo..." : "Tạo tài khoản"}
                 </button>
               </div>
             </form>

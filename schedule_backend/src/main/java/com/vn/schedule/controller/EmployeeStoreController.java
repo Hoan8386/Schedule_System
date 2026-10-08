@@ -22,8 +22,12 @@ public class EmployeeStoreController {
 
     @GetMapping
     @ApiMessage("Lấy danh sách dữ liệu")
-    public ResponseEntity<List<EmployeeStoreResponse>> list() {
-        return ResponseEntity.ok(responses(service.findAll()));
+    public ResponseEntity<List<EmployeeStoreResponse>> list(
+            @RequestParam(required = false) Integer storeId,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean primary) {
+        return ResponseEntity.ok(responses(service.findByFilters(storeId, role, status, primary)));
     }
 
     @GetMapping("/{id}")

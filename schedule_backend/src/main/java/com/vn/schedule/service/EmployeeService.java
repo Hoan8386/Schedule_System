@@ -6,6 +6,7 @@ import com.vn.schedule.repository.EmployeeRepository;
 import com.vn.schedule.repository.UserRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.dto.EmployeeRequest;
+import com.vn.schedule.dto.EmployeeResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,29 +22,32 @@ public class EmployeeService {
         this.userRepository = userRepository;
     }
 
-    public List<Employee> findAll() {
-        return repository.findAll();
+    public List<EmployeeResponse> findAll(String status) {
+        List<Employee> employees = status == null
+                ? repository.findAll()
+                : repository.findByStatusOrderByFullName(status);
+        return employees.stream().map(this::toResponse).toList();
     }
 
-    public Employee findById(Integer id) {
+    public Employee findEntityById(Integer id) {
         return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
     }
 
     @Transactional
-    public Employee create(EmployeeRequest body) {
-        return repository.save(toEntity(body));
+    public EmployeeResponse create(EmployeeRequest body) {
+        return toResponse(repository.save(toEntity(body)));
     }
 
     @Transactional
-    public Employee update(Integer id, EmployeeRequest body) {
-        Employee current = findById(id);
+    public EmployeeResponse update(Integer id, EmployeeRequest body) {
+        Employee current = findEntityById(id);
         applyFields(current, body);
-        return repository.save(current);
+        return toResponse(repository.save(current));
     }
 
     @Transactional
     public void delete(Integer id) {
-        repository.delete(findById(id));
+        repository.delete(findEntityById(id));
     }
 
     @Transactional
@@ -54,6 +58,10 @@ public class EmployeeService {
     @Transactional
     public void deleteBody(EmployeeRequest body) {
         repository.delete(toEntity(body));
+    }
+
+    public EmployeeResponse findById(Integer id) {
+        return toResponse(findEntityById(id));
     }
     private Employee toEntity(EmployeeRequest body) {
         Employee entity = new Employee();
@@ -92,5 +100,25 @@ public class EmployeeService {
         }
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
+    private EmployeeResponse toResponse(Employee employee) {
+        return new EmployeeResponse(
+                employee.getId(),
+                employee.getUser() == null ? null : employee.getUser().getId(),
+                employee.getEmployeeCode(),
+                employee.getFullName(),
+                employee.getDateOfBirth(),
+                employee.getGender(),
+                employee.getEmail(),
+                employee.getPhone(),
+                employee.getAddress(),
+                employee.getIdCardFrontId(),
+                employee.getIdCardBackId(),
+                employee.getHireDate(),
+                employee.getStatus(),
+                employee.getNote(),
+                employee.getCreatedAt(),
+                employee.getUpdatedAt());
     }
 }
