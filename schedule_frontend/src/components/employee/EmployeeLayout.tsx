@@ -51,7 +51,7 @@ const menuItems: MenuItem[] = [
 ];
 
 export default function EmployeeLayout() {
-  const { user, logout, switchRole } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -250,39 +250,6 @@ export default function EmployeeLayout() {
                     <p className="text-[11px] text-slate-400">
                       {user?.email || "minhanh.nv024@bloan.vn"}
                     </p>
-                  </div>
-
-                  <div className="p-1 border-b border-slate-100">
-                    <p className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase">
-                      Chuyển chế độ xem (Demo)
-                    </p>
-                    <button
-                      onClick={() => {
-                        switchRole("ADMIN");
-                        setIsProfileOpen(false);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-100 rounded-lg text-slate-700 flex items-center justify-between"
-                    >
-                      <span>1. Quản trị viên (ADMIN)</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        switchRole("MANAGER");
-                        setIsProfileOpen(false);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-100 rounded-lg text-slate-700 flex items-center justify-between"
-                    >
-                      <span>2. Quản lý chuỗi (MANAGER)</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        switchRole("STORE_MANAGER");
-                        setIsProfileOpen(false);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-100 rounded-lg text-slate-700 flex items-center justify-between"
-                    >
-                      <span>3. Trưởng cửa hàng</span>
-                    </button>
                   </div>
 
                   <div className="p-1">

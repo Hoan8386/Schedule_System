@@ -22,12 +22,19 @@ export default function LichPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [modal, setModal] = useState<{ kind: Kind; item?: Record<string, unknown> } | null>(null);
+  const [filters, setFilters] = useState({ q: "", from: "", to: "", storeId: "", status: "" });
 
   const load = async () => {
     setLoading(true); setError("");
     try {
       const [periodResponse, shiftResponse, dateResponse, assignmentResponse, storeResponse, employeeResponse] = await Promise.all([
-        managerApi.getSchedulePeriods(), managerApi.getShifts(), managerApi.getShiftsByDate(), managerApi.getShiftAssignments(),
+        managerApi.getSchedulePeriods(), managerApi.getShifts(), managerApi.getShiftsByDate({
+          q: filters.q || undefined,
+          from: filters.from || undefined,
+          to: filters.to || undefined,
+          storeId: filters.storeId ? Number(filters.storeId) : undefined,
+          status: filters.status || undefined,
+        }), managerApi.getShiftAssignments(),
         managerApi.getStores(), managerApi.getEmployees("ACTIVE"),
       ]);
       setPeriods(periodResponse.data ?? []); setShifts(shiftResponse.data ?? []); setShiftDates(dateResponse.data ?? []);
@@ -35,7 +42,7 @@ export default function LichPage() {
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu lịch"); }
     finally { setLoading(false); }
   };
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [filters]);
 
   const remove = async (kind: Kind, id: number) => {
     if (!id || !window.confirm("Bạn có chắc muốn xóa dữ liệu này?")) return;
@@ -93,6 +100,21 @@ export default function LichPage() {
 
   return <div className="mx-auto max-w-7xl space-y-6 p-6">{form}<header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h1 className="text-2xl font-black text-slate-800">Quản lý lịch & ca làm việc</h1><p className="mt-1 text-xs text-slate-500">Dữ liệu trực tiếp từ API Module 3.</p></div><button onClick={() => void load()} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Làm mới</button></header>
     {error && <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700"><AlertCircle className="h-4 w-4" />{error}</div>}
+    <section className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+      <label className="min-w-56 flex-1 text-xs font-semibold text-slate-600">Tìm ca
+        <input value={filters.q} onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))} placeholder="Tên ca hoặc mã ca" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-amber-400" />
+      </label>
+      <label className="text-xs font-semibold text-slate-600">Từ ngày
+        <input type="date" value={filters.from} onChange={(event) => setFilters((current) => ({ ...current, from: event.target.value }))} className="mt-1 rounded-xl border border-slate-200 px-3 py-2 text-sm" />
+      </label>
+      <label className="text-xs font-semibold text-slate-600">Đến ngày
+        <input type="date" value={filters.to} onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))} className="mt-1 rounded-xl border border-slate-200 px-3 py-2 text-sm" />
+      </label>
+      <label className="text-xs font-semibold text-slate-600">Trạng thái
+        <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))} className="mt-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Tất cả</option><option value="ACTIVE">Đang hoạt động</option><option value="INACTIVE">Ngừng hoạt động</option></select>
+      </label>
+      <button type="button" onClick={() => setFilters({ q: "", from: "", to: "", storeId: "", status: "" })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Xóa bộ lọc</button>
+    </section>
     <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"><div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4"><Calendar className="h-4 w-4 text-amber-600" /><h2 className="text-sm font-bold text-slate-800">Kỳ lập lịch ({periods.length})</h2>{add("period")}</div><div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-slate-50 text-[11px] uppercase text-slate-400"><tr><th className="px-5 py-3">Tên kỳ</th><th className="px-5 py-3">Thời gian</th><th className="px-5 py-3">Trạng thái</th><th /></tr></thead><tbody className="divide-y divide-slate-100">{periods.map((item) => <tr key={idOf(item as Record<string, unknown>)}><td className="px-5 py-4 font-bold">{text(item.periodName)}</td><td className="px-5 py-4">{date(item.startDate)} – {date(item.endDate)}</td><td className="px-5 py-4">{text(item.status)}</td><td className="px-5 py-4">{actions("period", item as Record<string, unknown>)}</td></tr>)}</tbody></table></div></section>
     <div className="grid gap-5 lg:grid-cols-2"><section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"><div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4"><Clock className="h-4 w-4 text-blue-600" /><h2 className="text-sm font-bold">Ca mẫu ({shifts.length})</h2>{add("shift")}</div><div className="divide-y divide-slate-100">{shifts.map((item) => <div key={idOf(item as Record<string, unknown>)} className="flex items-center justify-between gap-3 px-5 py-4"><div><p className="text-sm font-bold">{text(item.shiftName, text(item.shiftCode))}</p><p className="text-xs text-slate-500">{timeRange(item.startTime, item.endTime)}</p></div>{actions("shift", item as Record<string, unknown>)}</div>)}</div></section>
       <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"><div className="flex items-center border-b border-slate-100 px-5 py-4"><h2 className="text-sm font-bold">Ca theo ngày ({shiftDates.length})</h2>{add("shiftDate")}</div><div className="divide-y divide-slate-100">{shiftDates.map((item) => <div key={idOf(item as Record<string, unknown>)} className="flex items-center justify-between gap-3 px-5 py-4"><div><p className="text-sm font-bold">{text(item.shiftName, `Ca #${text(item.shiftId)}`)}</p><p className="text-xs text-slate-500">{date(item.workDate)} · {timeRange(item.startTime, item.endTime)}</p></div>{actions("shiftDate", item as Record<string, unknown>)}</div>)}</div></section></div>

@@ -2,7 +2,6 @@ package com.vn.schedule.util;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,17 +24,33 @@ import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.util.Base64;
 import com.vn.schedule.dto.response.ResLoginDTO;
+import com.vn.schedule.domain.Permission;
+import com.vn.schedule.domain.RolePermission;
+import com.vn.schedule.domain.UserRole;
+import com.vn.schedule.repository.PermissionRepository;
+import com.vn.schedule.repository.RolePermissionRepository;
+import com.vn.schedule.repository.UserRoleRepository;
 
 @Service
 public class SecurityUtil {
 
     private final JwtEncoder jwtEncoder;
+    private final UserRoleRepository userRoleRepository;
+    private final RolePermissionRepository rolePermissionRepository;
+    private final PermissionRepository permissionRepository;
     private static final String REFRESH_TOKEN_TYPE = "refresh";
     private static final String PASSWORD_RESET_TOKEN_TYPE = "password_reset";
     private static final String CONFIRMATION_TOKEN_TYPE = "account_confirmation";
 
-    public SecurityUtil(JwtEncoder jwtEncoder) {
+    public SecurityUtil(
+            JwtEncoder jwtEncoder,
+            UserRoleRepository userRoleRepository,
+            RolePermissionRepository rolePermissionRepository,
+            PermissionRepository permissionRepository) {
         this.jwtEncoder = jwtEncoder;
+        this.userRoleRepository = userRoleRepository;
+        this.rolePermissionRepository = rolePermissionRepository;
+        this.permissionRepository = permissionRepository;
     }
 
     public static final MacAlgorithm JWT_ALGORITHM = MacAlgorithm.HS512;
@@ -61,11 +76,25 @@ public class SecurityUtil {
         Instant now = Instant.now();
         Instant validity = now.plus(this.accessTokenExpiration, ChronoUnit.SECONDS);
 
-        // hardcode permission (for testing)
-        List<String> listAuthority = new ArrayList<String>();
+        List<Integer> roleIds = userRoleRepository.findByUserId(Math.toIntExact(dto.getUser().getId()))
+            .stream()
+            .map(UserRole::getRoleId)
+            .toList();
 
-        listAuthority.add("ROLE_USER_CREATE");
-        listAuthority.add("ROLE_USER_UPDATE");
+        List<Integer> permissionIds = roleIds.isEmpty()
+            ? List.of()
+            : rolePermissionRepository.findByRoleIdIn(roleIds)
+                .stream()
+                .map(RolePermission::getPermissionId)
+                .distinct()
+                .toList();
+
+        List<String> listAuthority = permissionIds.isEmpty()
+            ? List.of()
+            : permissionRepository.findByPermissionIdIn(permissionIds)
+                .stream()
+                .map(Permission::getPermissionCode)
+                .toList();
 
         // @formatter:off
         JwtClaimsSet claims = JwtClaimsSet.builder()

@@ -10,6 +10,7 @@ import com.vn.schedule.dto.response.*;
 import com.vn.schedule.service.ShiftByDateService;
 
 import java.util.List;
+import java.time.LocalDate;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
@@ -23,8 +24,13 @@ public class ShiftByDateController {
 
     @GetMapping
     @ApiMessage("Lấy danh sách dữ liệu")
-    public ResponseEntity<List<ShiftByDateResponse>> list() {
-        return ResponseEntity.ok(service.findAll());
+    public ResponseEntity<List<ShiftByDateResponse>> list(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to,
+            @RequestParam(required = false) Integer storeId,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(service.findAll(q, from, to, storeId, status));
     }
 
     @GetMapping("/{id}")

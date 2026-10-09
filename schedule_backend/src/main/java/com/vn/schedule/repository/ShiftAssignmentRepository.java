@@ -10,4 +10,3 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
     List<ShiftAssignment> findByEmployeeIdOrderByRegisteredAtDesc(Integer employeeId);
     List<ShiftAssignment> findByShiftByDateId(Integer shiftByDateId);
 }
-

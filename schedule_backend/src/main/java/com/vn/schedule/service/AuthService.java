@@ -12,6 +12,8 @@ import com.vn.schedule.dto.request.AuthRegisterRequest;
 import com.vn.schedule.dto.request.AuthResetPasswordRequest;
 import com.vn.schedule.dto.response.ResLoginDTO;
 import com.vn.schedule.repository.UserRepository;
+import com.vn.schedule.repository.RoleRepository;
+import com.vn.schedule.repository.UserRoleRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.util.SecurityUtil;
 
@@ -23,6 +25,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityUtil securityUtil;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
 
     @Transactional
     public User register(AuthRegisterRequest request) {
@@ -118,8 +122,21 @@ public class AuthService {
 
     private ResLoginDTO tokens(User user) {
         ResLoginDTO dto = new ResLoginDTO();
-        dto.setUser(new ResLoginDTO.UserLogin(user.getId(), user.getUsername(), user.getEmail(),
-                user.getPhone(), user.getStatus()));
+        ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin();
+        userLogin.setId(user.getId());
+        userLogin.setUsername(user.getUsername());
+        userLogin.setEmail(user.getEmail());
+        userLogin.setPhone(user.getPhone());
+        userLogin.setStatus(user.getStatus());
+        userRoleRepository.findByUserId(user.getId()).stream()
+                .findFirst()
+                .flatMap(userRole -> roleRepository.findById(userRole.getRoleId()))
+                .ifPresent(role -> {
+                    userLogin.setRoleId(role.getRoleId());
+                    userLogin.setRoleCode(role.getRoleCode());
+                    userLogin.setRoleName(role.getRoleName());
+                });
+        dto.setUser(userLogin);
         dto.setAccessToken(securityUtil.createAccessToken(user.getEmail(), dto));
         dto.setRefreshToken(securityUtil.createRefreshToken(user.getEmail(), dto));
         return dto;

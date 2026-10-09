@@ -38,7 +38,7 @@ const adminMenuItems: MenuItem[] = [
 ];
 
 export default function AdminLayout() {
-  const { user, logout, switchRole } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("taikhoan");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -248,55 +248,6 @@ export default function AdminLayout() {
                     <span className="mt-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
                       Vai trò: ADMIN (Quản trị viên)
                     </span>
-                  </div>
-
-                  {/* Switch Demo Roles */}
-                  <div className="p-2 border-b border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-1">
-                      Chuyển đổi giao diện Demo:
-                    </p>
-                    <div className="space-y-1">
-                      <button
-                        onClick={() => {
-                          switchRole("ADMIN");
-                          setIsProfileOpen(false);
-                        }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-800 font-bold transition-colors flex items-center justify-between"
-                      >
-                        <span>1. Quản trị viên (ADMIN)</span>
-                        <span className="text-[10px] text-amber-700 font-bold">Hiện tại</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          switchRole("MANAGER");
-                          setIsProfileOpen(false);
-                        }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-700 font-medium transition-colors flex items-center justify-between"
-                      >
-                        <span>2. Quản lý chuỗi (MANAGER)</span>
-                        <span className="text-[10px] text-slate-400">Vận hành</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          switchRole("STORE_MANAGER");
-                          setIsProfileOpen(false);
-                        }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-700 font-medium transition-colors flex items-center justify-between"
-                      >
-                        <span>3. Trưởng cửa hàng</span>
-                        <span className="text-[10px] text-slate-400">Quản lý ca</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          switchRole("EMPLOYEE");
-                          setIsProfileOpen(false);
-                        }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-700 font-medium transition-colors flex items-center justify-between"
-                      >
-                        <span>4. Nhân viên</span>
-                        <span className="text-[10px] text-slate-400">Xem ca & đăng ký</span>
-                      </button>
-                    </div>
                   </div>
 
                   <button

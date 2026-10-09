@@ -153,6 +153,8 @@ export interface ShiftByDateResponse {
   payRate?: number | null;
   status?: string | null;
   managerNote?: string | null;
+  storeId?: number | null;
+  storeName?: string | null;
   [key: string]: unknown;
 }
 
@@ -389,8 +391,24 @@ export const managerApi = {
     requestManagerApi<ShiftResponse>(`/api/v1/shift/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteShift: (id: number) =>
     requestManagerApi<void>(`/api/v1/shift/${id}`, { method: "DELETE" }),
-  getShiftsByDate: () =>
-    requestManagerApi<ShiftByDateResponse[]>("/api/v1/shift_by_date"),
+  getShiftsByDate: (filters?: {
+    q?: string;
+    from?: string;
+    to?: string;
+    storeId?: number;
+    status?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.q) params.set("q", filters.q);
+    if (filters?.from) params.set("from", filters.from);
+    if (filters?.to) params.set("to", filters.to);
+    if (filters?.storeId) params.set("storeId", String(filters.storeId));
+    if (filters?.status) params.set("status", filters.status);
+    const query = params.toString();
+    return requestManagerApi<ShiftByDateResponse[]>(
+      `/api/v1/shift_by_date${query ? `?${query}` : ""}`,
+    );
+  },
   createShiftByDate: (body: Record<string, unknown>) =>
     requestManagerApi<ShiftByDateResponse>("/api/v1/shift_by_date", { method: "POST", body: JSON.stringify(body) }),
   updateShiftByDate: (id: number, body: Record<string, unknown>) =>

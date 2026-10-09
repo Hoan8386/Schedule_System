@@ -54,7 +54,7 @@ const menuItems: MenuItem[] = [
 ];
 
 export default function StoreManagerLayout() {
-  const { user, logout, switchRole } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -219,39 +219,6 @@ export default function StoreManagerLayout() {
                     <p className="text-[11px] text-slate-400">
                       {user?.email || "thuha@bloan.vn"}
                     </p>
-                  </div>
-
-                  <div className="p-1 border-b border-slate-100">
-                    <p className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase">
-                      Chuyển chế độ xem (Demo)
-                    </p>
-                    <button
-                      onClick={() => {
-                        switchRole("ADMIN");
-                        setIsProfileOpen(false);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-100 rounded-lg text-slate-700"
-                    >
-                      1. Quản trị viên (ADMIN)
-                    </button>
-                    <button
-                      onClick={() => {
-                        switchRole("MANAGER");
-                        setIsProfileOpen(false);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-100 rounded-lg text-slate-700"
-                    >
-                      2. Quản lý chuỗi (MANAGER)
-                    </button>
-                    <button
-                      onClick={() => {
-                        switchRole("EMPLOYEE");
-                        setIsProfileOpen(false);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-100 rounded-lg text-slate-700"
-                    >
-                      4. Nhân viên (EMPLOYEE)
-                    </button>
                   </div>
 
                   <div className="p-1">
