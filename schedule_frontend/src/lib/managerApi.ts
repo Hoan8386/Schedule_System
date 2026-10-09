@@ -376,8 +376,24 @@ export const managerApi = {
       data: (json && "data" in json ? json.data : json) as AttachmentResponse,
     };
   },
-  getSchedulePeriods: () =>
-    requestManagerApi<SchedulePeriodResponse[]>("/api/v1/schedule_period"),
+  getSchedulePeriods: (filters?: {
+    q?: string;
+    from?: string;
+    to?: string;
+    storeId?: number;
+    status?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.q) params.set("q", filters.q);
+    if (filters?.from) params.set("from", filters.from);
+    if (filters?.to) params.set("to", filters.to);
+    if (filters?.storeId !== undefined) params.set("storeId", String(filters.storeId));
+    if (filters?.status) params.set("status", filters.status);
+    const query = params.toString();
+    return requestManagerApi<SchedulePeriodResponse[]>(
+      `/api/v1/schedule_period${query ? `?${query}` : ""}`,
+    );
+  },
   createSchedulePeriod: (body: Record<string, unknown>) =>
     requestManagerApi<SchedulePeriodResponse>("/api/v1/schedule_period", { method: "POST", body: JSON.stringify(body) }),
   updateSchedulePeriod: (id: number, body: Record<string, unknown>) =>

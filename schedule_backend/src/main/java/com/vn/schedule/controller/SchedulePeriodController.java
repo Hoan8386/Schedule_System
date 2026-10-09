@@ -4,12 +4,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.vn.schedule.domain.SchedulePeriod;
 import com.vn.schedule.dto.*;
 import com.vn.schedule.dto.request.*;
 import com.vn.schedule.dto.response.*;
 import com.vn.schedule.service.SchedulePeriodService;
 
+import java.time.LocalDate;
 import java.util.List;
 import com.vn.schedule.util.anotation.ApiMessage;
 
@@ -24,8 +24,13 @@ public class SchedulePeriodController {
 
     @GetMapping
     @ApiMessage("Lấy danh sách dữ liệu")
-    public ResponseEntity<List<SchedulePeriodResponse>> list() {
-        return ResponseEntity.ok(responses(service.findAll()));
+    public ResponseEntity<List<SchedulePeriodResponse>> list(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to,
+            @RequestParam(required = false) Integer storeId,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(responses(service.findAll(q, from, to, storeId, status)));
     }
 
     @GetMapping("/{id}")
