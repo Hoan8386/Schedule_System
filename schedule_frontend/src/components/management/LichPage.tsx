@@ -237,12 +237,37 @@ export default function LichPage() {
     return calendarMap.get(key)?.items ?? [];
   };
 
+  const shiftIdOf = (item: ShiftByDateResponse) =>
+    Number(item.id ?? item.shiftByDateId ?? 0);
+
+  const employeesForShift = (item: ShiftByDateResponse) =>
+    assignmentsByShiftDate.get(shiftIdOf(item)) ?? [];
+
+  const shiftStartHour = (item: ShiftByDateResponse) => {
+    const value = String(item.startTime ?? "").trim();
+    const hour = Number.parseInt(value.split(":")[0] ?? "", 10);
+    if (Number.isFinite(hour)) return hour;
+
+    const name = String(item.shiftName ?? "").toLowerCase();
+    if (name.includes("sáng")) return 8;
+    if (name.includes("chiều")) return 14;
+    if (name.includes("tối")) return 18;
+    return -1;
+  };
+
+  const shiftSlot = (item: ShiftByDateResponse) => {
+    const hour = shiftStartHour(item);
+    if (hour >= 16) return 2;
+    if (hour >= 12) return 1;
+    return 0;
+  };
+
   const openCalendarDetail = (day: Date, items = shiftDetails(day)) => {
     setCalendarDetail({
       date: day.toLocaleDateString("vi-VN"),
       items: items.map((entry) => {
-        const entryId = Number(entry.id ?? entry.shiftByDateId ?? 0);
-        const assignmentsForShift = assignmentsByShiftDate.get(entryId) ?? [];
+        const entryId = shiftIdOf(entry);
+        const assignmentsForShift = employeesForShift(entry);
         return {
           shiftByDateId: entryId,
           title: text(entry.shiftName, `Ca #${entry.shiftId ?? entry.shiftByDateId ?? ""}`),
@@ -784,10 +809,8 @@ export default function LichPage() {
                     const isCurrentMonth = day.getMonth() === calendarCursor.getMonth();
                     const isToday = day.toDateString() === new Date().toDateString();
                     return (
-                      <button
+                      <div
                         key={day.toISOString()}
-                        type="button"
-                        onClick={() => openCalendarDetail(day)}
                         className={`min-h-32 border-b border-r border-slate-200 p-2 text-left align-top transition hover:bg-amber-50/60 sm:min-h-36 ${!isCurrentMonth ? "bg-slate-50/70 text-slate-400" : "bg-white"} ${day.getDay() === 0 ? "border-r-0" : ""}`}
                       >
                         <div className="flex items-center justify-between">
@@ -795,21 +818,26 @@ export default function LichPage() {
                           {items.length > 0 && <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">{items.length} ca</span>}
                         </div>
                         <div className="mt-2 space-y-1">
-                          {items.slice(0, 3).map((item) => {
+                          {items.map((item) => {
                             const status = String(item.status ?? "").toUpperCase();
                             const pending = status.includes("PENDING") || status.includes("WAIT");
                             const changed = status.includes("CHANGE") || status.includes("SWAP");
                             return (
-                              <div key={Number(item.id ?? item.shiftByDateId ?? 0)} className={`rounded-md border px-1.5 py-1.5 ${changed ? "border-amber-300 bg-amber-50" : pending ? "border-dashed border-slate-300 bg-slate-50" : "border-slate-200 bg-slate-50"}`}>
+                              <button
+                                key={shiftIdOf(item)}
+                                type="button"
+                                onClick={() => openCalendarDetail(day, [item])}
+                                className={`block w-full rounded-md border px-1.5 py-1.5 text-left transition hover:border-amber-400 hover:shadow-sm ${changed ? "border-amber-300 bg-amber-50" : pending ? "border-dashed border-slate-300 bg-slate-50" : "border-slate-200 bg-slate-50"}`}
+                              >
                                 <p className="truncate text-[10px] font-bold text-slate-800">{timeRange(item.startTime, item.endTime)}</p>
                                 <p className="truncate text-[9px] text-slate-500">{text(item.shiftName, `Ca #${item.shiftId}`)}</p>
-                              </div>
+                                <p className="mt-1 text-[9px] font-bold text-blue-600">{employeesForShift(item).length} nhân viên</p>
+                              </button>
                             );
                           })}
-                          {items.length > 3 && <p className="px-1 text-[9px] font-bold text-slate-400">+{items.length - 3} ca khác</p>}
                           {items.length === 0 && isCurrentMonth && <p className="mt-3 text-[9px] text-slate-300">Chưa có ca</p>}
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -833,22 +861,25 @@ export default function LichPage() {
                         <p className="mt-1 text-[9px] text-slate-400">{["08:00", "14:00", "16:00"][slotIndex]}</p>
                       </div>
                       {calendarDays.map((day) => {
-                        const items = shiftDetails(day).filter((item) => {
-                          const start = Number(String(item.startTime ?? "0").split(":")[0]);
-                          return slotIndex === 0 ? start < 12 : slotIndex === 1 ? start >= 12 && start < 16 : start >= 16;
-                        });
+                        const items = shiftDetails(day).filter((item) => shiftSlot(item) === slotIndex);
                         return (
-                          <button key={`${slot}-${day.toISOString()}`} type="button" onClick={() => openCalendarDetail(day, items)} className="border-r border-slate-200 p-2 text-left hover:bg-amber-50/50">
+                          <div key={`${slot}-${day.toISOString()}`} className="border-r border-slate-200 p-2 text-left hover:bg-amber-50/50">
                             <div className="space-y-2">
                               {items.map((item) => (
-                                <div key={Number(item.id ?? item.shiftByDateId ?? 0)} className="rounded-lg border border-slate-200 bg-white p-2 shadow-xs">
+                                <button
+                                  key={shiftIdOf(item)}
+                                  type="button"
+                                  onClick={() => openCalendarDetail(day, [item])}
+                                  className="block w-full rounded-lg border border-slate-200 bg-white p-2 text-left shadow-xs transition hover:border-amber-400 hover:shadow-sm"
+                                >
                                   <p className="text-[10px] font-black text-slate-800">{text(item.shiftName, slot)}</p>
                                   <p className="mt-1 text-[10px] font-bold text-slate-700">{timeRange(item.startTime, item.endTime)}</p>
+                                  <p className="mt-1 text-[10px] font-bold text-blue-600">{employeesForShift(item).length} nhân viên</p>
                                   <p className="mt-1 truncate text-[9px] text-slate-500">{text(stores.find((store) => Number(store.id) === Number(item.storeId))?.storeName, "Theo cửa hàng")}</p>
-                                </div>
+                                </button>
                               ))}
                             </div>
-                          </button>
+                          </div>
                         );
                       })}
                     </div>

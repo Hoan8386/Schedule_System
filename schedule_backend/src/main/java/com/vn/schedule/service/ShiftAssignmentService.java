@@ -9,7 +9,8 @@ import com.vn.schedule.repository.ShiftByDateRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.dto.request.ShiftAssignmentRequest;
 import java.time.LocalDateTime;
-
+import com.vn.schedule.dto.response.ShiftAssignmentResponse;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,8 +30,33 @@ public class ShiftAssignmentService {
         this.shiftByDateRepository = shiftByDateRepository;
     }
 
-    public List<ShiftAssignment> findAll() {
-        return repository.findAll();
+    public List<ShiftAssignmentResponse> findAll() {
+    return repository.findAll().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    private ShiftAssignmentResponse toResponse(ShiftAssignment entity) {
+        ShiftAssignmentResponse response = new ShiftAssignmentResponse();
+
+        response.setId(entity.getId());
+
+        if (entity.getShiftByDate() != null) {
+            response.setShiftByDateId(entity.getShiftByDate().getId());
+        }
+
+        if (entity.getEmployee() != null) {
+            response.setEmployeeId(entity.getEmployee().getId());
+        }
+
+        response.setStatus(entity.getStatus());
+        response.setRegisteredAt(entity.getRegisteredAt());
+        response.setApprovedAt(entity.getApprovedAt());
+        response.setCancelledAt(entity.getCancelledAt());
+        response.setCancellationReason(entity.getCancellationReason());
+        response.setNote(entity.getNote());
+
+        return response;
     }
 
     public ShiftAssignment findById(Integer id) {

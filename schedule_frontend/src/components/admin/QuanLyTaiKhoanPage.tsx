@@ -330,17 +330,14 @@ export default function QuanLyTaiKhoanPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg">
-              ADMIN CENTER
-            </span>
-            <span className="text-slate-400 text-xs">/</span>
+      
             <span className="text-slate-500 text-xs font-semibold">Bảo mật & Người dùng</span>
           </div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight mt-1">
             Quản lý tài khoản & Phân quyền hệ thống
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Quản lý danh sách người dùng, cập nhật thông tin cá nhân và gán vai trò trực tiếp từ Backend Spring Boot.
+            Quản lý danh sách người dùng, cập nhật thông tin cá nhân và gán vai trò trực tiếp.
           </p>
         </div>
 

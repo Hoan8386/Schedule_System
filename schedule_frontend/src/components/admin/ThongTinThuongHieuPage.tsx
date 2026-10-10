@@ -71,7 +71,7 @@ export default function ThongTinThuongHieuPage() {
             <span className="text-slate-500 text-xs font-semibold">Tùy biến nhận diện</span>
           </div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight mt-1">
-            Quản lý thông tin chuỗi & Nhận diện thương hiệu
+            Quản lý chuỗi cửa hàng
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Cấu hình Logo, màu sắc chủ đạo, thông điệp thương hiệu và thông tin pháp lý của toàn hệ thống Ăn Vặt BLOAN.

@@ -31,7 +31,7 @@ interface MenuItem {
 
 const adminMenuItems: MenuItem[] = [
   { id: "taikhoan", label: "Quản lý tài khoản (phân quyền)", icon: ShieldCheck, badge: "RBAC" },
-  { id: "thuonghieu", label: "Quản lý thông tin cửa hàng (logo, màu sắc)", icon: Palette },
+  { id: "thuonghieu", label: "Quản lý chuỗi cửa hàng ", icon: Palette },
   { id: "api", label: "Quản lý API", icon: Code, badge: "Endpoints" },
   { id: "sinhma", label: "Cấu hình sinh mã tự động", icon: FileDigit },
   { id: "email_thongbao", label: "Quản lý thông báo gửi email/thông báo", icon: Mail },

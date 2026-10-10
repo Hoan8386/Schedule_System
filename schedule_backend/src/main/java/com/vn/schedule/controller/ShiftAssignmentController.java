@@ -1,21 +1,22 @@
+
 package com.vn.schedule.controller;
+
+import com.vn.schedule.domain.ShiftAssignment;
+import com.vn.schedule.dto.request.ShiftAssignmentRequest;
+import com.vn.schedule.dto.response.ShiftAssignmentResponse;
+import com.vn.schedule.service.ShiftAssignmentService;
+import com.vn.schedule.util.anotation.ApiMessage;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.vn.schedule.domain.ShiftAssignment;
-import com.vn.schedule.dto.*;
-import com.vn.schedule.dto.request.*;
-import com.vn.schedule.dto.response.*;
-import com.vn.schedule.service.ShiftAssignmentService;
-
 import java.util.List;
-import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
 @RequestMapping("/api/v1/shift_assignment")
 public class ShiftAssignmentController {
+
     private final ShiftAssignmentService service;
 
     public ShiftAssignmentController(ShiftAssignmentService service) {
@@ -25,41 +26,61 @@ public class ShiftAssignmentController {
     @GetMapping
     @ApiMessage("Lấy danh sách dữ liệu")
     public ResponseEntity<List<ShiftAssignmentResponse>> list() {
-        return ResponseEntity.ok(responses(service.findAll()));
+        return ResponseEntity.ok(service.findAll());
     }
 
     @GetMapping("/{id}")
     @ApiMessage("Lấy thông tin chi tiết")
     public ResponseEntity<ShiftAssignmentResponse> get(@PathVariable Integer id) {
-        return ResponseEntity.ok(response(service.findById(id)));
+        ShiftAssignment entity = service.findById(id);
+        return ResponseEntity.ok(toResponse(entity));
     }
 
     @PostMapping
-
     @ApiMessage("Tạo mới dữ liệu")
-    public ResponseEntity<ShiftAssignmentResponse> create(@RequestBody ShiftAssignmentRequest body) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(response(service.create(body)));
+    public ResponseEntity<ShiftAssignmentResponse> create(
+            @RequestBody ShiftAssignmentRequest body) {
+        ShiftAssignment entity = service.create(body);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(toResponse(entity));
     }
 
     @PutMapping("/{id}")
     @ApiMessage("Cập nhật dữ liệu")
-    public ResponseEntity<ShiftAssignmentResponse> update(@PathVariable Integer id, @RequestBody ShiftAssignmentRequest body) {
-        return ResponseEntity.ok(response(service.update(id, body)));
+    public ResponseEntity<ShiftAssignmentResponse> update(
+            @PathVariable Integer id,
+            @RequestBody ShiftAssignmentRequest body) {
+        ShiftAssignment entity = service.update(id, body);
+        return ResponseEntity.ok(toResponse(entity));
     }
 
     @DeleteMapping("/{id}")
-
     @ApiMessage("Xóa dữ liệu")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    private List<ShiftAssignmentResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(value -> new ShiftAssignmentResponse(DtoMapper.toMap(value))).toList();
-    }
+    private ShiftAssignmentResponse toResponse(ShiftAssignment entity) {
+        ShiftAssignmentResponse response = new ShiftAssignmentResponse();
 
-    private ShiftAssignmentResponse response(Object value) {
-        return new ShiftAssignmentResponse(DtoMapper.toMap(value));
+        response.setId(entity.getId());
+
+        if (entity.getShiftByDate() != null) {
+            response.setShiftByDateId(entity.getShiftByDate().getId());
+        }
+
+        if (entity.getEmployee() != null) {
+            response.setEmployeeId(entity.getEmployee().getId());
+        }
+
+        response.setStatus(entity.getStatus());
+        response.setRegisteredAt(entity.getRegisteredAt());
+        response.setApprovedAt(entity.getApprovedAt());
+        response.setCancelledAt(entity.getCancelledAt());
+        response.setCancellationReason(entity.getCancellationReason());
+        response.setNote(entity.getNote());
+
+        return response;
     }
 }

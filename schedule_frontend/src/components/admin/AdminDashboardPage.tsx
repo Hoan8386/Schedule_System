@@ -74,7 +74,7 @@ export default function AdminDashboardPage({ onNavigate }: AdminDashboardProps) 
     },
     {
       id: "thuonghieu",
-      title: "Quản lý thông tin cửa hàng (Logo, Màu sắc)",
+      title: "Quản lý chuỗi cửa hàng ",
       desc: "Tùy biến bộ nhận diện thương hiệu Ăn Vặt BLOAN, đổi logo thanh điều hướng, bảng màu chủ đạo (Primary/Accent) và thông tin pháp lý doanh nghiệp.",
       icon: Palette,
       iconBg: "bg-amber-50 text-amber-600",

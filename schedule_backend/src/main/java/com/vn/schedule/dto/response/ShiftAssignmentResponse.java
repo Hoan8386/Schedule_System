@@ -1,21 +1,92 @@
+
 package com.vn.schedule.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
 
-/** Jackson-compatible legacy payload with dynamic fields. */
 public class ShiftAssignmentResponse {
-    private final Map<String, Object> values = new LinkedHashMap<>();
 
-    public ShiftAssignmentResponse(Map<String, Object> values) { this.values.putAll(values); }
+    private Integer id;
+    private Integer shiftByDateId;
+    private Integer employeeId;
+    private String status;
+    private LocalDateTime registeredAt;
+    private LocalDateTime approvedAt;
+    private LocalDateTime cancelledAt;
+    private String cancellationReason;
+    private String note;
 
-    @JsonAnySetter
-    public void put(String name, Object value) { values.put(name, value); }
+    public ShiftAssignmentResponse() {
+    }
 
-    public Object get(String name) { return values.get(name); }
+    public Integer getId() {
+        return id;
+    }
 
-    @JsonAnyGetter
-    public Map<String, Object> values() { return values; }
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Integer getShiftByDateId() {
+        return shiftByDateId;
+    }
+
+    public void setShiftByDateId(Integer shiftByDateId) {
+        this.shiftByDateId = shiftByDateId;
+    }
+
+    public Integer getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(Integer employeeId) {
+        this.employeeId = employeeId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getRegisteredAt() {
+        return registeredAt;
+    }
+
+    public void setRegisteredAt(LocalDateTime registeredAt) {
+        this.registeredAt = registeredAt;
+    }
+
+    public LocalDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(LocalDateTime approvedAt) {
+        this.approvedAt = approvedAt;
+    }
+
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
 }
