@@ -128,6 +128,7 @@ export interface ShiftResponse {
   id?: number;
   shiftId?: number;
   storeId?: number | null;
+  storeName?: string | null;
   shiftCode?: string | null;
   shiftName?: string | null;
   startTime?: string | null;
@@ -400,7 +401,15 @@ export const managerApi = {
     requestManagerApi<SchedulePeriodResponse>(`/api/v1/schedule_period/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteSchedulePeriod: (id: number) =>
     requestManagerApi<void>(`/api/v1/schedule_period/${id}`, { method: "DELETE" }),
-  getShifts: () => requestManagerApi<ShiftResponse[]>("/api/v1/shift"),
+  getShifts: (filters?: { storeId?: number; status?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.storeId !== undefined) params.set("storeId", String(filters.storeId));
+    if (filters?.status) params.set("status", filters.status);
+    const query = params.toString();
+    return requestManagerApi<ShiftResponse[]>(
+      `/api/v1/shift${query ? `?${query}` : ""}`,
+    );
+  },
   createShift: (body: Record<string, unknown>) =>
     requestManagerApi<ShiftResponse>("/api/v1/shift", { method: "POST", body: JSON.stringify(body) }),
   updateShift: (id: number, body: Record<string, unknown>) =>

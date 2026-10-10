@@ -8,7 +8,8 @@ import {
   Calendar,
   CalendarRange,
   Clock3,
-  ListFilter,
+  ChevronLeft,
+  ChevronRight,
   Pencil,
   Plus,
   RefreshCw,
@@ -38,6 +39,9 @@ const date = (value: unknown) =>
 const timeRange = (start: unknown, end: unknown) =>
   `${text(start, "--:--")} – ${text(end, "--:--")}`;
 
+const listData = <T,>(value: unknown): T[] =>
+  Array.isArray(value) ? value as T[] : [];
+
 const dayKey = (value: string | null | undefined) => {
   if (!value) return "";
   const safe = new Date(value);
@@ -47,6 +51,7 @@ const dayKey = (value: string | null | undefined) => {
 
 type TabKey = "period" | "shift" | "calendar";
 type Kind = "period" | "shift" | "shiftDate" | "assignment";
+type CalendarView = "month" | "week";
 
 export default function LichPage() {
   const [periods, setPeriods] = useState<SchedulePeriodResponse[]>([]);
@@ -61,6 +66,8 @@ export default function LichPage() {
   const [modal, setModal] = useState<{ kind: Kind; item?: Record<string, unknown> } | null>(null);
   const [filters, setFilters] = useState({ q: "", from: "", to: "", storeId: "", status: "" });
   const [activeTab, setActiveTab] = useState<TabKey>("period");
+  const [calendarView, setCalendarView] = useState<CalendarView>("month");
+  const [calendarCursor, setCalendarCursor] = useState(() => new Date());
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
   const [calendarDetail, setCalendarDetail] = useState<{
     date: string;
@@ -76,7 +83,10 @@ export default function LichPage() {
     setLoading(true);
     setError("");
     try {
-      const [periodResponse, shiftResponse, dateResponse, assignmentResponse, storeResponse, employeeResponse] = await Promise.all([
+      const storeResponse = await managerApi.getStores();
+      setStores(listData<StoreResponse>(storeResponse.data));
+
+      const [periodResponse, shiftResponse, dateResponse, assignmentResponse, employeeResponse] = await Promise.all([
         managerApi.getSchedulePeriods({
           q: filters.q || undefined,
           from: filters.from || undefined,
@@ -84,7 +94,10 @@ export default function LichPage() {
           storeId: filters.storeId ? Number(filters.storeId) : undefined,
           status: filters.status || undefined,
         }),
-        managerApi.getShifts(),
+        managerApi.getShifts({
+          storeId: filters.storeId ? Number(filters.storeId) : undefined,
+          status: filters.status || undefined,
+        }),
         managerApi.getShiftsByDate({
           q: filters.q || undefined,
           from: filters.from || undefined,
@@ -93,19 +106,18 @@ export default function LichPage() {
           status: filters.status || undefined,
         }),
         managerApi.getShiftAssignments(),
-        managerApi.getStores(),
         managerApi.getEmployees("ACTIVE"),
       ]);
 
-      setPeriods(periodResponse.data ?? []);
-      setShifts(shiftResponse.data ?? []);
-      setShiftDates(dateResponse.data ?? []);
-      setAssignments(assignmentResponse.data ?? []);
-      setStores(storeResponse.data ?? []);
-      setEmployees(employeeResponse.data ?? []);
+      setPeriods(listData<SchedulePeriodResponse>(periodResponse.data));
+      setShifts(listData<ShiftResponse>(shiftResponse.data));
+      setShiftDates(listData<ShiftByDateResponse>(dateResponse.data));
+      setAssignments(listData<ShiftAssignmentResponse>(assignmentResponse.data));
+      setEmployees(listData<EmployeeResponse>(employeeResponse.data));
 
-      if (!selectedPeriodId && (periodResponse.data?.length ?? 0) > 0) {
-        setSelectedPeriodId(Number((periodResponse.data ?? [])[0].id ?? (periodResponse.data ?? [])[0].schedulePeriodId));
+      const loadedPeriods = listData<SchedulePeriodResponse>(periodResponse.data);
+      if (!selectedPeriodId && loadedPeriods.length > 0) {
+        setSelectedPeriodId(Number(loadedPeriods[0].id ?? loadedPeriods[0].schedulePeriodId));
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu lịch");
@@ -164,24 +176,6 @@ export default function LichPage() {
 
   const selectedPeriod = periodDetails.find((item) => item.periodId === selectedPeriodId) ?? periodDetails[0];
 
-  const calendarDates = useMemo(() => {
-    const dates = shiftDates
-      .map((item) => dayKey(item.workDate ? String(item.workDate) : ""))
-      .filter(Boolean)
-      .sort();
-
-    if (dates.length === 0) return [];
-
-    const start = new Date(`${dates[0]}T00:00:00`);
-    const end = new Date(`${dates[dates.length - 1]}T00:00:00`);
-    const diff = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
-    return Array.from({ length: diff }, (_, index) => {
-      const current = new Date(start);
-      current.setDate(start.getDate() + index);
-      return current;
-    });
-  }, [shiftDates]);
-
   const calendarMap = useMemo(() => {
     const map = new Map<string, { count: number; items: ShiftByDateResponse[] }>();
 
@@ -198,6 +192,79 @@ export default function LichPage() {
 
     return map;
   }, [shiftDates, assignmentsByShiftDate]);
+
+  const calendarDays = useMemo(() => {
+    const cursor = new Date(calendarCursor);
+    cursor.setHours(0, 0, 0, 0);
+    const mondayOffset = (cursor.getDay() + 6) % 7;
+    const start = new Date(cursor);
+
+    if (calendarView === "month") {
+      start.setDate(1);
+      start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    } else {
+      start.setDate(start.getDate() - mondayOffset);
+    }
+
+    const total = calendarView === "month" ? 42 : 7;
+    return Array.from({ length: total }, (_, index) => {
+      const day = new Date(start);
+      day.setDate(start.getDate() + index);
+      return day;
+    });
+  }, [calendarCursor, calendarView]);
+
+  const calendarTitle = useMemo(() => {
+    if (calendarView === "month") {
+      return `Tháng ${calendarCursor.getMonth() + 1}, ${calendarCursor.getFullYear()}`;
+    }
+
+    const start = calendarDays[0];
+    const end = calendarDays[calendarDays.length - 1];
+    if (!start || !end) return "";
+    return `${String(start.getDate()).padStart(2, "0")} – ${String(end.getDate()).padStart(2, "0")} tháng ${end.getMonth() + 1}, ${end.getFullYear()}`;
+  }, [calendarCursor, calendarDays, calendarView]);
+
+  const calendarStats = useMemo(() => {
+    const items = Array.from(calendarMap.values()).flatMap((entry) => entry.items);
+    const assigned = items.filter((item) => (assignmentsByShiftDate.get(Number(item.id ?? item.shiftByDateId ?? 0))?.length ?? 0) > 0).length;
+    const completed = items.filter((item) => ["COMPLETED", "DONE", "FINISHED"].includes(String(item.status).toUpperCase())).length;
+    return { total: items.length, assigned, completed };
+  }, [calendarMap, assignmentsByShiftDate]);
+
+  const shiftDetails = (day: Date) => {
+    const key = dayKey(day.toISOString());
+    return calendarMap.get(key)?.items ?? [];
+  };
+
+  const openCalendarDetail = (day: Date, items = shiftDetails(day)) => {
+    setCalendarDetail({
+      date: day.toLocaleDateString("vi-VN"),
+      items: items.map((entry) => {
+        const entryId = Number(entry.id ?? entry.shiftByDateId ?? 0);
+        const assignmentsForShift = assignmentsByShiftDate.get(entryId) ?? [];
+        return {
+          shiftByDateId: entryId,
+          title: text(entry.shiftName, `Ca #${entry.shiftId ?? entry.shiftByDateId ?? ""}`),
+          time: timeRange(entry.startTime, entry.endTime),
+          employees: assignmentsForShift.map((assignment) => ({
+            employeeId: Number(assignment.employeeId ?? 0),
+            fullName: employeeMap.get(Number(assignment.employeeId ?? 0))?.fullName || `NV #${assignment.employeeId}`,
+            status: text(assignment.status, "ACTIVE"),
+          })),
+        };
+      }),
+    });
+  };
+
+  const moveCalendar = (direction: number) => {
+    setCalendarCursor((current) => {
+      const next = new Date(current);
+      next.setDate(1);
+      next.setMonth(next.getMonth() + direction * (calendarView === "month" ? 1 : 7));
+      return next;
+    });
+  };
 
   const remove = async (kind: Kind, id: number) => {
     if (!id || !window.confirm("Bạn có chắc muốn xóa dữ liệu này?")) return;
@@ -584,9 +651,24 @@ export default function LichPage() {
 
       {activeTab === "shift" && (
         <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-          <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
-            <Clock3 className="h-4 w-4 text-blue-600" />
-            <h2 className="text-sm font-bold text-slate-800">Danh sách Shift ({shifts.length})</h2>
+          <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center gap-2">
+              <Clock3 className="h-4 w-4 text-blue-600" />
+              <h2 className="text-sm font-bold text-slate-800">Danh sách Shift ({shifts.length})</h2>
+            </div>
+            <label className="ml-auto min-w-52 text-[11px] font-semibold text-slate-600">
+              Cửa hàng
+              <select
+                value={filters.storeId}
+                onChange={(event) => setFilters((current) => ({ ...current, storeId: event.target.value }))}
+                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              >
+                <option value="">Tất cả cửa hàng</option>
+                {stores.map((store) => (
+                  <option key={store.id} value={String(store.id)}>{text(store.storeName, `Cửa hàng #${store.id}`)}</option>
+                ))}
+              </select>
+            </label>
             {add("shift")}
           </div>
 
@@ -597,6 +679,9 @@ export default function LichPage() {
                   <div>
                     <p className="text-sm font-black text-slate-800">{text(item.shiftName, text(item.shiftCode))}</p>
                     <p className="mt-1 text-[11px] text-slate-500">{timeRange(item.startTime, item.endTime)}</p>
+                    <p className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">
+                      {text(item.storeName, item.storeId ? `Cửa hàng #${item.storeId}` : "Chưa xác định cửa hàng")}
+                    </p>
                   </div>
                   {actions("shift", item as Record<string, unknown>)}
                 </div>
@@ -612,85 +697,172 @@ export default function LichPage() {
 
       {activeTab === "calendar" && (
         <>
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <ListFilter className="h-4 w-4 text-amber-600" />
-                <h2 className="text-sm font-bold text-slate-800">Thời khóa biểu ca làm</h2>
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-4 border-b border-slate-100 pb-4">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CalendarRange className="h-5 w-5 text-amber-500" />
+                    <h2 className="text-xl font-black tracking-tight text-slate-900">Thời khóa biểu ca làm</h2>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">Theo dõi lịch làm việc và tình trạng phân công theo cửa hàng.</p>
+                </div>
+                {add("shiftDate")}
               </div>
-              <label className="ml-auto min-w-47.5 text-[11px] font-semibold text-slate-600">
-                Cửa hàng
-                <select
-                  value={filters.storeId}
-                  onChange={(event) => setFilters((current) => ({ ...current, storeId: event.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                >
-                  <option value="">Tất cả cửa hàng</option>
-                  {stores.map((store) => (
-                    <option key={store.id} value={String(store.id)}>{text(store.storeName, `Cửa hàng #${store.id}`)}</option>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <label className="min-w-48 text-[11px] font-semibold text-slate-600">
+                  Cửa hàng
+                  <select
+                    value={filters.storeId}
+                    onChange={(event) => setFilters((current) => ({ ...current, storeId: event.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium outline-hidden focus:border-amber-400"
+                  >
+                    <option value="">Tất cả cửa hàng</option>
+                    {stores.map((store) => (
+                      <option key={store.id} value={String(store.id)}>{text(store.storeName, `Cửa hàng #${store.id}`)}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="min-w-44 text-[11px] font-semibold text-slate-600">
+                  Trạng thái
+                  <select
+                    value={filters.status}
+                    onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium outline-hidden focus:border-amber-400"
+                  >
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="ACTIVE">Đang hoạt động</option>
+                    <option value="COMPLETED">Đã hoàn tất</option>
+                  </select>
+                </label>
+                <div className="ml-auto flex items-center gap-1 rounded-xl border border-slate-200 p-1">
+                  {(["week", "month"] as CalendarView[]).map((view) => (
+                    <button
+                      key={view}
+                      type="button"
+                      onClick={() => setCalendarView(view)}
+                      className={`rounded-lg px-4 py-2 text-xs font-bold transition ${calendarView === view ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+                    >
+                      {view === "week" ? "Tuần" : "Tháng"}
+                    </button>
                   ))}
-                </select>
-              </label>
+                </div>
+              </div>
             </div>
 
-            {calendarDates.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 p-5 text-xs text-slate-500">Chưa có dữ liệu lịch trong khoảng thời gian hiện tại.</div>
+            <div className="flex flex-col justify-between gap-3 border-b border-slate-100 py-4 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => moveCalendar(-1)} aria-label="Kỳ trước" className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50">
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button type="button" onClick={() => moveCalendar(1)} aria-label="Kỳ sau" className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50">
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <h3 className="ml-1 text-base font-black text-slate-800">{calendarTitle}</h3>
+                <button type="button" onClick={() => setCalendarCursor(new Date())} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                  Hôm nay
+                </button>
+              </div>
+              <div className="text-xs text-slate-500">
+                <span className="font-bold text-slate-800">{calendarStats.total} ca</span>
+                <span className="mx-1">·</span>
+                <span>{calendarStats.assigned} đã phân công</span>
+              </div>
+            </div>
+
+            {calendarView === "month" ? (
+              <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+                <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+                  {["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"].map((label) => (
+                    <div key={label} className="px-2 py-2 text-center text-[10px] font-bold text-slate-500 sm:text-[11px]">{label}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7">
+                  {calendarDays.map((day) => {
+                    const items = shiftDetails(day);
+                    const isCurrentMonth = day.getMonth() === calendarCursor.getMonth();
+                    const isToday = day.toDateString() === new Date().toDateString();
+                    return (
+                      <button
+                        key={day.toISOString()}
+                        type="button"
+                        onClick={() => openCalendarDetail(day)}
+                        className={`min-h-32 border-b border-r border-slate-200 p-2 text-left align-top transition hover:bg-amber-50/60 sm:min-h-36 ${!isCurrentMonth ? "bg-slate-50/70 text-slate-400" : "bg-white"} ${day.getDay() === 0 ? "border-r-0" : ""}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs font-black ${isToday ? "flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-slate-950" : isCurrentMonth ? "text-slate-800" : "text-slate-400"}`}>{String(day.getDate()).padStart(2, "0")}</span>
+                          {items.length > 0 && <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">{items.length} ca</span>}
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          {items.slice(0, 3).map((item) => {
+                            const status = String(item.status ?? "").toUpperCase();
+                            const pending = status.includes("PENDING") || status.includes("WAIT");
+                            const changed = status.includes("CHANGE") || status.includes("SWAP");
+                            return (
+                              <div key={Number(item.id ?? item.shiftByDateId ?? 0)} className={`rounded-md border px-1.5 py-1.5 ${changed ? "border-amber-300 bg-amber-50" : pending ? "border-dashed border-slate-300 bg-slate-50" : "border-slate-200 bg-slate-50"}`}>
+                                <p className="truncate text-[10px] font-bold text-slate-800">{timeRange(item.startTime, item.endTime)}</p>
+                                <p className="truncate text-[9px] text-slate-500">{text(item.shiftName, `Ca #${item.shiftId}`)}</p>
+                              </div>
+                            );
+                          })}
+                          {items.length > 3 && <p className="px-1 text-[9px] font-bold text-slate-400">+{items.length - 3} ca khác</p>}
+                          {items.length === 0 && isCurrentMonth && <p className="mt-3 text-[9px] text-slate-300">Chưa có ca</p>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             ) : (
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 7 }, (_, index) => (
-                  <div key={`head-${index}`} className="px-2 py-2 text-center text-[11px] font-bold uppercase text-slate-500">
-                    {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][index]}
+              <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+                <div className="min-w-175">
+                  <div className="grid grid-cols-[6rem_repeat(7,minmax(8rem,1fr))] border-b border-slate-200 bg-slate-50">
+                    <div className="border-r border-slate-200 p-3 text-center text-[10px] font-bold text-slate-500">Ca</div>
+                    {calendarDays.map((day) => (
+                      <div key={day.toISOString()} className={`border-r border-slate-200 p-3 text-center ${day.toDateString() === new Date().toDateString() ? "bg-amber-50" : ""}`}>
+                        <p className="text-[10px] font-semibold text-slate-500">{["CN", "T2", "T3", "T4", "T5", "T6", "T7"][day.getDay()]}</p>
+                        <p className="mt-1 text-lg font-black text-slate-800">{String(day.getDate()).padStart(2, "0")}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-
-                {calendarDates.map((day, index) => {
-                  const key = day.toISOString().slice(0, 10);
-                  const count = calendarMap.get(key)?.count ?? 0;
-                  const items = calendarMap.get(key)?.items ?? [];
-
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => {
-                        setCalendarDetail({
-                          date: date(day.toISOString()),
-                          items: items.map((entry) => {
-                            const assignmentsForShift = assignmentsByShiftDate.get(Number(entry.id ?? entry.shiftByDateId ?? 0)) ?? [];
-                            return {
-                              shiftByDateId: Number(entry.id ?? entry.shiftByDateId ?? 0),
-                              title: text(entry.shiftName, `Ca #${entry.shiftId ?? entry.shiftByDateId ?? ""}`),
-                              time: timeRange(entry.startTime, entry.endTime),
-                              employees: assignmentsForShift.map((assignment) => ({
-                                employeeId: Number(assignment.employeeId ?? 0),
-                                fullName: employeeMap.get(Number(assignment.employeeId ?? 0))?.fullName || `NV #${assignment.employeeId}`,
-                                status: text(assignment.status, "ACTIVE"),
-                              })),
-                            };
-                          }),
+                  {["Ca sáng", "Ca chiều", "Ca tối"].map((slot, slotIndex) => (
+                    <div key={slot} className="grid min-h-32 grid-cols-[6rem_repeat(7,minmax(8rem,1fr))] border-b border-slate-200">
+                      <div className="border-r border-slate-200 p-3">
+                        <p className="text-[10px] font-black text-slate-700">{slot}</p>
+                        <p className="mt-1 text-[9px] text-slate-400">{["08:00", "14:00", "16:00"][slotIndex]}</p>
+                      </div>
+                      {calendarDays.map((day) => {
+                        const items = shiftDetails(day).filter((item) => {
+                          const start = Number(String(item.startTime ?? "0").split(":")[0]);
+                          return slotIndex === 0 ? start < 12 : slotIndex === 1 ? start >= 12 && start < 16 : start >= 16;
                         });
-                      }}
-                      className={`min-h-29.5 rounded-2xl border p-2 text-left transition ${
-                        index % 7 === 0 ? "border-rose-200 bg-rose-50" : "border-slate-200 bg-slate-50 hover:border-amber-300 hover:bg-amber-50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-black text-slate-800">{day.getDate()}</span>
-                        {count > 0 && <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white">{count}</span>}
-                      </div>
-                      <div className="mt-3 space-y-1 text-[10px] text-slate-600">
-                        {items.slice(0, 2).map((item) => (
-                          <div key={Number(item.id ?? item.shiftByDateId ?? 0)} className="rounded-lg bg-white px-2 py-1">
-                            {text(item.shiftName, `Ca #${item.shiftId}`)}
-                          </div>
-                        ))}
-                        {items.length > 2 && <div className="text-[10px] font-semibold text-slate-500">+{items.length - 2} ca</div>}
-                      </div>
-                    </button>
-                  );
-                })}
+                        return (
+                          <button key={`${slot}-${day.toISOString()}`} type="button" onClick={() => openCalendarDetail(day, items)} className="border-r border-slate-200 p-2 text-left hover:bg-amber-50/50">
+                            <div className="space-y-2">
+                              {items.map((item) => (
+                                <div key={Number(item.id ?? item.shiftByDateId ?? 0)} className="rounded-lg border border-slate-200 bg-white p-2 shadow-xs">
+                                  <p className="text-[10px] font-black text-slate-800">{text(item.shiftName, slot)}</p>
+                                  <p className="mt-1 text-[10px] font-bold text-slate-700">{timeRange(item.startTime, item.endTime)}</p>
+                                  <p className="mt-1 truncate text-[9px] text-slate-500">{text(stores.find((store) => Number(store.id) === Number(item.storeId))?.storeName, "Theo cửa hàng")}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-500">
+              <span className="rounded-md bg-slate-100 px-2 py-1">Đã phân công</span>
+              <span className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-2 py-1">Chờ xử lý</span>
+              <span className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-amber-700">Đổi ca / cần chú ý</span>
+              <span className="ml-auto">{calendarStats.completed} ca đã hoàn tất</span>
+            </div>
           </section>
 
           {calendarDetail && (

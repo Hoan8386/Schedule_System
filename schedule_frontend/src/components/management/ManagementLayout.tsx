@@ -49,12 +49,12 @@ interface MenuItem {
 
 const operationMenuItems: MenuItem[] = [
   { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
-  { id: "nhansu", label: "Quản lý nhân sự", icon: Users, badge: "45 NV" },
-  { id: "cuahang", label: "Quản lý cửa hàng", icon: Store, badge: "24 CH" },
+  { id: "nhansu", label: "Quản lý nhân sự", icon: Users },
+  { id: "cuahang", label: "Quản lý cửa hàng", icon: Store,  },
   { id: "chamcong", label: "Quản lý chấm công", icon: Clock },
-  { id: "yeucau", label: "Xử lý yêu cầu", icon: Inbox, badge: "12 chờ" },
+  { id: "yeucau", label: "Xử lý yêu cầu", icon: Inbox},
   { id: "lich", label: "Quản lý lịch ca", icon: Calendar },
-  { id: "noiquy", label: "Nội quy & vi phạm", icon: ShieldAlert, badge: "3" },
+  { id: "noiquy", label: "Nội quy & vi phạm", icon: ShieldAlert },
   { id: "luong", label: "Quản lý lương & thưởng", icon: Wallet },
   { id: "thongke", label: "Thống kê & báo cáo", icon: TrendingUp },
 ];
@@ -207,41 +207,7 @@ export default function ManagementLayout() {
               </div>
             </div>
 
-            {/* Section 2: Admin System Settings */}
-            <div>
-              <p className="px-3 text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>Quản trị Admin</span>
-                <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-black">
-                  ROOT
-                </span>
-              </p>
-              <div className="space-y-0.5">
-                {adminMenuItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                        isActive
-                          ? "bg-amber-50/80 text-amber-800 font-bold border border-amber-200/60 shadow-xs"
-                          : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <Icon
-                          className={`w-4 h-4 shrink-0 ${
-                            isActive ? "text-amber-600" : "text-slate-400"
-                          }`}
-                        />
-                        <span className="truncate">{item.label}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+           
           </nav>
         </div>
 

@@ -24,8 +24,10 @@ public class ShiftController {
 
     @GetMapping
     @ApiMessage("Lấy danh sách dữ liệu")
-    public ResponseEntity<List<ShiftResponse>> list() {
-        return ResponseEntity.ok(responses(service.findAll()));
+    public ResponseEntity<List<ShiftResponse>> list(
+            @RequestParam(required = false) Integer storeId,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(responses(service.findAll(storeId, status)));
     }
 
     @GetMapping("/{id}")
@@ -55,11 +57,16 @@ public class ShiftController {
         return ResponseEntity.noContent().build();
     }
 
-    private List<ShiftResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(value -> new ShiftResponse(DtoMapper.toMap(value))).toList();
+    private List<ShiftResponse> responses(java.util.Collection<Shift> values) {
+        return values.stream().map(this::response).toList();
     }
 
-    private ShiftResponse response(Object value) {
-        return new ShiftResponse(DtoMapper.toMap(value));
+    private ShiftResponse response(Shift value) {
+        java.util.Map<String, Object> result = DtoMapper.toMap(value);
+        if (value.getStore() != null) {
+            result.put("storeId", value.getStore().getId());
+            result.put("storeName", value.getStore().getStoreName());
+        }
+        return new ShiftResponse(result);
     }
 }

@@ -25,8 +25,17 @@ public class ShiftService {
         this.storeRepository = storeRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<Shift> findAll() {
         return repository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Shift> findAll(Integer storeId, String status) {
+        return repository.findAll().stream()
+                .filter(shift -> storeId == null || shift.getStore().getId().equals(storeId))
+                .filter(shift -> status == null || status.isBlank() || status.equalsIgnoreCase(shift.getStatus()))
+                .toList();
     }
 
     public Shift findById(Integer id) {
@@ -61,32 +70,32 @@ public class ShiftService {
     }
     private Shift toEntity(ShiftRequest body) {
         Shift entity = new Shift();
-        entity.setId((Integer) body.get("id"));
+        entity.setId(integerValue(body.get("id"), "id"));
         entity.setStore(resolveStore(body));
         entity.setShiftCode((String) body.get("shiftCode"));
         entity.setShiftName((String) body.get("shiftName"));
-        entity.setStartTime((LocalTime) body.get("startTime"));
-        entity.setEndTime((LocalTime) body.get("endTime"));
-        entity.setMaxCapacity((Integer) body.get("maxCapacity"));
-        entity.setPayRate((BigDecimal) body.get("payRate"));
+        entity.setStartTime(timeValue(body.get("startTime"), "startTime"));
+        entity.setEndTime(timeValue(body.get("endTime"), "endTime"));
+        entity.setMaxCapacity(integerValue(body.get("maxCapacity"), "maxCapacity"));
+        entity.setPayRate(decimalValue(body.get("payRate"), "payRate"));
         entity.setStatus((String) body.get("status"));
         entity.setNote((String) body.get("note"));
-        entity.setCreatedBy((Integer) body.get("createdBy"));
+        entity.setCreatedBy(integerValue(body.get("createdBy"), "createdBy"));
         return entity;
     }
 
     private void applyFields(Shift entity, ShiftRequest body) {
-        entity.setId((Integer) body.get("id"));
+        entity.setId(integerValue(body.get("id"), "id"));
         entity.setStore(resolveStore(body));
         entity.setShiftCode((String) body.get("shiftCode"));
         entity.setShiftName((String) body.get("shiftName"));
-        entity.setStartTime((LocalTime) body.get("startTime"));
-        entity.setEndTime((LocalTime) body.get("endTime"));
-        entity.setMaxCapacity((Integer) body.get("maxCapacity"));
-        entity.setPayRate((BigDecimal) body.get("payRate"));
+        entity.setStartTime(timeValue(body.get("startTime"), "startTime"));
+        entity.setEndTime(timeValue(body.get("endTime"), "endTime"));
+        entity.setMaxCapacity(integerValue(body.get("maxCapacity"), "maxCapacity"));
+        entity.setPayRate(decimalValue(body.get("payRate"), "payRate"));
         entity.setStatus((String) body.get("status"));
         entity.setNote((String) body.get("note"));
-        entity.setCreatedBy((Integer) body.get("createdBy"));
+        entity.setCreatedBy(integerValue(body.get("createdBy"), "createdBy"));
     }
 
     private Store resolveStore(ShiftRequest body) {
@@ -97,9 +106,74 @@ public class ShiftService {
         if (value instanceof Number number) {
             return number.intValue();
         }
-        if (value instanceof java.util.Map<?, ?> map && map.get("id") instanceof Number number) {
-            return number.intValue();
+        if (value instanceof String string && !string.isBlank()) {
+            return parseInteger(string, fieldName);
+        }
+        if (value instanceof java.util.Map<?, ?> map) {
+            return requiredId(map.get("id"), fieldName);
         }
         throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " is required");
+    }
+
+    private Integer integerValue(Object value, String fieldName) {
+        if (value == null || (value instanceof String string && string.isBlank())) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String string) {
+            return parseInteger(string, fieldName);
+        }
+        throw invalidValue(fieldName, "số nguyên");
+    }
+
+    private Integer parseInteger(String value, String fieldName) {
+        try {
+            return Integer.valueOf(value.trim());
+        } catch (NumberFormatException exception) {
+            throw invalidValue(fieldName, "số nguyên");
+        }
+    }
+
+    private LocalTime timeValue(Object value, String fieldName) {
+        if (value == null || (value instanceof String string && string.isBlank())) {
+            return null;
+        }
+        if (value instanceof LocalTime time) {
+            return time;
+        }
+        if (value instanceof String string) {
+            try {
+                return LocalTime.parse(string.trim());
+            } catch (java.time.format.DateTimeParseException exception) {
+                throw invalidValue(fieldName, "giờ hợp lệ theo định dạng HH:mm hoặc HH:mm:ss");
+            }
+        }
+        throw invalidValue(fieldName, "giờ hợp lệ theo định dạng HH:mm hoặc HH:mm:ss");
+    }
+
+    private BigDecimal decimalValue(Object value, String fieldName) {
+        if (value == null || (value instanceof String string && string.isBlank())) {
+            return null;
+        }
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        if (value instanceof Number number) {
+            return new BigDecimal(number.toString());
+        }
+        if (value instanceof String string) {
+            try {
+                return new BigDecimal(string.trim());
+            } catch (NumberFormatException exception) {
+                throw invalidValue(fieldName, "số thập phân");
+            }
+        }
+        throw invalidValue(fieldName, "số thập phân");
+    }
+
+    private ApiException invalidValue(String fieldName, String expected) {
+        return new ApiException(HttpStatus.BAD_REQUEST, fieldName + " phải là " + expected);
     }
 }
