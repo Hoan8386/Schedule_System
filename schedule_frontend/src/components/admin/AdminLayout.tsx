@@ -77,15 +77,13 @@ export default function AdminLayout() {
         <div className="flex flex-col min-h-0 flex-1">
           {/* Logo Header */}
           <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center p-1.5 shadow-sm shadow-amber-200/50">
-              <Image
-                src="/logo/logo1.jpg"
-                alt="BLOAN Logo"
-                width={36}
-                height={36}
-                className="object-contain rounded-lg"
-              />
-            </div>
+            <Image
+              src="/logo/logo1.jpg"
+              alt="BLOAN Logo"
+              width={48}
+              height={48}
+              className="w-12 h-12 object-contain rounded-xl shrink-0 shadow-sm"
+            />
             <div>
               <div className="font-extrabold text-[#ED1C24] text-base leading-tight tracking-tight">
                 Ăn Vặt BLOAN

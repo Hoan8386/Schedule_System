@@ -25,6 +25,8 @@ public class Employee {
     private String employeeCode;
     @Column(name = "full_name", nullable = false)
     private String fullName;
+    @Column(name = "avatar")
+    private String avatar;
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
     @Column(name = "gender")

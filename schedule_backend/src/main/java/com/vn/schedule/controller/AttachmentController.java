@@ -53,7 +53,15 @@ public class AttachmentController {
     @GetMapping("/{id}")
     @ApiMessage("Lấy thông tin chi tiết")
     public ResponseEntity<AttachmentResponse> get(@PathVariable Integer id) {
-        return ResponseEntity.ok(response(service.findById(id)));
+        Attachment attachment = service.findById(id);
+        AttachmentResponse res = response(attachment);
+        if (attachment.getFilePath() != null) {
+            String pubUrl = storage.publicUrlFor(attachment.getFilePath());
+            if (pubUrl != null && !pubUrl.equals(attachment.getFilePath())) {
+                res.put("url", pubUrl);
+            }
+        }
+        return ResponseEntity.ok(res);
     }
 
     @GetMapping("/file/{id}")

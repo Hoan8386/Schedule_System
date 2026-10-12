@@ -57,7 +57,7 @@ public class StoreService {
         Store entity = new Store();
         entity.setStoreCode(body.storeCode());
         entity.setStoreName(body.storeName());
-        entity.setLogoId(body.logoId());
+        entity.setStoreImageId(body.storeImageId());
         entity.setAddress(body.address());
         entity.setPhone(body.phone());
         entity.setStatus(body.status());
@@ -68,7 +68,7 @@ public class StoreService {
     private void applyFields(Store entity, StoreRequest body) {
         entity.setStoreCode(body.storeCode());
         entity.setStoreName(body.storeName());
-        entity.setLogoId(body.logoId());
+        entity.setStoreImageId(body.storeImageId());
         entity.setAddress(body.address());
         entity.setPhone(body.phone());
         entity.setStatus(body.status());

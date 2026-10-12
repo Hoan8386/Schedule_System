@@ -184,15 +184,15 @@ CREATE TABLE `store` (
     store_id INT AUTO_INCREMENT PRIMARY KEY,
     store_code VARCHAR(50) NOT NULL UNIQUE,
     store_name VARCHAR(255) NOT NULL,
-    logo_id INT,
+    store_image_id INT,
     address VARCHAR(500),
     phone VARCHAR(20),
     status VARCHAR(30) NOT NULL,
     note TEXT,
     created_at DATETIME,
     updated_at DATETIME,
-    CONSTRAINT fk_store_logo
-        FOREIGN KEY (logo_id) REFERENCES `attachment`(attachment_id)
+    CONSTRAINT fk_store_image
+        FOREIGN KEY (store_image_id) REFERENCES `attachment`(attachment_id)
 );
 
 

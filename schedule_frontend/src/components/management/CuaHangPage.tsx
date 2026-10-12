@@ -110,6 +110,8 @@ export default function CuaHangPage() {
     setStoreForm({
       storeCode: store?.storeCode ?? "",
       storeName: store?.storeName ?? "",
+      storeImageId: (store?.storeImageId ?? store?.logoId) as number | undefined,
+      logoId: (store?.storeImageId ?? store?.logoId) as number | undefined,
       address: store?.address ?? "",
       phone: store?.phone ?? "",
       status: store?.status ?? "ACTIVE",
@@ -142,12 +144,12 @@ export default function CuaHangPage() {
     setSaving(true);
     setError("");
     try {
-      let logoId = storeForm.logoId;
+      let imageId = storeForm.storeImageId ?? storeForm.logoId;
       if (logoFile) {
         const uploadResponse = await managerApi.uploadAttachment(logoFile);
-        logoId = uploadResponse.data.attachmentId;
+        imageId = uploadResponse.data.attachmentId;
       }
-      const payload = { ...storeForm, logoId };
+      const payload = { ...storeForm, storeImageId: imageId, logoId: imageId };
       if (editingStore) {
         await managerApi.updateStore(editingStore.id, payload);
       } else {

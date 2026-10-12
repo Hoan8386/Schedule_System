@@ -74,7 +74,8 @@ public class SecurityConfiguration {
                 "/api/v1/danh-gia-san-pham",
                 "/api/v1/danh-gia-san-pham/**",
                 "/notification/**",
-                "/api/v1/lich-lam-viec/cua-hang/**"
+                "/api/v1/lich-lam-viec/cua-hang/**",
+                "/api/v1/attachment/file/**"
         };
 
         http

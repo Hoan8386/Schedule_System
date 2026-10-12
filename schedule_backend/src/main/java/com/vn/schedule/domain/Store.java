@@ -21,8 +21,8 @@ public class Store {
     private String storeCode;
     @Column(name = "store_name", nullable = false)
     private String storeName;
-    @Column(name = "logo_id")
-    private Integer logoId;
+    @Column(name = "store_image_id")
+    private Integer storeImageId;
     @Column(name = "address")
     private String address;
     @Column(name = "phone")
@@ -36,4 +36,3 @@ public class Store {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }
-

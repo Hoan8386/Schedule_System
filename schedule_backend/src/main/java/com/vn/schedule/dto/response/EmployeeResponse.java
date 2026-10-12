@@ -8,6 +8,7 @@ public record EmployeeResponse(
         Integer userId,
         String employeeCode,
         String fullName,
+        String avatar,
         LocalDate dateOfBirth,
         String gender,
         String email,

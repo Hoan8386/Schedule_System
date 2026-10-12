@@ -32,8 +32,7 @@ public class EmployeeController {
     }
 
     @PostMapping
-
-    @ApiMessage("Tạo mới dữ liệu")
+    @ApiMessage("Tạo mới nhân viên (tự động tạo tài khoản user và gửi email thông tin)")
     public ResponseEntity<EmployeeResponse> create(@RequestBody EmployeeRequest request) {
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
                 .body(service.create(request));

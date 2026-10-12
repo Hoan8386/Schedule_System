@@ -1,6 +1,6 @@
 import { ApiResponse } from "@/lib/api";
 
-const API_BASE_URL =
+export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 function getHeaders(): Headers {
@@ -47,6 +47,7 @@ export interface EmployeeResponse {
   userId?: number | null;
   employeeCode?: string | null;
   fullName?: string | null;
+  avatar?: string | null;
   dateOfBirth?: string | null;
   gender?: string | null;
   email?: string | null;
@@ -55,6 +56,10 @@ export interface EmployeeResponse {
   hireDate?: string | null;
   status?: string | null;
   note?: string | null;
+  idCardFrontId?: number | null;
+  idCardBackId?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   [key: string]: unknown;
 }
 
@@ -62,6 +67,8 @@ export interface StoreResponse {
   id: number;
   storeCode?: string | null;
   storeName?: string | null;
+  storeImageId?: number | null;
+  logoId?: number | null;
   logoImage?: string | null;
   logoContentType?: string | null;
   address?: string | null;
@@ -94,6 +101,7 @@ export interface StoreManagerResponse {
 export interface StoreRequest {
   storeCode: string;
   storeName: string;
+  storeImageId?: number;
   logoId?: number;
   address?: string;
   phone?: string;
@@ -270,14 +278,17 @@ export interface BonusDetailResponse {
 }
 
 export interface EmployeeRequest {
-  userId: number;
+  userId?: number;
   employeeCode: string;
   fullName: string;
+  avatar?: string;
   dateOfBirth?: string;
   gender?: string;
   email?: string;
   phone?: string;
   address?: string;
+  idCardFrontId?: number | null;
+  idCardBackId?: number | null;
   hireDate?: string;
   status: string;
   note?: string;
@@ -290,6 +301,8 @@ export const managerApi = {
         ? `/api/v1/employees?status=${encodeURIComponent(status)}`
         : "/api/v1/employees"
     ),
+  getEmployee: (id: number) =>
+    requestManagerApi<EmployeeResponse>(`/api/v1/employees/${id}`),
   getStores: (status?: string) =>
     requestManagerApi<StoreResponse[]>(
       status
@@ -525,4 +538,37 @@ export const managerApi = {
     requestManagerApi<BonusDetailResponse>(`/api/v1/bonus_detail/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteBonusDetail: (id: number) =>
     requestManagerApi<void>(`/api/v1/bonus_detail/${id}`, { method: "DELETE" }),
+  uploadAttachment: async (file: File): Promise<ApiResponse<AttachmentResponse>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = typeof window !== "undefined" ? localStorage.getItem("bloan_access_token") : null;
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/attachment/upload`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    const text = await response.text();
+    const json = text ? JSON.parse(text) : null;
+    if (!response.ok) {
+      throw new Error(
+        (Array.isArray(json?.message) ? json.message.join(", ") : json?.message) ||
+          json?.error ||
+          text ||
+          `Lỗi tải tệp lên (${response.status})`
+      );
+    }
+    return {
+      statusCode: response.status,
+      error: json?.error ?? null,
+      message: json?.message ?? "Tải ảnh thành công",
+      data: (json && "data" in json ? json.data : json) as AttachmentResponse,
+    };
+  },
+  getAttachment: (id: number) =>
+    requestManagerApi<AttachmentResponse>(`/api/v1/attachment/${id}`),
+  getAttachmentFileUrl: (id: number | string) =>
+    `${API_BASE_URL}/api/v1/attachment/file/${id}`,
 };

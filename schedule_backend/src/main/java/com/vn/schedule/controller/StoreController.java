@@ -65,7 +65,7 @@ public class StoreController {
     private void apply(Store store, StoreRequest request) {
         store.setStoreCode(request.storeCode());
         store.setStoreName(request.storeName());
-        store.setLogoId(request.logoId());
+        store.setStoreImageId(request.storeImageId());
         store.setAddress(request.address());
         store.setPhone(request.phone());
         store.setStatus(request.status());
@@ -97,9 +97,10 @@ public class StoreController {
         response.setNote(store.getNote());
         response.setCreatedAt(store.getCreatedAt());
         response.setUpdatedAt(store.getUpdatedAt());
+        response.setStoreImageId(store.getStoreImageId());
 
-        if (store.getLogoId() != null) {
-            attachments.findById(store.getLogoId()).ifPresent(attachment -> {
+        if (store.getStoreImageId() != null) {
+            attachments.findById(store.getStoreImageId()).ifPresent(attachment -> {
                 byte[] image = storage.download(attachment.getFilePath());
                 response.setLogoContentType(attachment.getFileType());
                 response.setLogoImage("data:" + attachment.getFileType() + ";base64,"

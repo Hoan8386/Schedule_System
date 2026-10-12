@@ -14,6 +14,7 @@ public class StoreResponse {
     private LocalDateTime updatedAt;
     private String logoImage;
     private String logoContentType;
+    private Integer storeImageId;
 
     public Integer getId() {
         return id;
@@ -101,5 +102,13 @@ public class StoreResponse {
 
     public void setLogoContentType(String logoContentType) {
         this.logoContentType = logoContentType;
+    }
+
+    public Integer getStoreImageId() {
+        return storeImageId;
+    }
+
+    public void setStoreImageId(Integer storeImageId) {
+        this.storeImageId = storeImageId;
     }
 }
