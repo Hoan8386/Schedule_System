@@ -28,17 +28,28 @@ export default function Home() {
   }
 
   if (isAuthenticated && user) {
-    switch (user.roleCode || user.role) {
-      case "ADMIN":
+    switch (Number(user.roleId)) {
+      case 1:
         return <AdminLayout />;
-      case "MANAGER":
+      case 2:
         return <ManagementLayout />;
-      case "STORE_MANAGER":
+      case 3:
         return <StoreManagerLayout />;
-      case "EMPLOYEE":
+      case 4:
         return <EmployeeLayout />;
       default:
-        return null;
+        switch (user.roleCode || user.role) {
+          case "ADMIN":
+            return <AdminLayout />;
+          case "MANAGER":
+            return <ManagementLayout />;
+          case "STORE_MANAGER":
+            return <StoreManagerLayout />;
+          case "EMPLOYEE":
+            return <EmployeeLayout />;
+          default:
+            return null;
+        }
     }
   }
 

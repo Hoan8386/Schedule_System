@@ -292,7 +292,7 @@ export default function CuaHangPage() {
                 </div>
                 <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
                   <p><span className="block text-[10px] text-slate-400 font-bold">NHÂN SỰ</span><b>{staffCount}</b></p>
-                  <p><span className="block text-[10px] text-slate-400 font-bold">QUẢN LÝ</span><b>{managerCount}</b></p>
+                  <p><span className="block text-[10px] text-slate-400 font-bold">TRƯỞNG CỬA HÀNG</span><b>{managerCount}</b></p>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
                   <button
@@ -360,7 +360,7 @@ export default function CuaHangPage() {
               {assignments.filter((assignment) => assignment.storeId === staffStore.id && (!assignment.status || assignment.status.toUpperCase() === "ACTIVE")).map((assignment) => {
                 const employee = employees.find((item) => item.id === assignment.employeeId);
                 const isManager = managers.some((manager) => manager.storeId === staffStore.id && manager.employeeId === assignment.employeeId);
-                return <div key={assignment.employeeStoreId} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3"><div><p className="text-sm font-bold text-slate-800">{text(employee?.fullName, `Nhân viên #${assignment.employeeId}`)}</p><p className="text-xs text-slate-500">{text(employee?.employeeCode)} · {text(employee?.phone)}</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isManager ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"}`}>{isManager ? "QUẢN LÝ" : "NHÂN VIÊN"}</span></div>;
+                return <div key={assignment.employeeStoreId} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3"><div><p className="text-sm font-bold text-slate-800">{text(employee?.fullName, `Nhân viên #${assignment.employeeId}`)}</p><p className="text-xs text-slate-500">{text(employee?.employeeCode)} · {text(employee?.phone)}</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isManager ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"}`}>{isManager ? "TRƯỞNG CỬA HÀNG" : "NHÂN VIÊN"}</span></div>;
               })}
               {assignments.filter((assignment) => assignment.storeId === staffStore.id && (!assignment.status || assignment.status.toUpperCase() === "ACTIVE")).length === 0 && <p className="py-8 text-center text-sm text-slate-500">Chưa có nhân viên đang làm tại cửa hàng này.</p>}
             </div>

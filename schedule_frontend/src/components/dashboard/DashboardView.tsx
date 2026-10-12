@@ -187,7 +187,7 @@ export default function DashboardView() {
               <thead>
                 <tr className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                   <th className="py-3 px-4">Ngày</th>
-                  <th className="py-3 px-4">Ca phân công</th>
+                  <th className="py-3 px-4">Ca phân bổ</th>
                   <th className="py-3 px-4">Vị trí đảm nhiệm</th>
                   <th className="py-3 px-4">Trạng thái</th>
                 </tr>

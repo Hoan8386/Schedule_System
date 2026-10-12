@@ -249,12 +249,12 @@ export default function NhanSuPage() {
                 <label className="text-xs font-bold text-slate-600">Trạng thái<select value={employeeForm.status} onChange={(event) => setEmployeeForm({ ...employeeForm, status: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option><option value="RESIGNED">RESIGNED</option></select></label>
                 <label className="text-xs font-bold text-slate-600">Cửa hàng đang làm
                   <select value={employeeStoreForm.storeId} onChange={(event) => setEmployeeStoreForm({ ...employeeStoreForm, storeId: Number(event.target.value) })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal">
-                    <option value={0}>Chưa phân công</option>
+                    <option value={0}>Chưa phân bổ</option>
                     {stores.map((store) => <option key={store.id} value={store.id}>{value(store.storeName)} - {value(store.storeCode)}</option>)}
                   </select>
                 </label>
-                <label className="text-xs font-bold text-slate-600">Ngày bắt đầu phân công<input type="date" value={employeeStoreForm.startDate} onChange={(event) => setEmployeeStoreForm({ ...employeeStoreForm, startDate: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal" /></label>
-                <label className="text-xs font-bold text-slate-600">Trạng thái phân công<select value={employeeStoreForm.status} onChange={(event) => setEmployeeStoreForm({ ...employeeStoreForm, status: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option></select></label>
+                <label className="text-xs font-bold text-slate-600">Ngày bắt đầu phân bổ<input type="date" value={employeeStoreForm.startDate} onChange={(event) => setEmployeeStoreForm({ ...employeeStoreForm, startDate: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal" /></label>
+                <label className="text-xs font-bold text-slate-600">Trạng thái phân bổ<select value={employeeStoreForm.status} onChange={(event) => setEmployeeStoreForm({ ...employeeStoreForm, status: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option></select></label>
               </div>
               <div className="flex justify-end gap-2"><button type="button" onClick={() => setEmployeeFormOpen(false)} className="rounded-xl border px-4 py-2 text-sm">Hủy</button><button disabled={saving} className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold disabled:opacity-50">{saving ? "Đang lưu..." : "Lưu"}</button></div>
             </form>
@@ -290,12 +290,10 @@ export default function NhanSuPage() {
           <select value={assignmentRole} onChange={(event) => setAssignmentRole(event.target.value as "ALL" | "MANAGER" | "EMPLOYEE")} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
             <option value="ALL">Vai trò: Tất cả</option><option value="MANAGER">Quản lý</option><option value="EMPLOYEE">Nhân viên</option>
           </select>
-          <select value={assignmentStatus} onChange={(event) => setAssignmentStatus(event.target.value)} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
-            <option value="ALL">Phân công: Tất cả</option><option value="ACTIVE">Đang phân công</option><option value="INACTIVE">Ngừng phân công</option>
-          </select>
-          <select value={assignmentPrimary} onChange={(event) => setAssignmentPrimary(event.target.value)} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
-            <option value="ALL">Chính/phụ: Tất cả</option><option value="true">Cửa hàng chính</option><option value="false">Cửa hàng phụ</option>
-          </select>
+          {/* <select value={assignmentStatus} onChange={(event) => setAssignmentStatus(event.target.value)} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+            <option value="ALL">phân bổ: Tất cả</option><option value="ACTIVE">Đang phân bổ</option><option value="INACTIVE">Ngừng phân bổ</option>
+          </select> */}
+        
           <button
             type="button"
             onClick={() => {
@@ -309,7 +307,7 @@ export default function NhanSuPage() {
             className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100"
           >
             <X className="h-3.5 w-3.5" />
-            Xóa bộ lọc
+            Đặt lại
           </button>
         </div>
         </div>

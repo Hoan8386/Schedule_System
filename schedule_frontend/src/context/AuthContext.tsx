@@ -24,6 +24,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function resolveRole(user: UserLogin): UserRoleCode {
+  const roleById: Record<number, UserRoleCode> = {
+    1: "ADMIN",
+    2: "MANAGER",
+    3: "STORE_MANAGER",
+    4: "EMPLOYEE",
+  };
+  const roleFromId = user.roleId ? roleById[Number(user.roleId)] : undefined;
+  if (roleFromId) return roleFromId;
+
+  const normalizedRole = String(user.roleCode || user.role || "").trim().toUpperCase();
+  if (
+    normalizedRole === "ADMIN" ||
+    normalizedRole === "MANAGER" ||
+    normalizedRole === "STORE_MANAGER" ||
+    normalizedRole === "EMPLOYEE"
+  ) {
+    return normalizedRole;
+  }
+
+  return "EMPLOYEE";
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserLogin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const savedUser = authApi.getSavedUser();
       const token = authApi.getSavedToken();
       if (savedUser && token) {
-        const role = (savedUser.roleCode || savedUser.role || "ADMIN") as UserRoleCode;
+        const role = resolveRole(savedUser);
         savedUser.role = role;
         savedUser.roleCode = role;
         setUser(savedUser);
@@ -54,26 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await authApi.login(payload);
       if (res.data?.user) {
         const u = res.data.user;
-        const roleCode = (u.roleCode || u.role) as UserRoleCode;
-        if (roleCode) {
-          u.role = roleCode;
-          u.roleCode = roleCode;
-        } else if (u.roleId === 1) {
-          u.role = "ADMIN";
-          u.roleCode = "ADMIN";
-        } else if (u.roleId === 2) {
-          u.role = "MANAGER";
-          u.roleCode = "MANAGER";
-        } else if (u.roleId === 3) {
-          u.role = "STORE_MANAGER";
-          u.roleCode = "STORE_MANAGER";
-        } else if (u.roleId === 4) {
-          u.role = "EMPLOYEE";
-          u.roleCode = "EMPLOYEE";
-        } else {
-          u.role = "ADMIN";
-          u.roleCode = "ADMIN";
-        }
+        const roleCode = resolveRole(u);
+        u.role = roleCode;
+        u.roleCode = roleCode;
 
         if (!u.roleName) {
           if (u.role === "ADMIN") u.roleName = "Quản trị viên";

@@ -386,7 +386,7 @@ export default function LichPage() {
       <form onSubmit={submit} className="w-full max-w-xl space-y-4 rounded-2xl bg-white p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-black text-slate-800">
-            {modal.item ? "Chỉnh sửa" : "Thêm"} {modal.kind === "period" ? "kỳ lập lịch" : modal.kind === "shift" ? "ca mẫu" : modal.kind === "shiftDate" ? "ca theo ngày" : "phân công"}
+            {modal.item ? "Chỉnh sửa" : "Thêm"} {modal.kind === "period" ? "kỳ lập lịch" : modal.kind === "shift" ? "ca mẫu" : modal.kind === "shiftDate" ? "ca theo ngày" : "phân bổ"}
           </h2>
           <button type="button" onClick={() => setModal(null)} aria-label="Đóng" className="rounded-full p-2 hover:bg-slate-100">
             <X className="h-4 w-4" />
@@ -414,7 +414,7 @@ export default function LichPage() {
               {input("shiftName", "Tên ca", "text", true)}
               {input("startTime", "Bắt đầu", "time", true)}
               {input("endTime", "Kết thúc", "time", true)}
-              {input("maxCapacity", "Sức chứa", "number", true)}
+              {input("maxCapacity", "Số lượng", "number", true)}
               {input("payRate", "Lương theo giờ", "number")}
               {input("status", "Trạng thái", "text", true)}
             </>
@@ -444,7 +444,7 @@ export default function LichPage() {
         </div>
 
         <button disabled={saving} className="w-full rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-slate-900 disabled:opacity-50">
-          {saving ? "Đang lưu..." : "Lưu dữ liệu"}
+          {saving ? "Đang lưu..." : "Lưu"}
         </button>
       </form>
     </div>
@@ -564,7 +564,7 @@ export default function LichPage() {
               </select>
             </label>
             <button type="button" onClick={() => setFilters({ q: "", from: "", to: "", storeId: "", status: "" })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
-              Xóa bộ lọc
+              Đặt lại
             </button>
           </section>
 
@@ -730,7 +730,7 @@ export default function LichPage() {
                     <CalendarRange className="h-5 w-5 text-amber-500" />
                     <h2 className="text-xl font-black tracking-tight text-slate-900">Thời khóa biểu ca làm</h2>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">Theo dõi lịch làm việc và tình trạng phân công theo cửa hàng.</p>
+                  <p className="mt-1 text-xs text-slate-500">Theo dõi lịch làm việc và tình trạng phân bổ theo cửa hàng.</p>
                 </div>
                 {add("shiftDate")}
               </div>
@@ -792,7 +792,7 @@ export default function LichPage() {
               <div className="text-xs text-slate-500">
                 <span className="font-bold text-slate-800">{calendarStats.total} ca</span>
                 <span className="mx-1">·</span>
-                <span>{calendarStats.assigned} đã phân công</span>
+                <span>{calendarStats.assigned} đã phân bổ</span>
               </div>
             </div>
 
@@ -889,7 +889,7 @@ export default function LichPage() {
             )}
 
             <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-500">
-              <span className="rounded-md bg-slate-100 px-2 py-1">Đã phân công</span>
+              <span className="rounded-md bg-slate-100 px-2 py-1">Đã phân bổ</span>
               <span className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-2 py-1">Chờ xử lý</span>
               <span className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-amber-700">Đổi ca / cần chú ý</span>
               <span className="ml-auto">{calendarStats.completed} ca đã hoàn tất</span>
@@ -922,7 +922,7 @@ export default function LichPage() {
 
                       <div className="mt-4 space-y-2">
                         {item.employees.length === 0 ? (
-                          <div className="rounded-xl border border-dashed border-slate-200 p-3 text-xs text-slate-500">Chưa có nhân viên được phân công.</div>
+                          <div className="rounded-xl border border-dashed border-slate-200 p-3 text-xs text-slate-500">Chưa có nhân viên được phân bổ.</div>
                         ) : (
                           item.employees.map((employee) => (
                             <div key={`${item.shiftByDateId}-${employee.employeeId}`} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">

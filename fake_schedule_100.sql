@@ -220,7 +220,7 @@ SELECT shift_date.shift_by_date_id,
            ELSE 'APPROVED'
        END,
        NOW(),
-       'Phân công giả phục vụ kiểm thử'
+       'phân bổ giả phục vụ kiểm thử'
 FROM shift_by_date shift_date
 JOIN shift item ON item.shift_id = shift_date.shift_id
 WHERE item.shift_code LIKE 'FAKE\\_%' ESCAPE '\\'

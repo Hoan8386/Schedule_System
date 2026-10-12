@@ -883,7 +883,7 @@ Module 3 gồm các nghiệp vụ:
 | Kỳ lập lịch | `SCHEDULE_PERIOD` | `/api/v1/schedule_period` |
 | Ca làm việc mẫu | `SHIFT` | `/api/v1/shift` |
 | Ca làm việc theo ngày | `SHIFT_BY_DATE` | `/api/v1/shift_by_date` |
-| Phân công nhân viên vào ca | `SHIFT_ASSIGNMENT` | `/api/v1/shift_assignment` |
+| phân bổ nhân viên vào ca | `SHIFT_ASSIGNMENT` | `/api/v1/shift_assignment` |
 | Yêu cầu khẩn cấp | `EMERGENCY_REQUEST` | `/api/v1/emergency_request` |
 
 Các controller tương ứng:
@@ -1079,7 +1079,7 @@ cho riêng ngày đó.
 
 ## 15D. SHIFT_ASSIGNMENT API (`/api/v1/shift_assignment`)
 
-Quản lý việc phân công một nhân viên vào một ca cụ thể. Một nhân viên không
+Quản lý việc phân bổ một nhân viên vào một ca cụ thể. Một nhân viên không
 được tạo hai bản ghi cho cùng một `shiftByDateId` theo ràng buộc duy nhất của
 bảng `shift_assignment`.
 
@@ -1087,25 +1087,25 @@ bảng `shift_assignment`.
 
 | Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
 |---|---|---|---|:---:|---|
-| `GET` | `/api/v1/shift_assignment` | Lấy toàn bộ phân công ca | Không | `200` | `ShiftAssignmentResponse[]` |
-| `GET` | `/api/v1/shift_assignment/{id}` | Lấy phân công theo ID | Không | `200` | `ShiftAssignmentResponse` |
-| `POST` | `/api/v1/shift_assignment` | Đăng ký/phân công nhân viên vào ca | JSON | `201` | `ShiftAssignmentResponse` |
-| `PUT` | `/api/v1/shift_assignment/{id}` | Cập nhật phân công ca | JSON | `200` | `ShiftAssignmentResponse` |
-| `DELETE` | `/api/v1/shift_assignment/{id}` | Xóa phân công ca | Không | `204` | Không có body |
+| `GET` | `/api/v1/shift_assignment` | Lấy toàn bộ phân bổ ca | Không | `200` | `ShiftAssignmentResponse[]` |
+| `GET` | `/api/v1/shift_assignment/{id}` | Lấy phân bổ theo ID | Không | `200` | `ShiftAssignmentResponse` |
+| `POST` | `/api/v1/shift_assignment` | Đăng ký/phân bổ nhân viên vào ca | JSON | `201` | `ShiftAssignmentResponse` |
+| `PUT` | `/api/v1/shift_assignment/{id}` | Cập nhật phân bổ ca | JSON | `200` | `ShiftAssignmentResponse` |
+| `DELETE` | `/api/v1/shift_assignment/{id}` | Xóa phân bổ ca | Không | `204` | Không có body |
 
 ### 15D.2 Cấu trúc `ShiftAssignmentResponse`
 
 | Field | Kiểu | Nullable | Mô tả |
 |---|---|:---:|---|
-| `id` | `number` | Không | ID phân công (`assignment_id`). |
-| `shiftByDate` hoặc `shiftByDateId` | `object/number` | Không | Ca theo ngày được phân công. |
-| `employee` hoặc `employeeId` | `object/number` | Không | Nhân viên được phân công. |
+| `id` | `number` | Không | ID phân bổ (`assignment_id`). |
+| `shiftByDate` hoặc `shiftByDateId` | `object/number` | Không | Ca theo ngày được phân bổ. |
+| `employee` hoặc `employeeId` | `object/number` | Không | Nhân viên được phân bổ. |
 | `status` | `string` | Không | Ví dụ `PENDING`, `APPROVED`, `CANCELLED`, `COMPLETED`. |
 | `registeredAt` | `string` | Có | Thời điểm đăng ký. |
 | `approvedAt` | `string` | Có | Thời điểm được duyệt. |
 | `cancelledAt` | `string` | Có | Thời điểm hủy. |
 | `cancellationReason` | `string` | Có | Lý do hủy. |
-| `note` | `string` | Có | Ghi chú phân công. |
+| `note` | `string` | Có | Ghi chú phân bổ. |
 
 ### 15D.3 Request Body POST/PUT
 
@@ -1119,7 +1119,7 @@ bảng `shift_assignment`.
 }
 ```
 
-Khi duyệt phân công:
+Khi duyệt phân bổ:
 
 ```json
 {
@@ -1143,8 +1143,8 @@ Khi hủy:
 
 ## 15E. EMERGENCY_REQUEST API (`/api/v1/emergency_request`)
 
-Quản lý yêu cầu phát sinh khẩn cấp liên quan đến phân công ca, chẳng hạn
-đổi ca, xin thay ca hoặc chuyển nhân viên giữa các phân công.
+Quản lý yêu cầu phát sinh khẩn cấp liên quan đến phân bổ ca, chẳng hạn
+đổi ca, xin thay ca hoặc chuyển nhân viên giữa các phân bổ.
 
 ### 15E.1 Danh sách endpoints
 
@@ -1162,10 +1162,10 @@ Quản lý yêu cầu phát sinh khẩn cấp liên quan đến phân công ca, 
 |---|---|:---:|---|
 | `emergencyRequestId` | `number` | Không | ID yêu cầu (`emergency_request_id`). |
 | `employeeId` | `number` | Không | Nhân viên tạo hoặc liên quan đến yêu cầu. |
-| `assignmentId` | `number` | Có | Phân công hiện tại liên quan đến yêu cầu. |
+| `assignmentId` | `number` | Có | phân bổ hiện tại liên quan đến yêu cầu. |
 | `requestType` | `string` | Không | Loại yêu cầu, ví dụ `SHIFT_SWAP`, `ABSENCE`, `REPLACEMENT`. |
-| `fromShiftAssignmentId` | `number` | Có | Phân công nguồn khi đổi/chuyển ca. |
-| `toAssignmentId` | `number` | Có | Phân công đích hoặc phân công thay thế. |
+| `fromShiftAssignmentId` | `number` | Có | phân bổ nguồn khi đổi/chuyển ca. |
+| `toAssignmentId` | `number` | Có | phân bổ đích hoặc phân bổ thay thế. |
 | `reason` | `string` | Không | Lý do yêu cầu. |
 | `status` | `string` | Không | Ví dụ `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`. |
 | `requestedAt` | `string` | Có | Thời điểm tạo yêu cầu. |
@@ -1204,7 +1204,7 @@ Duyệt hoặc từ chối yêu cầu:
 ### 15E.4 Quy trình trạng thái khuyến nghị
 
 1. Nhân viên tạo request với `status = PENDING`.
-2. Quản lý kiểm tra phân công nguồn và phân công đích.
+2. Quản lý kiểm tra phân bổ nguồn và phân bổ đích.
 3. Quản lý cập nhật `status = APPROVED` hoặc `REJECTED`.
 4. Khi xử lý phải ghi `processedBy`, `processedAt` và `processNote`.
 5. Không xóa request đã xử lý nếu cần lưu lịch sử; nên chuyển trạng thái
