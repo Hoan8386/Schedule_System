@@ -22,6 +22,8 @@ import {
   Mail,
   Phone,
   Shield,
+  Info,
+  MoreHorizontal,
 } from "lucide-react";
 import { UserRoleCode } from "@/types/auth";
 import {
@@ -311,16 +313,34 @@ export default function QuanLyTaiKhoanPage() {
     return matchSearch && matchRole && matchStatus;
   });
 
+  const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
+
+  // Chuẩn hóa 1 ngôn ngữ cho tên vai trò
+  const getRoleDisplayName = (code: string) => {
+    switch (code) {
+      case "ADMIN":
+        return "Quản trị viên";
+      case "MANAGER":
+        return "Quản lý";
+      case "STORE_MANAGER":
+        return "Quản lý chi nhánh";
+      case "EMPLOYEE":
+        return "Nhân viên";
+      default:
+        return code || "Nhân viên";
+    }
+  };
+
   const roleBadgeStyle = (code: UserRoleCode) => {
     switch (code) {
       case "ADMIN":
-        return "bg-red-50 text-red-700 border-red-200";
+        return "bg-rose-100 text-rose-800 border-rose-300";
       case "MANAGER":
-        return "bg-blue-50 text-blue-700 border-blue-200";
+        return "bg-blue-100 text-blue-800 border-blue-300";
       case "STORE_MANAGER":
-        return "bg-amber-50 text-amber-800 border-amber-200";
+        return "bg-amber-100 text-amber-900 border-amber-300";
       default:
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+        return "bg-emerald-100 text-emerald-800 border-emerald-300";
     }
   };
 
@@ -329,125 +349,127 @@ export default function QuanLyTaiKhoanPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-      
-            <span className="text-slate-500 text-xs font-semibold">Bảo mật & Người dùng</span>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              Quản lý tài khoản
+            </h1>
+            <div className="relative group">
+              <button
+                type="button"
+                className="w-6 h-6 rounded-full bg-slate-200 hover:bg-amber-100 text-slate-700 hover:text-amber-800 flex items-center justify-center font-bold transition-all cursor-help border border-slate-300 shadow-2xs"
+                title="Thông tin phân quyền hệ thống"
+              >
+                <Info className="w-3.5 h-3.5 stroke-[2.5]" />
+              </button>
+
+              {/* Tooltip & Phân quyền hệ thống vào chữ i */}
+              <div className="absolute left-0 top-8 z-40 hidden group-hover:block w-80 p-3.5 bg-slate-900 text-white rounded-xl shadow-2xl transition-all pointer-events-none border border-slate-700">
+                <div className="font-bold text-amber-400 text-xs flex items-center gap-1.5 mb-1">
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <span>& Phân quyền hệ thống</span>
+                </div>
+                <p className="text-slate-200 text-xs leading-relaxed font-medium">
+                  Quản lý danh sách người dùng, cập nhật thông tin cá nhân và gán vai trò trực tiếp trong hệ thống.
+                </p>
+              </div>
+            </div>
           </div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight mt-1">
-            Quản lý tài khoản & Phân quyền hệ thống
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Quản lý danh sách người dùng, cập nhật thông tin cá nhân và gán vai trò trực tiếp.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
             onClick={loadData}
             disabled={isLoadingApi}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
             title="Đồng bộ lại từ Backend Spring Boot"
           >
             <RefreshCw
-              className={`w-3.5 h-3.5 ${isLoadingApi ? "animate-spin text-amber-600" : "text-slate-500"}`}
+              className={`w-3.5 h-3.5 ${isLoadingApi ? "animate-spin text-amber-600" : "text-slate-700"}`}
             />
             <span>{isLoadingApi ? "Đang đồng bộ..." : "Tải lại dữ liệu"}</span>
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tạo tài khoản mới</span>
           </button>
         </div>
       </div>
 
       {/* Thông báo lỗi kết nối nếu có */}
       {apiError && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700 flex items-center justify-between">
+        <div className="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs text-rose-800 font-semibold flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-            <span>Lỗi tải dữ liệu tài khoản từ backend: <strong>{apiError}</strong></span>
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>Lỗi tải dữ liệu tài khoản từ backend: <strong className="font-bold">{apiError}</strong></span>
           </div>
           <button
             onClick={loadData}
-            className="font-bold underline text-rose-800 hover:text-rose-900 cursor-pointer ml-4"
+            className="font-bold underline text-rose-900 hover:text-black cursor-pointer ml-4"
           >
             Thử lại
           </button>
         </div>
       )}
 
-      {/* 4 Thẻ Thống Kê (Dữ liệu thực tế từ backend) */}
+      {/* 4 Thẻ Thống Kê (Bỏ mô tả, thay Box Quản trị viên bằng Quản lý) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-5 border border-slate-300 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500">Tổng tài khoản</span>
-            <div className="text-2xl sm:text-3xl font-black text-slate-800 mt-1 tracking-tight">
+            <span className="text-xs font-bold text-slate-700">Tổng tài khoản</span>
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tracking-tight">
               {accounts.length}
             </div>
-            <p className="text-[11px] text-emerald-600 mt-1 font-semibold">
-              {accounts.filter((a) => a.status === "ACTIVE").length} đang hoạt động
-            </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 border border-amber-200">
+            <Users className="w-5 h-5 stroke-[2.2]" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-5 border border-slate-300 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500">Quản trị viên (ADMIN)</span>
-            <div className="text-2xl sm:text-3xl font-black text-slate-800 mt-1 tracking-tight">
-              {accounts.filter((a) => a.roleCode === "ADMIN").length}
+            <span className="text-xs font-bold text-slate-700">Quản lý</span>
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tracking-tight">
+              {accounts.filter((a) => a.roleCode === "MANAGER" || a.roleCode === "STORE_MANAGER").length}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1 font-medium">Toàn quyền hệ thống</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center shrink-0 border border-blue-200">
+            <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-5 border border-slate-300 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500">Quản lý & Trưởng CH</span>
-            <div className="text-2xl sm:text-3xl font-black text-slate-800 mt-1 tracking-tight">
-              {accounts.filter((a) => a.roleCode === "STORE_MANAGER" || a.roleCode === "MANAGER").length}
+            <span className="text-xs font-bold text-slate-700">Nhân viên</span>
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tracking-tight">
+              {accounts.filter((a) => a.roleCode === "EMPLOYEE").length}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1 font-medium">Vận hành và quản lý ca</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <UserCheck className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200">
+            <UserCheck className="w-5 h-5 stroke-[2.2]" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-5 border border-slate-300 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500">Tài khoản bị khóa</span>
-            <div className="text-2xl sm:text-3xl font-black text-slate-800 mt-1 tracking-tight">
+            <span className="text-xs font-bold text-slate-700">Tài khoản bị khóa</span>
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tracking-tight">
               {accounts.filter((a) => a.status === "LOCKED").length}
             </div>
-            <p className="text-[11px] text-rose-500 mt-1 font-semibold">Tạm ngưng quyền truy cập</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-            <UserX className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center shrink-0 border border-rose-200">
+            <UserX className="w-5 h-5 stroke-[2.2]" />
           </div>
         </div>
       </div>
 
       {/* DANH SÁCH TÀI KHOẢN VÀ THAO TÁC */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-300 shadow-xs overflow-visible">
         {/* Bộ lọc & Tìm kiếm */}
-        <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
           <div className="relative flex-1 max-w-sm">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
-              placeholder="Tìm theo username, họ tên, email, sđt..."
+              placeholder="Tìm theo username hoặc ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl outline-hidden hover:border-slate-300 focus:border-amber-400 transition-all font-medium text-slate-800"
+              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl outline-hidden hover:border-slate-400 focus:border-amber-500 transition-all font-bold text-slate-800 placeholder:text-slate-400"
             />
           </div>
 
@@ -455,24 +477,23 @@ export default function QuanLyTaiKhoanPage() {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300"
+              className="px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-800 outline-hidden hover:border-slate-400"
             >
               <option value="ALL">Tất cả vai trò</option>
-              {roles.map((r) => (
-                <option key={r.roleId} value={r.roleCode}>
-                  {r.roleCode} ({r.roleName})
-                </option>
-              ))}
+              <option value="ADMIN">Quản trị viên</option>
+              <option value="MANAGER">Quản lý</option>
+              <option value="STORE_MANAGER">Quản lý chi nhánh</option>
+              <option value="EMPLOYEE">Nhân viên</option>
             </select>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300"
+              className="px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-800 outline-hidden hover:border-slate-400"
             >
               <option value="ALL">Tất cả trạng thái</option>
-              <option value="ACTIVE">Đang hoạt động</option>
-              <option value="LOCKED">Bị tạm khóa</option>
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="LOCKED">Đã khóa</option>
             </select>
 
             <button
@@ -481,125 +502,162 @@ export default function QuanLyTaiKhoanPage() {
                 setRoleFilter("ALL");
                 setStatusFilter("ALL");
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 font-bold cursor-pointer"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5 text-slate-700" />
               <span>Đặt lại</span>
             </button>
           </div>
         </div>
 
-        {/* Bảng dữ liệu */}
-        <div className="overflow-x-auto">
+        {/* Bảng dữ liệu: Chữ đậm hơn, 1 dòng, bỏ email phone, gộp thao tác thành 1 pop up */}
+        <div className="overflow-x-auto min-h-[300px]">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/60 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="px-5 py-3">Tài khoản & Người dùng</th>
-                <th className="px-5 py-3">Vai trò hệ thống</th>
-                <th className="px-5 py-3">Liên hệ</th>
-                <th className="px-5 py-3">Đăng nhập gần nhất</th>
-                <th className="px-5 py-3 text-center">Trạng thái</th>
-                <th className="px-5 py-3 text-right">Thao tác</th>
+              <tr className="bg-slate-100 border-b border-slate-200 text-xs font-black text-slate-700 uppercase tracking-wider whitespace-nowrap">
+                <th className="px-5 py-3.5">Tài khoản</th>
+                <th className="px-5 py-3.5">Vai trò</th>
+                <th className="px-5 py-3.5">Đăng nhập gần nhất</th>
+                <th className="px-5 py-3.5 text-center">Trạng thái</th>
+                <th className="px-5 py-3.5 text-right">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {filteredAccounts.map((acc) => {
+            <tbody className="divide-y divide-slate-200 text-xs">
+              {filteredAccounts.map((acc, index) => {
                 const badgeClass = roleBadgeStyle(acc.roleCode);
 
                 return (
-                  <tr key={acc.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-black text-xs flex items-center justify-center border border-amber-200 shrink-0">
+                  <tr key={acc.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-900 font-black text-xs flex items-center justify-center border border-amber-200 shrink-0">
                           {acc.username.slice(0, 2).toUpperCase()}
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-800 text-sm">@{acc.username}</p>
-                          <p className="text-[11px] text-slate-400 font-mono mt-0.5">ID: #{acc.id}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 text-xs">@{acc.username}</span>
+                          <span className="text-[10px] text-slate-700 font-mono font-bold bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">
+                            #{acc.id}
+                          </span>
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-3.5 whitespace-nowrap">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-black border ${badgeClass}`}
+                        className={`px-2.5 py-1 rounded-full text-xs font-bold border ${badgeClass}`}
                       >
-                        {acc.roleCode} · {acc.roleName}
+                        {getRoleDisplayName(acc.roleCode)}
                       </span>
                     </td>
 
-                    <td className="px-5 py-4 text-slate-600">
-                      <p className="font-medium text-slate-800">{acc.email || "—"}</p>
-                      <p className="text-[11px] text-slate-400 font-mono">{acc.phone}</p>
+                    <td className="px-5 py-3.5 whitespace-nowrap text-slate-800 font-semibold text-xs">
+                      {acc.lastLogin}
                     </td>
 
-                    <td className="px-5 py-4 text-slate-500 font-medium">{acc.lastLogin}</td>
-
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-3.5 whitespace-nowrap text-center">
                       <button
                         onClick={() => handleToggleStatus(acc)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border transition-all cursor-pointer ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer ${
                           acc.status === "ACTIVE"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                            : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                            ? "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200"
+                            : "bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200"
                         }`}
                         title="Nhấn để đổi trạng thái"
                       >
                         {acc.status === "ACTIVE" ? (
                           <>
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>HOẠT ĐỘNG</span>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                            <span>Hoạt động</span>
                           </>
                         ) : (
                           <>
-                            <Lock className="w-3 h-3" />
-                            <span>ĐÃ KHÓA</span>
+                            <Lock className="w-3.5 h-3.5 text-rose-700" />
+                            <span>Đã khóa</span>
                           </>
                         )}
                       </button>
                     </td>
 
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* NÚT CHỈNH SỬA & GÁN QUYỀN HỆ THỐNG */}
+                    <td className="px-5 py-3.5 whitespace-nowrap text-right relative">
+                      <div className="inline-block text-left">
                         <button
-                          onClick={() => handleOpenEdit(acc)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition-colors cursor-pointer"
-                          title="Cập nhật thông tin & Gán quyền hệ thống"
+                          onClick={() => setOpenActionMenuId(openActionMenuId === acc.id ? null : acc.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs transition-colors cursor-pointer shadow-2xs"
                         >
-                          <Edit className="w-3.5 h-3.5 text-amber-700" />
-                          <span>Sửa & Gán quyền</span>
+                          <MoreHorizontal className="w-4 h-4 text-slate-700" />
+                          <span>Thao tác</span>
                         </button>
 
-                        <button
-                          onClick={() => handleToggleStatus(acc)}
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
-                          title={acc.status === "ACTIVE" ? "Khóa tài khoản" : "Mở khóa"}
-                        >
-                          {acc.status === "ACTIVE" ? (
-                            <Lock className="w-3.5 h-3.5" />
-                          ) : (
-                            <Unlock className="w-3.5 h-3.5" />
-                          )}
-                        </button>
+                        {openActionMenuId === acc.id && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={() => setOpenActionMenuId(null)}
+                            />
+                            <div
+                              className={`absolute right-0 w-48 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100 ${
+                                index >= filteredAccounts.length - 2 && filteredAccounts.length > 2
+                                  ? "bottom-full mb-1"
+                                  : "top-full mt-1"
+                              }`}
+                            >
+                              <button
+                                onClick={() => {
+                                  setOpenActionMenuId(null);
+                                  handleOpenEdit(acc);
+                                }}
+                                className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-amber-50 text-slate-800 hover:text-amber-900 font-bold transition-colors cursor-pointer"
+                              >
+                                <Edit className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Sửa & Phân quyền</span>
+                              </button>
 
-                        <button
-                          onClick={() =>
-                            alert(`Mật khẩu tạm thời cho @${acc.username} đã được cấp lại: Bloan@2026`)
-                          }
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-amber-600 transition-colors cursor-pointer"
-                          title="Cấp lại mật khẩu"
-                        >
-                          <KeyRound className="w-3.5 h-3.5" />
-                        </button>
+                              <button
+                                onClick={() => {
+                                  setOpenActionMenuId(null);
+                                  handleToggleStatus(acc);
+                                }}
+                                className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-slate-100 text-slate-800 font-bold transition-colors cursor-pointer"
+                              >
+                                {acc.status === "ACTIVE" ? (
+                                  <>
+                                    <Lock className="w-3.5 h-3.5 text-rose-600" />
+                                    <span>Khóa tài khoản</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Mở khóa tài khoản</span>
+                                  </>
+                                )}
+                              </button>
 
-                        <button
-                          onClick={() => handleDeleteAccount(acc.id, acc.username)}
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-colors cursor-pointer"
-                          title="Xóa tài khoản khỏi hệ thống"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                              <button
+                                onClick={() => {
+                                  setOpenActionMenuId(null);
+                                  alert(`Mật khẩu tạm thời cho @${acc.username} đã được cấp lại: Bloan@2026`);
+                                }}
+                                className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-slate-100 text-slate-800 font-bold transition-colors cursor-pointer"
+                              >
+                                <KeyRound className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Cấp lại mật khẩu</span>
+                              </button>
+
+                              <div className="my-1 border-t border-slate-100" />
+
+                              <button
+                                onClick={() => {
+                                  setOpenActionMenuId(null);
+                                  handleDeleteAccount(acc.id, acc.username);
+                                }}
+                                className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-rose-50 text-rose-700 font-bold transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Xóa tài khoản</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -608,7 +666,7 @@ export default function QuanLyTaiKhoanPage() {
 
               {filteredAccounts.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
+                  <td colSpan={5} className="px-5 py-12 text-center text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="font-semibold text-sm text-slate-600">Không tìm thấy tài khoản nào</p>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -638,7 +696,7 @@ export default function QuanLyTaiKhoanPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-800 text-sm">
-                    Cập nhật tài khoản & Gán quyền hệ thống
+                    Cập nhật tài khoản & Phân quyền
                   </h3>
                   <p className="text-[11px] text-slate-400">
                     Tài khoản: <strong className="text-slate-700 font-mono">@{editAccount.username}</strong> (ID: #{editAccount.id})
@@ -698,17 +756,17 @@ export default function QuanLyTaiKhoanPage() {
                     onChange={(e) => setEditStatus(e.target.value as "ACTIVE" | "LOCKED")}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-hidden focus:border-amber-400 font-medium text-slate-800 bg-white"
                   >
-                    <option value="ACTIVE">HOẠT ĐỘNG (Bình thường)</option>
-                    <option value="LOCKED">ĐÃ KHÓA (Tạm ngưng)</option>
+                    <option value="ACTIVE">Hoạt động (Bình thường)</option>
+                    <option value="LOCKED">Đã khóa (Tạm ngưng)</option>
                   </select>
                 </div>
               </div>
 
-              {/* PHÂN QUYỀN HỆ THỐNG / GÁN VAI TRÒ */}
+              {/* PHÂN QUYỀN HỆ THỐNG / GÁN VAI TRÒ (1 NGÔN NGỮ THUẦN VIỆT) */}
               <div className="pt-2 border-t border-slate-100">
                 <label className="font-bold text-slate-800 flex items-center gap-1.5 mb-1.5">
                   <ShieldCheck className="w-4 h-4 text-amber-600" />
-                  <span>Gán vai trò / Phân quyền hệ thống (Role RBAC) *</span>
+                  <span>Vai trò tài khoản *</span>
                 </label>
                 <select
                   value={editRoleId}
@@ -717,15 +775,15 @@ export default function QuanLyTaiKhoanPage() {
                 >
                   {roles.map((r) => (
                     <option key={r.roleId} value={r.roleId}>
-                      {r.roleCode} — {r.roleName}
+                      {getRoleDisplayName(r.roleCode)}
                     </option>
                   ))}
                   {roles.length === 0 && (
                     <>
-                      <option value={1}>ADMIN — Quản trị viên</option>
-                      <option value={2}>MANAGER — Quản lý chuỗi</option>
-                      <option value={3}>STORE_MANAGER — Trưởng cửa hàng</option>
-                      <option value={4}>EMPLOYEE — Nhân viên</option>
+                      <option value={1}>Quản trị viên</option>
+                      <option value={2}>Quản lý</option>
+                      <option value={3}>Quản lý chi nhánh</option>
+                      <option value={4}>Nhân viên</option>
                     </>
                   )}
                 </select>
@@ -734,22 +792,22 @@ export default function QuanLyTaiKhoanPage() {
                 <div className="mt-2 p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-[11px] text-amber-900 leading-relaxed">
                   {editRoleId === 1 && (
                     <p>
-                      <strong>ADMIN:</strong> Toàn quyền quản trị hệ thống, quản lý tài khoản, phân quyền, cấu hình thông số và truy cập toàn bộ API.
+                      <strong>Quản trị viên:</strong> Toàn quyền quản trị hệ thống, quản lý tài khoản, phân quyền, cấu hình thông số và truy cập toàn bộ API.
                     </p>
                   )}
                   {editRoleId === 2 && (
                     <p>
-                      <strong>MANAGER:</strong> Quản lý vận hành toàn chuỗi chi nhánh, xem danh sách nhân sự, chốt bảng lương và duyệt đề xuất ca làm.
+                      <strong>Quản lý:</strong> Quản lý vận hành toàn chuỗi chi nhánh, xem danh sách nhân sự, chốt bảng lương và duyệt đề xuất ca làm.
                     </p>
                   )}
                   {editRoleId === 3 && (
                     <p>
-                      <strong>STORE_MANAGER:</strong> Xếp ca làm việc, đối soát chấm công, duyệt đổi ca nhân viên và lập biên bản trong phạm vi chi nhánh phụ trách.
+                      <strong>Quản lý chi nhánh:</strong> Xếp ca làm việc, đối soát chấm công, duyệt đổi ca nhân viên và lập biên bản trong phạm vi chi nhánh phụ trách.
                     </p>
                   )}
                   {editRoleId >= 4 && (
                     <p>
-                      <strong>EMPLOYEE:</strong> Nhân viên phục vụ/pha chế; chỉ xem lịch làm việc cá nhân, đăng ký ca mở, điểm danh FaceID và xem phiếu lương.
+                      <strong>Nhân viên:</strong> Nhân viên phục vụ/pha chế; chỉ xem lịch làm việc cá nhân, đăng ký ca mở, điểm danh FaceID và xem phiếu lương.
                     </p>
                   )}
                 </div>

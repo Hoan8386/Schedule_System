@@ -23,6 +23,7 @@ import {
   Code,
   FileDigit,
   Mail,
+  BellRing,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardPage from "@/components/management/DashboardPage";
@@ -34,6 +35,7 @@ import NoiQuyPage from "@/components/management/NoiQuyPage";
 import LuongPage from "@/components/management/LuongPage";
 import ThongKePage from "@/components/management/ThongKePage";
 import CuaHangPage from "@/components/management/CuaHangPage";
+import PhatThongBaoPage from "@/components/management/PhatThongBaoPage";
 import QuanLyTaiKhoanPage from "@/components/admin/QuanLyTaiKhoanPage";
 import ThongTinThuongHieuPage from "@/components/admin/ThongTinThuongHieuPage";
 import QuanLyApiPage from "@/components/admin/QuanLyApiPage";
@@ -57,14 +59,15 @@ const operationMenuItems: MenuItem[] = [
   { id: "noiquy", label: "Nội quy & vi phạm", icon: ShieldAlert },
   { id: "luong", label: "Quản lý lương & thưởng", icon: Wallet },
   { id: "thongke", label: "Thống kê & báo cáo", icon: TrendingUp },
+  { id: "phatthongbao", label: "Phát thông báo", icon: BellRing },
 ];
 
 const adminMenuItems: MenuItem[] = [
-  { id: "taikhoan", label: "Tài khoản & Phân quyền", icon: ShieldCheck },
+  { id: "taikhoan", label: "Quản lý tài khoản", icon: ShieldCheck },
   { id: "thuonghieu", label: "Logo, màu sắc & Chuỗi", icon: Palette },
   { id: "api", label: "Quản lý API & Thiết bị", icon: Code },
   { id: "sinhma", label: "Cấu hình sinh mã tự động", icon: FileDigit },
-  { id: "email_thongbao", label: "Thông báo & Gửi Email", icon: Mail },
+  { id: "email_thongbao", label: "Quản lý thông báo & Email", icon: Mail },
 ];
 
 export default function ManagementLayout() {
@@ -99,6 +102,8 @@ export default function ManagementLayout() {
         return <LuongPage />;
       case "thongke":
         return <ThongKePage />;
+      case "phatthongbao":
+        return <PhatThongBaoPage />;
       // Admin Pages
       case "taikhoan":
         return <QuanLyTaiKhoanPage />;

@@ -30,11 +30,11 @@ interface MenuItem {
 }
 
 const adminMenuItems: MenuItem[] = [
-  { id: "taikhoan", label: "Quản lý tài khoản (phân quyền)", icon: ShieldCheck, badge: "RBAC" },
+  { id: "taikhoan", label: "Quản lý tài khoản", icon: ShieldCheck, badge: "RBAC" },
   { id: "thuonghieu", label: "Quản lý chuỗi cửa hàng ", icon: Palette },
   { id: "api", label: "Quản lý API", icon: Code, badge: "Endpoints" },
   { id: "sinhma", label: "Cấu hình sinh mã tự động", icon: FileDigit },
-  { id: "email_thongbao", label: "Quản lý thông báo gửi email/thông báo", icon: Mail },
+  { id: "email_thongbao", label: "Quản lý thông báo & Email", icon: Mail },
 ];
 
 export default function AdminLayout() {
@@ -44,7 +44,7 @@ export default function AdminLayout() {
 
   const getBreadcrumbTitle = () => {
     const item = adminMenuItems.find((m) => m.id === activeTab);
-    return item ? item.label : "Quản lý tài khoản (phân quyền)";
+    return item ? item.label : "Quản lý tài khoản";
   };
 
   const renderPage = () => {

@@ -12,6 +12,7 @@ import {
   FileDigit,
   Settings2,
   Layers,
+  Info,
 } from "lucide-react";
 
 interface CodeRule {
@@ -122,30 +123,43 @@ export default function CauHinhSinhMaPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg">
+            <span className="text-xs font-black uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-lg">
               ADMIN CENTER
             </span>
             <span className="text-slate-400 text-xs">/</span>
-            <span className="text-slate-500 text-xs font-semibold">Quy tắc sinh mã</span>
+            <span className="text-slate-700 text-xs font-bold">Quy tắc sinh mã</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight mt-1">
-            Cấu hình quy tắc sinh mã tự động (Auto-Code Generator)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Tùy biến tiền tố, định dạng ngày tháng và số lượng chữ số tự tăng cho các thực thể dữ liệu trong chuỗi Ăn Vặt BLOAN.
-          </p>
+          <div className="flex items-center gap-2.5 mt-1">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              Cấu hình quy tắc sinh mã tự động (Auto-Code Generator)
+            </h1>
+            <div className="relative group">
+              <button
+                type="button"
+                className="w-6 h-6 rounded-full bg-slate-200 hover:bg-amber-100 text-slate-700 hover:text-amber-800 flex items-center justify-center font-bold transition-all cursor-help border border-slate-300 shadow-2xs"
+                title="Thông tin sinh mã tự động"
+              >
+                <Info className="w-3.5 h-3.5 stroke-[2.5]" />
+              </button>
+              <div className="absolute left-0 top-8 z-40 hidden group-hover:block w-80 p-3.5 bg-slate-900 text-white rounded-xl shadow-2xl transition-all pointer-events-none border border-slate-700">
+                <p className="text-slate-200 text-xs leading-relaxed font-medium">
+                  Tùy biến tiền tố, định dạng ngày tháng và số lượng chữ số tự tăng cho các thực thể dữ liệu trong chuỗi Ăn Vặt BLOAN.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => alert("Đã đặt lại quy tắc về chuẩn mặc định")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
           >
-            <RotateCcw className="w-4 h-4 text-slate-500" />
+            <RotateCcw className="w-4 h-4 text-slate-700" />
             <span>Mặc định</span>
           </button>
           <button
             onClick={handleSave}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>Lưu quy tắc sinh mã</span>
@@ -154,18 +168,18 @@ export default function CauHinhSinhMaPage() {
       </div>
 
       {/* Overview Card */}
-      <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-5 text-slate-900 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-5 text-slate-950 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-amber-400">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-950" />
-            <h3 className="font-black text-base tracking-tight">Quy chuẩn sinh mã duy nhất (Unique Identity)</h3>
+            <Sparkles className="w-5 h-5 text-amber-950 stroke-[2.2]" />
+            <h3 className="font-black text-base tracking-tight text-slate-950">Quy chuẩn sinh mã duy nhất (Unique Identity)</h3>
           </div>
-          <p className="text-xs font-medium text-amber-950/80 max-w-2xl">
+          <p className="text-xs font-bold text-amber-950/90 max-w-2xl">
             Mỗi đối tượng khi được thêm mới sẽ được cấp phát mã tự động theo mẫu đã định nghĩa. Hệ thống đảm bảo không trùng lặp ngay cả khi có hàng nghìn giao dịch đồng thời.
           </p>
         </div>
-        <div className="bg-white/90 backdrop-blur-xs px-4 py-2.5 rounded-xl shadow-xs border border-white/60 shrink-0 text-center">
-          <p className="text-[10px] font-bold text-slate-500 uppercase">Năm chu kỳ hiện tại</p>
+        <div className="bg-white px-4 py-2.5 rounded-xl shadow-xs border border-slate-300 shrink-0 text-center">
+          <p className="text-[10px] font-black text-slate-700 uppercase">Năm chu kỳ hiện tại</p>
           <p className="text-xl font-black text-slate-900">2026 · Quý 4</p>
         </div>
       </div>
@@ -179,7 +193,7 @@ export default function CauHinhSinhMaPage() {
           return (
             <div
               key={rule.id}
-              className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 hover:border-amber-300 transition-all"
+              className="bg-white rounded-2xl border border-slate-300 shadow-xs p-5 hover:border-amber-400 transition-all"
             >
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div className="flex items-start gap-3">

@@ -16,6 +16,7 @@ import {
   FileText,
   Eye,
   Sliders,
+  Info,
 } from "lucide-react";
 
 export default function ThongTinThuongHieuPage() {
@@ -64,30 +65,43 @@ export default function ThongTinThuongHieuPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg">
+            <span className="text-xs font-black uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-lg">
               ADMIN CENTER
             </span>
             <span className="text-slate-400 text-xs">/</span>
-            <span className="text-slate-500 text-xs font-semibold">Tùy biến nhận diện</span>
+            <span className="text-slate-700 text-xs font-bold">Tùy biến nhận diện</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight mt-1">
-            Quản lý chuỗi cửa hàng
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Cấu hình Logo, màu sắc chủ đạo, thông điệp thương hiệu và thông tin pháp lý của toàn hệ thống Ăn Vặt BLOAN.
-          </p>
+          <div className="flex items-center gap-2.5 mt-1">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              Quản lý chuỗi cửa hàng
+            </h1>
+            <div className="relative group">
+              <button
+                type="button"
+                className="w-6 h-6 rounded-full bg-slate-200 hover:bg-amber-100 text-slate-700 hover:text-amber-800 flex items-center justify-center font-bold transition-all cursor-help border border-slate-300 shadow-2xs"
+                title="Thông tin cấu hình thương hiệu"
+              >
+                <Info className="w-3.5 h-3.5 stroke-[2.5]" />
+              </button>
+              <div className="absolute left-0 top-8 z-40 hidden group-hover:block w-80 p-3.5 bg-slate-900 text-white rounded-xl shadow-2xl transition-all pointer-events-none border border-slate-700">
+                <p className="text-slate-200 text-xs leading-relaxed font-medium">
+                  Cấu hình Logo, màu sắc chủ đạo, thông điệp thương hiệu và thông tin pháp lý của toàn hệ thống Ăn Vặt BLOAN.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2.5">
           <button
             onClick={handleReset}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
           >
-            <RotateCcw className="w-4 h-4 text-slate-500" />
+            <RotateCcw className="w-4 h-4 text-slate-700" />
             <span>Khôi phục mặc định</span>
           </button>
           <button
             onClick={handleSave}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200 cursor-pointer"
           >
             <Check className="w-4 h-4 stroke-[3]" />
             <span>Lưu cài đặt thương hiệu</span>
@@ -99,14 +113,13 @@ export default function ThongTinThuongHieuPage() {
         {/* Left column: Form configuration (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
           {/* Card 1: Logo & Media */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-5">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold border border-amber-200">
                 <ImageIcon className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-800 text-sm">Logo & Hình ảnh thương hiệu</h3>
-                <p className="text-[11px] text-slate-400">Hình ảnh hiển thị trên thanh menu, trang đăng nhập và hóa đơn</p>
+                <h3 className="font-bold text-slate-900 text-sm">Logo & Hình ảnh thương hiệu</h3>
               </div>
             </div>
 
@@ -163,20 +176,19 @@ export default function ThongTinThuongHieuPage() {
           </div>
 
           {/* Card 2: Color Palette */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-5">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold border border-blue-200">
                 <Palette className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-800 text-sm">Hệ màu sắc nhận diện (Design Tokens)</h3>
-                <p className="text-[11px] text-slate-400">Tùy biến màu nhấn chính và màu phụ trên toàn giao diện</p>
+                <h3 className="font-bold text-slate-900 text-sm">Hệ màu sắc nhận diện (Design Tokens)</h3>
               </div>
             </div>
 
             <div className="space-y-4 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-2">Bảng màu gợi ý theo nhận diện:</label>
+                <label className="font-bold text-slate-800 block mb-2">Bảng màu gợi ý theo nhận diện:</label>
                 <div className="flex flex-wrap gap-2">
                   {colorPresets.map((preset) => (
                     <button
@@ -186,7 +198,7 @@ export default function ThongTinThuongHieuPage() {
                         setPrimaryColor(preset.primary);
                         setAccentColor(preset.accent);
                       }}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 font-semibold text-xs transition-all shadow-2xs"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-all shadow-2xs cursor-pointer"
                     >
                       <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: preset.primary }} />
                       <span>{preset.label}</span>
@@ -197,8 +209,8 @@ export default function ThongTinThuongHieuPage() {
 
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Màu chủ đạo (Primary):</label>
-                  <div className="flex items-center gap-2 p-1.5 border border-slate-200 rounded-xl bg-white">
+                  <label className="font-bold text-slate-800 block mb-1">Màu chủ đạo (Primary):</label>
+                  <div className="flex items-center gap-2 p-1.5 border border-slate-300 rounded-xl bg-white">
                     <input
                       type="color"
                       value={primaryColor}
@@ -209,14 +221,14 @@ export default function ThongTinThuongHieuPage() {
                       type="text"
                       value={primaryColor}
                       onChange={(e) => setPrimaryColor(e.target.value)}
-                      className="w-full text-xs font-mono font-bold uppercase text-slate-800 outline-hidden"
+                      className="w-full text-xs font-mono font-bold uppercase text-slate-900 outline-hidden"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Màu thương hiệu phụ (Accent):</label>
-                  <div className="flex items-center gap-2 p-1.5 border border-slate-200 rounded-xl bg-white">
+                  <label className="font-bold text-slate-800 block mb-1">Màu thương hiệu phụ (Accent):</label>
+                  <div className="flex items-center gap-2 p-1.5 border border-slate-300 rounded-xl bg-white">
                     <input
                       type="color"
                       value={accentColor}
@@ -227,7 +239,7 @@ export default function ThongTinThuongHieuPage() {
                       type="text"
                       value={accentColor}
                       onChange={(e) => setAccentColor(e.target.value)}
-                      className="w-full text-xs font-mono font-bold uppercase text-slate-800 outline-hidden"
+                      className="w-full text-xs font-mono font-bold uppercase text-slate-900 outline-hidden"
                     />
                   </div>
                 </div>
@@ -236,14 +248,13 @@ export default function ThongTinThuongHieuPage() {
           </div>
 
           {/* Card 3: Business Information */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-5">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold border border-emerald-200">
                 <Building className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-800 text-sm">Thông tin chuỗi & Doanh nghiệp</h3>
-                <p className="text-[11px] text-slate-400">Hiển thị trong email thông báo, chân trang và phiếu lương</p>
+                <h3 className="font-bold text-slate-900 text-sm">Thông tin chuỗi & Doanh nghiệp</h3>
               </div>
             </div>
 
