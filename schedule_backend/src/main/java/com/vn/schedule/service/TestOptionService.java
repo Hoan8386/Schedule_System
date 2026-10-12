@@ -54,19 +54,27 @@ public class TestOptionService {
     }
     private TestOption toEntity(TestOptionRequest body) {
         TestOption entity = new TestOption();
-        entity.setOptionId((Integer) body.get("optionId"));
-        entity.setQuestionId((Integer) body.get("questionId"));
-        entity.setOptionText((String) body.get("optionText"));
-        entity.setIsCorrect((Boolean) body.get("isCorrect"));
-        entity.setDisplayOrder((Integer) body.get("displayOrder"));
+        applyFields(entity, body);
         return entity;
     }
 
     private void applyFields(TestOption entity, TestOptionRequest body) {
-        entity.setOptionId((Integer) body.get("optionId"));
-        entity.setQuestionId((Integer) body.get("questionId"));
-        entity.setOptionText((String) body.get("optionText"));
-        entity.setIsCorrect((Boolean) body.get("isCorrect"));
-        entity.setDisplayOrder((Integer) body.get("displayOrder"));
+        if (body.get("optionId") != null) entity.setOptionId(toInteger(body.get("optionId")));
+        if (body.get("questionId") != null) entity.setQuestionId(toInteger(body.get("questionId")));
+        if (body.get("optionText") != null) entity.setOptionText(String.valueOf(body.get("optionText")));
+        if (body.get("isCorrect") != null) entity.setIsCorrect(toBoolean(body.get("isCorrect")));
+        if (body.get("displayOrder") != null) entity.setDisplayOrder(toInteger(body.get("displayOrder")));
+    }
+
+    private Integer toInteger(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(value.toString()); } catch (Exception e) { return null; }
+    }
+
+    private Boolean toBoolean(Object value) {
+        if (value == null) return null;
+        if (value instanceof Boolean b) return b;
+        return Boolean.parseBoolean(value.toString());
     }
 }

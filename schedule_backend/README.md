@@ -67,7 +67,16 @@ ghép dùng PUT/DELETE với JSON chứa khóa. Các API nghiệp vụ hiện c�
 
 - `/api/stores`, `/api/employees`
 - `/api/schedule/periods`, `/api/schedule/shifts`, `/api/schedule/calendar`, `/api/schedule/assignments`
+- `/api/v1/shift_group`, `/api/v1/schedule_round`, `/api/v1/schedule_session`
 - `/api/attendance` và `/api/attendance/check-in`
+
+Module 03 (Schedule & Shift) cung cấp CRUD cho nhóm ca, đợt đăng ký và phiên
+đăng ký. `SHIFT_GROUP` bắt buộc `storeId`, `shiftGroupCode`,
+`shiftGroupName`, `status` (`ACTIVE`/`INACTIVE`) và duy nhất theo cặp
+`storeId` + `shiftGroupCode`. `SCHEDULE_ROUND` nhận trạng thái `OPEN` hoặc
+`CLOSED`; `SCHEDULE_SESSION` nhận `OPEN`, `PENDING` hoặc `CLOSED` và có thể
+gán `shiftGroupId`. Các mốc thời gian được nhận theo ISO-8601 và thời điểm
+kết thúc không được trước thời điểm bắt đầu.
 
 ## Postman
 

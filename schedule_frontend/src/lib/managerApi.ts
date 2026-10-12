@@ -277,6 +277,87 @@ export interface BonusDetailResponse {
   [key: string]: unknown;
 }
 
+export interface RoleResponse {
+  roleId: number;
+  roleCode?: string;
+  roleName?: string;
+  description?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+export interface TestResponse {
+  testId?: number;
+  id?: number;
+  testCode: string;
+  testName: string;
+  description?: string;
+  targetRoleId?: number;
+  durationMinutes?: number;
+  passingScore?: number;
+  status: string;
+  createdBy?: number;
+  createdAt?: string;
+  [key: string]: unknown;
+}
+
+export interface TestRequest {
+  testCode: string;
+  testName: string;
+  description?: string;
+  targetRoleId?: number;
+  durationMinutes?: number;
+  passingScore?: number;
+  status: string;
+  createdBy?: number;
+}
+
+export interface TestQuestionResponse {
+  questionId?: number;
+  id?: number;
+  testId: number;
+  questionText: string;
+  questionType: string;
+  score?: number;
+  displayOrder?: number;
+  [key: string]: unknown;
+}
+
+export interface TestOptionResponse {
+  optionId?: number;
+  id?: number;
+  questionId: number;
+  optionText: string;
+  isCorrect?: boolean;
+  displayOrder?: number;
+  [key: string]: unknown;
+}
+
+export interface TestAssignmentResponse {
+  testAssignmentId?: number;
+  id?: number;
+  testId: number;
+  employeeId: number;
+  assignedBy?: number;
+  assignedAt?: string;
+  dueAt?: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+export interface TestResultResponse {
+  testResultId?: number;
+  id?: number;
+  testAssignmentId: number;
+  score?: number;
+  passed?: boolean;
+  startedAt?: string;
+  submittedAt?: string;
+  gradedBy?: number;
+  gradedAt?: string;
+  [key: string]: unknown;
+}
+
 export interface EmployeeRequest {
   userId?: number;
   employeeCode: string;
@@ -571,4 +652,52 @@ export const managerApi = {
     requestManagerApi<AttachmentResponse>(`/api/v1/attachment/${id}`),
   getAttachmentFileUrl: (id: number | string) =>
     `${API_BASE_URL}/api/v1/attachment/file/${id}`,
+  getRoles: () => requestManagerApi<RoleResponse[]>("/api/v1/role"),
+
+  // Test APIs
+  getTests: () => requestManagerApi<TestResponse[]>("/api/v1/test"),
+  getTestById: (id: number) => requestManagerApi<TestResponse>(`/api/v1/test/${id}`),
+  createTest: (body: Record<string, unknown>) =>
+    requestManagerApi<TestResponse>("/api/v1/test", { method: "POST", body: JSON.stringify(body) }),
+  updateTest: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<TestResponse>(`/api/v1/test/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteTest: (id: number) =>
+    requestManagerApi<void>(`/api/v1/test/${id}`, { method: "DELETE" }),
+
+  // Question APIs
+  getTestQuestions: () => requestManagerApi<TestQuestionResponse[]>("/api/v1/test_question"),
+  getTestQuestionById: (id: number) => requestManagerApi<TestQuestionResponse>(`/api/v1/test_question/${id}`),
+  createTestQuestion: (body: Record<string, unknown>) =>
+    requestManagerApi<TestQuestionResponse>("/api/v1/test_question", { method: "POST", body: JSON.stringify(body) }),
+  updateTestQuestion: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<TestQuestionResponse>(`/api/v1/test_question/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteTestQuestion: (id: number) =>
+    requestManagerApi<void>(`/api/v1/test_question/${id}`, { method: "DELETE" }),
+
+  // Option APIs
+  getTestOptions: () => requestManagerApi<TestOptionResponse[]>("/api/v1/test_option"),
+  createTestOption: (body: Record<string, unknown>) =>
+    requestManagerApi<TestOptionResponse>("/api/v1/test_option", { method: "POST", body: JSON.stringify(body) }),
+  updateTestOption: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<TestOptionResponse>(`/api/v1/test_option/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteTestOption: (id: number) =>
+    requestManagerApi<void>(`/api/v1/test_option/${id}`, { method: "DELETE" }),
+
+  // Assignment APIs
+  getTestAssignments: () => requestManagerApi<TestAssignmentResponse[]>("/api/v1/test_assignment"),
+  createTestAssignment: (body: Record<string, unknown>) =>
+    requestManagerApi<TestAssignmentResponse>("/api/v1/test_assignment", { method: "POST", body: JSON.stringify(body) }),
+  updateTestAssignment: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<TestAssignmentResponse>(`/api/v1/test_assignment/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteTestAssignment: (id: number) =>
+    requestManagerApi<void>(`/api/v1/test_assignment/${id}`, { method: "DELETE" }),
+
+  // Result APIs
+  getTestResults: () => requestManagerApi<TestResultResponse[]>("/api/v1/test_result"),
+  createTestResult: (body: Record<string, unknown>) =>
+    requestManagerApi<TestResultResponse>("/api/v1/test_result", { method: "POST", body: JSON.stringify(body) }),
+  updateTestResult: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<TestResultResponse>(`/api/v1/test_result/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteTestResult: (id: number) =>
+    requestManagerApi<void>(`/api/v1/test_result/${id}`, { method: "DELETE" }),
 };

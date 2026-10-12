@@ -39,6 +39,9 @@ DROP TABLE IF EXISTS `emergency_request`;
 DROP TABLE IF EXISTS `shift_assignment`;
 DROP TABLE IF EXISTS `shift_by_date`;
 DROP TABLE IF EXISTS `shift`;
+DROP TABLE IF EXISTS `schedule_session`;
+DROP TABLE IF EXISTS `schedule_round`;
+DROP TABLE IF EXISTS `shift_group`;
 DROP TABLE IF EXISTS `schedule_period`;
 DROP TABLE IF EXISTS `store_manager`;
 DROP TABLE IF EXISTS `employee_store`;
@@ -268,9 +271,61 @@ CREATE TABLE `schedule_period` (
         FOREIGN KEY (finalized_by) REFERENCES `employee`(employee_id)
 );
 
+-- ============================================================
+-- 12. MODULE 03: SHIFT_GROUP
+-- ============================================================
+
+CREATE TABLE `shift_group` (
+    shift_group_id INT AUTO_INCREMENT PRIMARY KEY,
+    store_id INT NOT NULL,
+    shift_group_code VARCHAR(100) NOT NULL,
+    shift_group_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    pay_rate DECIMAL(15,2),
+    status VARCHAR(30) NOT NULL,
+    created_by INT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    UNIQUE KEY uk_shift_group_store_code (store_id, shift_group_code),
+    CONSTRAINT fk_shift_group_store FOREIGN KEY (store_id) REFERENCES `store`(store_id),
+    CONSTRAINT fk_shift_group_created_by FOREIGN KEY (created_by) REFERENCES `employee`(employee_id)
+);
 
 -- ============================================================
--- 12. SHIFT
+-- 13. MODULE 03: SCHEDULE_ROUND
+-- ============================================================
+
+CREATE TABLE `schedule_round` (
+    schedule_round_id INT AUTO_INCREMENT PRIMARY KEY,
+    round_name VARCHAR(255) NOT NULL,
+    registration_start_at DATETIME,
+    registration_end_at DATETIME,
+    status VARCHAR(30) NOT NULL,
+    created_by INT,
+    created_at DATETIME,
+    CONSTRAINT fk_schedule_round_created_by FOREIGN KEY (created_by) REFERENCES `employee`(employee_id)
+);
+
+-- ============================================================
+-- 14. MODULE 03: SCHEDULE_SESSION
+-- ============================================================
+
+CREATE TABLE `schedule_session` (
+    schedule_session_id INT AUTO_INCREMENT PRIMARY KEY,
+    session_name VARCHAR(255) NOT NULL,
+    session_open_at DATETIME,
+    session_close_at DATETIME,
+    shift_group_id INT,
+    status VARCHAR(30) NOT NULL,
+    created_by INT,
+    created_at DATETIME,
+    CONSTRAINT fk_schedule_session_shift_group FOREIGN KEY (shift_group_id) REFERENCES `shift_group`(shift_group_id),
+    CONSTRAINT fk_schedule_session_created_by FOREIGN KEY (created_by) REFERENCES `employee`(employee_id)
+);
+
+
+-- ============================================================
+-- 15. SHIFT
 -- ============================================================
 
 CREATE TABLE `shift` (

@@ -56,25 +56,48 @@ public class TestResultService {
     }
     private TestResult toEntity(TestResultRequest body) {
         TestResult entity = new TestResult();
-        entity.setTestResultId((Integer) body.get("testResultId"));
-        entity.setTestAssignmentId((Integer) body.get("testAssignmentId"));
-        entity.setScore((BigDecimal) body.get("score"));
-        entity.setPassed((Boolean) body.get("passed"));
-        entity.setStartedAt((LocalDateTime) body.get("startedAt"));
-        entity.setSubmittedAt((LocalDateTime) body.get("submittedAt"));
-        entity.setGradedBy((Integer) body.get("gradedBy"));
-        entity.setGradedAt((LocalDateTime) body.get("gradedAt"));
+        applyFields(entity, body);
         return entity;
     }
 
     private void applyFields(TestResult entity, TestResultRequest body) {
-        entity.setTestResultId((Integer) body.get("testResultId"));
-        entity.setTestAssignmentId((Integer) body.get("testAssignmentId"));
-        entity.setScore((BigDecimal) body.get("score"));
-        entity.setPassed((Boolean) body.get("passed"));
-        entity.setStartedAt((LocalDateTime) body.get("startedAt"));
-        entity.setSubmittedAt((LocalDateTime) body.get("submittedAt"));
-        entity.setGradedBy((Integer) body.get("gradedBy"));
-        entity.setGradedAt((LocalDateTime) body.get("gradedAt"));
+        if (body.get("testResultId") != null) entity.setTestResultId(toInteger(body.get("testResultId")));
+        if (body.get("testAssignmentId") != null) entity.setTestAssignmentId(toInteger(body.get("testAssignmentId")));
+        if (body.get("score") != null) entity.setScore(toBigDecimal(body.get("score")));
+        if (body.get("passed") != null) entity.setPassed(toBoolean(body.get("passed")));
+        if (body.get("startedAt") != null) entity.setStartedAt(toLocalDateTime(body.get("startedAt")));
+        if (body.get("submittedAt") != null) entity.setSubmittedAt(toLocalDateTime(body.get("submittedAt")));
+        if (body.get("gradedBy") != null) entity.setGradedBy(toInteger(body.get("gradedBy")));
+        if (body.get("gradedAt") != null) entity.setGradedAt(toLocalDateTime(body.get("gradedAt")));
+    }
+
+    private Integer toInteger(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(value.toString()); } catch (Exception e) { return null; }
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) return null;
+        if (value instanceof BigDecimal bd) return bd;
+        if (value instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        try { return new BigDecimal(value.toString()); } catch (Exception e) { return null; }
+    }
+
+    private Boolean toBoolean(Object value) {
+        if (value == null) return null;
+        if (value instanceof Boolean b) return b;
+        return Boolean.parseBoolean(value.toString());
+    }
+
+    private LocalDateTime toLocalDateTime(Object value) {
+        if (value == null) return null;
+        if (value instanceof LocalDateTime ldt) return ldt;
+        try {
+            String str = value.toString().replace("Z", "");
+            return LocalDateTime.parse(str);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

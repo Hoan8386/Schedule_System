@@ -24,6 +24,7 @@ import {
   FileDigit,
   Mail,
   BellRing,
+  FileCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardPage from "@/components/management/DashboardPage";
@@ -41,6 +42,7 @@ import ThongTinThuongHieuPage from "@/components/admin/ThongTinThuongHieuPage";
 import QuanLyApiPage from "@/components/admin/QuanLyApiPage";
 import CauHinhSinhMaPage from "@/components/admin/CauHinhSinhMaPage";
 import QuanLyEmailThongBaoPage from "@/components/admin/QuanLyEmailThongBaoPage";
+import QuanLyTestPage from "@/components/management/QuanLyTestPage";
 
 interface MenuItem {
   id: string;
@@ -60,6 +62,7 @@ const operationMenuItems: MenuItem[] = [
   { id: "luong", label: "Quản lý lương & thưởng", icon: Wallet },
   { id: "thongke", label: "Thống kê & báo cáo", icon: TrendingUp },
   { id: "phatthongbao", label: "Phát thông báo", icon: BellRing },
+  { id: "quanlytest", label: "Quản lý bài test", icon: FileCheck },
 ];
 
 const adminMenuItems: MenuItem[] = [
@@ -104,6 +107,8 @@ export default function ManagementLayout() {
         return <ThongKePage />;
       case "phatthongbao":
         return <PhatThongBaoPage />;
+      case "quanlytest":
+        return <QuanLyTestPage />;
       // Admin Pages
       case "taikhoan":
         return <QuanLyTaiKhoanPage />;

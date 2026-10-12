@@ -54,29 +54,35 @@ public class TestService {
     public void deleteBody(TestRequest body) {
         repository.delete(toEntity(body));
     }
+
     private Test toEntity(TestRequest body) {
         Test entity = new Test();
-        entity.setTestId((Integer) body.get("testId"));
-        entity.setTestCode((String) body.get("testCode"));
-        entity.setTestName((String) body.get("testName"));
-        entity.setDescription((String) body.get("description"));
-        entity.setTargetRoleId((Integer) body.get("targetRoleId"));
-        entity.setDurationMinutes((Integer) body.get("durationMinutes"));
-        entity.setPassingScore((BigDecimal) body.get("passingScore"));
-        entity.setStatus((String) body.get("status"));
-        entity.setCreatedBy((Integer) body.get("createdBy"));
+        applyFields(entity, body);
         return entity;
     }
 
     private void applyFields(Test entity, TestRequest body) {
-        entity.setTestId((Integer) body.get("testId"));
-        entity.setTestCode((String) body.get("testCode"));
-        entity.setTestName((String) body.get("testName"));
-        entity.setDescription((String) body.get("description"));
-        entity.setTargetRoleId((Integer) body.get("targetRoleId"));
-        entity.setDurationMinutes((Integer) body.get("durationMinutes"));
-        entity.setPassingScore((BigDecimal) body.get("passingScore"));
-        entity.setStatus((String) body.get("status"));
-        entity.setCreatedBy((Integer) body.get("createdBy"));
+        if (body.get("testId") != null) entity.setTestId(toInteger(body.get("testId")));
+        if (body.get("testCode") != null) entity.setTestCode(String.valueOf(body.get("testCode")));
+        if (body.get("testName") != null) entity.setTestName(String.valueOf(body.get("testName")));
+        if (body.get("description") != null) entity.setDescription(String.valueOf(body.get("description")));
+        if (body.get("targetRoleId") != null) entity.setTargetRoleId(toInteger(body.get("targetRoleId")));
+        if (body.get("durationMinutes") != null) entity.setDurationMinutes(toInteger(body.get("durationMinutes")));
+        if (body.get("passingScore") != null) entity.setPassingScore(toBigDecimal(body.get("passingScore")));
+        if (body.get("status") != null) entity.setStatus(String.valueOf(body.get("status")));
+        if (body.get("createdBy") != null) entity.setCreatedBy(toInteger(body.get("createdBy")));
+    }
+
+    private Integer toInteger(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(value.toString()); } catch (Exception e) { return null; }
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) return null;
+        if (value instanceof BigDecimal bd) return bd;
+        if (value instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        try { return new BigDecimal(value.toString()); } catch (Exception e) { return null; }
     }
 }

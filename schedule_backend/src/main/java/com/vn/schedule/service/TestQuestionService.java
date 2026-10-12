@@ -55,21 +55,29 @@ public class TestQuestionService {
     }
     private TestQuestion toEntity(TestQuestionRequest body) {
         TestQuestion entity = new TestQuestion();
-        entity.setQuestionId((Integer) body.get("questionId"));
-        entity.setTestId((Integer) body.get("testId"));
-        entity.setQuestionText((String) body.get("questionText"));
-        entity.setQuestionType((String) body.get("questionType"));
-        entity.setScore((BigDecimal) body.get("score"));
-        entity.setDisplayOrder((Integer) body.get("displayOrder"));
+        applyFields(entity, body);
         return entity;
     }
 
     private void applyFields(TestQuestion entity, TestQuestionRequest body) {
-        entity.setQuestionId((Integer) body.get("questionId"));
-        entity.setTestId((Integer) body.get("testId"));
-        entity.setQuestionText((String) body.get("questionText"));
-        entity.setQuestionType((String) body.get("questionType"));
-        entity.setScore((BigDecimal) body.get("score"));
-        entity.setDisplayOrder((Integer) body.get("displayOrder"));
+        if (body.get("questionId") != null) entity.setQuestionId(toInteger(body.get("questionId")));
+        if (body.get("testId") != null) entity.setTestId(toInteger(body.get("testId")));
+        if (body.get("questionText") != null) entity.setQuestionText(String.valueOf(body.get("questionText")));
+        if (body.get("questionType") != null) entity.setQuestionType(String.valueOf(body.get("questionType")));
+        if (body.get("score") != null) entity.setScore(toBigDecimal(body.get("score")));
+        if (body.get("displayOrder") != null) entity.setDisplayOrder(toInteger(body.get("displayOrder")));
+    }
+
+    private Integer toInteger(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(value.toString()); } catch (Exception e) { return null; }
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) return null;
+        if (value instanceof BigDecimal bd) return bd;
+        if (value instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        try { return new BigDecimal(value.toString()); } catch (Exception e) { return null; }
     }
 }
