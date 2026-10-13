@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
+import { employeeApi } from "@/lib/employeeApi";
 
 export default function EmployeeFeedbackPage() {
   const [feedbackType, setFeedbackType] = useState<"system" | "shift" | "colleague">("shift");
@@ -21,13 +22,20 @@ export default function EmployeeFeedbackPage() {
   );
   const [isSent, setIsSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSent(true);
-    setTimeout(() => {
-      alert("Cảm ơn bạn! Phản hồi đã được chuyển tới quản lý cửa hàng.");
-      setIsSent(false);
-    }, 800);
+    try {
+      await employeeApi.createFeedback({
+        feedbackType: feedbackType === "system" ? "SYSTEM" : feedbackType === "shift" ? "SHIFT" : "EMPLOYEE",
+        content: `${title}\n\n${content}`,
+        status: "PENDING",
+        shiftByDateId: feedbackType === "shift" ? Number(shift) || undefined : undefined,
+      });
+      setIsSent(true);
+      setTimeout(() => setIsSent(false), 1200);
+    } catch (cause) {
+      alert(cause instanceof Error ? cause.message : "Không thể gửi phản hồi");
+    }
   };
 
   return (

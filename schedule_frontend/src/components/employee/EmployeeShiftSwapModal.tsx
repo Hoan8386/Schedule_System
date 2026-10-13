@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, Store, Info, Check } from "lucide-react";
+import { employeeApi } from "@/lib/employeeApi";
 
 interface EmployeeShiftSwapModalProps {
   isOpen: boolean;
@@ -12,27 +13,46 @@ export default function EmployeeShiftSwapModal({
   isOpen,
   onClose,
 }: EmployeeShiftSwapModalProps) {
-  const [currentShift, setCurrentShift] = useState("06/10/2026 · Ca sáng · 08:00 – 14:00");
-  const [targetShift, setTargetShift] = useState("07/10/2026 · Ca tối · 16:00 – 22:00");
+  const [currentShift, setCurrentShift] = useState("");
+  const [targetShift, setTargetShift] = useState("");
+  const [assignments, setAssignments] = useState<Array<Record<string, unknown>>>([]);
+  const [availableShifts, setAvailableShifts] = useState<Array<Record<string, unknown>>>([]);
   const [reason, setReason] = useState(
     "Em có lịch học bổ sung vào sáng 06/10. Em xin chuyển sang ca tối 07/10 để đảm bảo đủ giờ làm trong tuần."
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    Promise.all([employeeApi.getAssignments(), employeeApi.getShiftsByDate({ status: "OPEN" })])
+      .then(([own, available]) => {
+        const ownValues = own.data ?? [];
+        const shiftValues = available.data ?? [];
+        setAssignments(ownValues);
+        setAvailableShifts(shiftValues);
+        setCurrentShift(String(ownValues[0]?.id ?? ownValues[0]?.shiftAssignmentId ?? ""));
+        setTargetShift(String(shiftValues[0]?.id ?? shiftValues[0]?.shiftByDateId ?? ""));
+      }).catch(() => { setAssignments([]); setAvailableShifts([]); });
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    employeeApi.createEmergencyRequest({
+      assignmentId: Number(currentShift),
+      requestType: "CHANGE",
+      fromShiftAssignmentId: Number(currentShift),
+      toAssignmentId: Number(targetShift),
+      reason,
+      status: "PENDING",
+      requestedAt: new Date().toISOString(),
+    }).then(() => {
       setIsSuccess(true);
-      setTimeout(() => {
-        setIsSuccess(false);
-        onClose();
-      }, 1200);
-    }, 600);
+      setTimeout(() => { setIsSuccess(false); onClose(); }, 1200);
+    }).catch(() => setIsSubmitting(false));
   };
 
   return (
@@ -80,15 +100,11 @@ export default function EmployeeShiftSwapModal({
                 onChange={(e) => setCurrentShift(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden hover:border-slate-300 focus:border-amber-400"
               >
-                <option value="06/10/2026 · Ca sáng · 08:00 – 14:00">
-                  06/10/2026 · Ca sáng · 08:00 – 14:00
-                </option>
-                <option value="08/10/2026 · Ca tối · 16:00 – 22:00">
-                  08/10/2026 · Ca tối · 16:00 – 22:00
-                </option>
-                <option value="10/10/2026 · Ca sáng · 08:00 – 14:00">
-                  10/10/2026 · Ca sáng · 08:00 – 14:00
-                </option>
+                {assignments.map((item) => (
+                  <option key={String(item.id ?? item.shiftAssignmentId)} value={String(item.id ?? item.shiftAssignmentId)}>
+                    Ca đăng ký #{String(item.id ?? item.shiftAssignmentId)}
+                  </option>
+                ))}
               </select>
               <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-2 text-slate-500">
                 <Store className="w-3.5 h-3.5 text-slate-400" />
@@ -106,15 +122,11 @@ export default function EmployeeShiftSwapModal({
                 onChange={(e) => setTargetShift(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden hover:border-slate-300 focus:border-amber-400"
               >
-                <option value="07/10/2026 · Ca tối · 16:00 – 22:00">
-                  07/10/2026 · Ca tối · 16:00 – 22:00
-                </option>
-                <option value="09/10/2026 · Ca sáng · 08:00 – 14:00">
-                  09/10/2026 · Ca sáng · 08:00 – 14:00
-                </option>
-                <option value="11/10/2026 · Ca tối · 16:00 – 22:00">
-                  11/10/2026 · Ca tối · 16:00 – 22:00
-                </option>
+                {availableShifts.map((item) => (
+                  <option key={String(item.id ?? item.shiftByDateId)} value={String(item.id ?? item.shiftByDateId)}>
+                    Ca theo ngày #{String(item.id ?? item.shiftByDateId)}
+                  </option>
+                ))}
               </select>
               <p className="text-[11px] text-slate-400">
                 BLOAN Nguyễn Trãi · 6 giờ · 180.000 VND · Còn 2 chỗ

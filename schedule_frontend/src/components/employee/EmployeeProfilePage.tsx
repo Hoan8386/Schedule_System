@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Pencil,
   CheckCircle2,
@@ -13,10 +13,25 @@ import {
   Building,
   UserCheck,
 } from "lucide-react";
+import { employeeApi } from "@/lib/employeeApi";
+import type { EmployeeResponse } from "@/lib/managerApi";
 
 export default function EmployeeProfilePage() {
+  const [profile, setProfile] = useState<EmployeeResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    employeeApi.getProfile()
+      .then((response) => setProfile(response.data?.[0] ?? null))
+      .catch((cause) => setError(cause instanceof Error ? cause.message : "Không thể tải thông tin cá nhân"));
+  }, []);
+
+  const fullName = profile?.fullName ?? "Chưa cập nhật";
+  const initials = fullName.split(" ").map((part) => part[0]).join("").slice(-2).toUpperCase();
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">{error}</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -42,14 +57,14 @@ export default function EmployeeProfilePage() {
           {/* Main User Card */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs text-center flex flex-col items-center">
             <div className="w-24 h-24 rounded-full bg-slate-100 border-4 border-white shadow-sm flex items-center justify-center text-2xl font-black text-slate-700">
-              MA
+              {initials}
             </div>
 
             <h3 className="text-lg font-black text-slate-800 mt-4">
-              Nguyễn Minh Anh
+              {fullName}
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              NV024 · Nhân viên bán hàng
+              {profile?.employeeCode ?? "Nhân viên"}
             </p>
 
             <span className="mt-3 px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
@@ -60,12 +75,12 @@ export default function EmployeeProfilePage() {
               <div>
                 <span className="text-slate-400 text-[11px]">Cửa hàng chính</span>
                 <p className="font-bold text-slate-800 mt-0.5">
-                  BLOAN Nguyễn Trãi
+                  {profile?.address ?? "Chưa cập nhật"}
                 </p>
               </div>
               <div>
                 <span className="text-slate-400 text-[11px]">Ngày gia nhập</span>
-                <p className="font-bold text-slate-800 mt-0.5">01/09/2025</p>
+                <p className="font-bold text-slate-800 mt-0.5">{profile?.hireDate ?? "Chưa cập nhật"}</p>
               </div>
             </div>
           </div>
@@ -102,7 +117,7 @@ export default function EmployeeProfilePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div>
                 <span className="text-slate-400 text-[11px]">Họ và tên</span>
-                <p className="font-bold text-slate-800 mt-0.5">Nguyễn Minh Anh</p>
+                <p className="font-bold text-slate-800 mt-0.5">{fullName}</p>
               </div>
               <div>
                 <span className="text-slate-400 text-[11px]">Ngày sinh</span>
@@ -118,19 +133,19 @@ export default function EmployeeProfilePage() {
               <div>
                 <span className="text-slate-400 text-[11px]">Email</span>
                 <p className="font-bold text-slate-800 mt-0.5">
-                  minhanh.nv024@bloan.vn
+                  {profile?.email ?? "Chưa cập nhật"}
                 </p>
               </div>
               <div>
                 <span className="text-slate-400 text-[11px]">Số điện thoại</span>
-                <p className="font-bold text-slate-800 mt-0.5">0903 246 810</p>
+                <p className="font-bold text-slate-800 mt-0.5">{profile?.phone ?? "Chưa cập nhật"}</p>
               </div>
             </div>
 
             <div className="text-xs pt-2">
               <span className="text-slate-400 text-[11px]">Địa chỉ liên hệ</span>
               <p className="font-bold text-slate-800 mt-0.5">
-                Phường Bến Thành, TP. Hồ Chí Minh
+                {profile?.address ?? "Chưa cập nhật"}
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FileText,
   Clock,
@@ -13,6 +13,7 @@ import {
   X,
   Check,
 } from "lucide-react";
+import { employeeApi } from "@/lib/employeeApi";
 
 interface TestItem {
   id: string;
@@ -74,13 +75,38 @@ const initialTests: TestItem[] = [
 ];
 
 export default function EmployeeTestPage() {
-  const [tests, setTests] = useState<TestItem[]>(initialTests);
+  const [tests, setTests] = useState<TestItem[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeQuizModal, setActiveQuizModal] = useState<TestItem | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isQuizSubmitted, setIsQuizSubmitted] = useState(false);
+
+  useEffect(() => {
+    Promise.all([employeeApi.getTestAssignments(), employeeApi.getTests(), employeeApi.getTestResults()])
+      .then(([assignments, testsResponse, results]) => {
+        const resultByAssignment = new Map((results.data ?? []).map((result) => [result.testAssignmentId, result]));
+        const testById = new Map((testsResponse.data ?? []).map((test) => [test.testId ?? test.id, test]));
+        setTests((assignments.data ?? []).map((assignment) => {
+          const test = testById.get(assignment.testId);
+          const result = resultByAssignment.get(assignment.id ?? assignment.testAssignmentId ?? -1);
+          return {
+            id: String(assignment.id ?? assignment.testAssignmentId),
+            title: test?.testName ?? `Bài kiểm tra #${assignment.testId}`,
+            code: test?.testCode ?? "",
+            type: test?.description ?? "Đào tạo",
+            questions: 0,
+            duration: test?.durationMinutes ?? 0,
+            dueDate: assignment.dueAt ?? "Chưa có hạn",
+            status: result ? "COMPLETED" : assignment.status === "IN_PROGRESS" ? "IN_PROGRESS" : "NOT_STARTED",
+            score: result?.score,
+          };
+        }));
+      })
+      .catch((cause) => setLoadError(cause instanceof Error ? cause.message : "Không thể tải bài kiểm tra"));
+  }, []);
 
   const handleStartTest = (test: TestItem) => {
     setActiveQuizModal(test);
@@ -109,6 +135,7 @@ export default function EmployeeTestPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      {loadError && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">{loadError}</div>}
       {/* Header */}
       <div>
         <h1 className="text-2xl font-black text-slate-800 tracking-tight">

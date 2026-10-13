@@ -17,22 +17,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class AttendanceService {
     private final AttendanceRepository repository;
     private final EmployeeRepository employeeRepository;
     private final ShiftByDateRepository shiftByDateRepository;
+    private final StoreScopeService storeScopeService;
 
     public AttendanceService(AttendanceRepository repository, EmployeeRepository employeeRepository,
-            ShiftByDateRepository shiftByDateRepository) {
+            ShiftByDateRepository shiftByDateRepository, StoreScopeService storeScopeService) {
         this.repository = repository;
         this.employeeRepository = employeeRepository;
         this.shiftByDateRepository = shiftByDateRepository;
+        this.storeScopeService = storeScopeService;
     }
 
     @Transactional(readOnly = true)
     public List<AttendanceResponse> findAll(Integer employeeId) {
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")) {
+            employeeId = storeScopeService.currentEmployeeId();
+        }
         List<Attendance> values = employeeId == null
                 ? repository.findAll()
                 : repository.findByEmployeeIdOrderByCheckInAtDesc(employeeId);
@@ -45,12 +51,22 @@ public class AttendanceService {
     }
 
     public Attendance findById(Integer id) {
-        return repository.findById(id)
+        Attendance item = repository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")
+                && (item.getEmployee() == null
+                || !Objects.equals(item.getEmployee().getId(), storeScopeService.currentEmployeeId()))) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được xem chấm công của mình");
+        }
+        return item;
     }
 
     @Transactional
     public AttendanceResponse checkIn(CheckInRequest request) {
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")
+                && !Objects.equals(request.employeeId(), storeScopeService.currentEmployeeId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được chấm công cho mình");
+        }
         Employee employee = employeeRepository.findById(request.employeeId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Employee not found"));
         Attendance item = new Attendance();
@@ -68,6 +84,10 @@ public class AttendanceService {
 
     @Transactional
     public AttendanceResponse create(AttendanceRequest body) {
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")
+                && !Objects.equals(body.resolvedEmployeeId(), storeScopeService.currentEmployeeId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được tạo chấm công cho mình");
+        }
         return toResponse(repository.save(toEntity(body)));
     }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Copy,
   Search,
@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Info,
 } from "lucide-react";
+import { employeeApi } from "@/lib/employeeApi";
 
 interface ShiftItem {
   id: string;
@@ -113,25 +114,68 @@ const initialShifts: ShiftItem[] = [
 ];
 
 export default function EmployeeRegisterShiftPage() {
-  const [shifts, setShifts] = useState<ShiftItem[]>(initialShifts);
+  const [shifts, setShifts] = useState<ShiftItem[]>([]);
+  const [employeeId, setEmployeeId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [storeFilter, setStoreFilter] = useState("all");
   const [shiftFilter, setShiftFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const handleRegister = (id: string) => {
-    setShifts((prev) =>
-      prev.map((s) => {
-        if (s.id === id && s.status === "AVAILABLE") {
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([employeeApi.getProfile(), employeeApi.getShiftsByDate({ status: "OPEN" }), employeeApi.getAssignments()])
+      .then(([profile, available, assignments]) => {
+        if (cancelled) return;
+        const employee = profile.data?.[0];
+        setEmployeeId(employee?.id ?? null);
+        const registered = new Set(
+          (assignments.data ?? [])
+            .filter((item) => item.employeeId === employee?.id)
+            .map((item) => item.shiftByDateId),
+        );
+        setShifts((available.data ?? []).map((item) => {
+          const id = item.shiftByDateId ?? item.id ?? 0;
+          const capacity = item.maxCapacity ?? 0;
+          const current = item.capacity ?? 0;
+          const start = item.startTime?.slice(0, 5) ?? "";
+          const end = item.endTime?.slice(0, 5) ?? "";
           return {
-            ...s,
-            registeredCount: s.registeredCount + 1,
-            status: "REGISTERED",
+            id: String(id),
+            day: item.workDate ?? "",
+            shiftName: item.shiftName ?? "Ca làm việc",
+            shiftHours: `${start} – ${end}`,
+            store: item.storeName ?? "Cửa hàng",
+            registeredCount: current,
+            capacity,
+            ratePerShift: `${Number(item.payRate ?? 0).toLocaleString("vi-VN")} VND`,
+            hoursDetail: `${start && end ? "Theo cấu hình ca" : ""}`,
+            status: registered.has(item.shiftByDateId)
+              ? "REGISTERED"
+              : current >= capacity && capacity > 0 ? "FULL" : "AVAILABLE",
           };
-        }
-        return s;
+        }));
       })
-    );
+      .catch((cause) => setError(cause instanceof Error ? cause.message : "Không thể tải danh sách ca"));
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleRegister = async (id: string) => {
+    if (!employeeId) {
+      setError("Không xác định được hồ sơ nhân viên hiện tại");
+      return;
+    }
+    try {
+      await employeeApi.createAssignment({
+        shiftByDate: { id: Number(id) },
+        employee: { id: employeeId },
+        status: "PENDING",
+        registeredAt: new Date().toISOString(),
+      });
+      setShifts((prev) => prev.map((s) => s.id === id ? { ...s, registeredCount: s.registeredCount + 1, status: "REGISTERED" } : s));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Không thể đăng ký ca");
+    }
   };
 
   const handleCopyPreviousWeek = () => {
@@ -142,6 +186,7 @@ export default function EmployeeRegisterShiftPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">{error}</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

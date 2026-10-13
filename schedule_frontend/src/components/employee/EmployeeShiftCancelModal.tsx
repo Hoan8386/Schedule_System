@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, AlertTriangle, Check, Store } from "lucide-react";
+import { employeeApi } from "@/lib/employeeApi";
 
 interface EmployeeShiftCancelModalProps {
   isOpen: boolean;
@@ -12,26 +13,38 @@ export default function EmployeeShiftCancelModal({
   isOpen,
   onClose,
 }: EmployeeShiftCancelModalProps) {
-  const [selectedShift, setSelectedShift] = useState("10/10/2026 · Ca sáng · 08:00 – 14:00");
+  const [selectedShift, setSelectedShift] = useState("");
+  const [assignments, setAssignments] = useState<Array<Record<string, unknown>>>([]);
   const [reason, setReason] = useState(
     "Em có lịch khám bệnh vào sáng 10/10 và không thể có mặt tại cửa hàng. Em xin phép hủy ca này."
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    employeeApi.getAssignments().then((response) => {
+      const own = response.data ?? [];
+      setAssignments(own);
+      setSelectedShift(String(own[0]?.id ?? own[0]?.shiftAssignmentId ?? ""));
+    }).catch(() => setAssignments([]));
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    employeeApi.createEmergencyRequest({
+      assignmentId: Number(selectedShift),
+      requestType: "CANCEL",
+      reason,
+      status: "PENDING",
+      requestedAt: new Date().toISOString(),
+    }).then(() => {
       setIsSuccess(true);
-      setTimeout(() => {
-        setIsSuccess(false);
-        onClose();
-      }, 1200);
-    }, 600);
+      setTimeout(() => { setIsSuccess(false); onClose(); }, 1200);
+    }).catch(() => setIsSubmitting(false));
   };
 
   return (
@@ -79,15 +92,11 @@ export default function EmployeeShiftCancelModal({
                 onChange={(e) => setSelectedShift(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden hover:border-slate-300 focus:border-red-400"
               >
-                <option value="10/10/2026 · Ca sáng · 08:00 – 14:00">
-                  10/10/2026 · Ca sáng · 08:00 – 14:00
-                </option>
-                <option value="08/10/2026 · Ca tối · 16:00 – 22:00">
-                  08/10/2026 · Ca tối · 16:00 – 22:00
-                </option>
-                <option value="06/10/2026 · Ca sáng · 08:00 – 14:00">
-                  06/10/2026 · Ca sáng · 08:00 – 14:00
-                </option>
+                {assignments.map((item) => (
+                  <option key={String(item.id ?? item.shiftAssignmentId)} value={String(item.id ?? item.shiftAssignmentId)}>
+                    Ca đăng ký #{String(item.id ?? item.shiftAssignmentId)}
+                  </option>
+                ))}
               </select>
 
               <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-1">

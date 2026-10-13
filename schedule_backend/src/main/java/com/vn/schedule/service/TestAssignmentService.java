@@ -15,21 +15,36 @@ import java.util.List;
 @Service
 public class TestAssignmentService {
     private final TestAssignmentRepository repository;
-    public TestAssignmentService(TestAssignmentRepository repository) {
+    private final StoreScopeService storeScopeService;
+    public TestAssignmentService(TestAssignmentRepository repository, StoreScopeService storeScopeService) {
         this.repository = repository;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<TestAssignment> findAll() {
-        return repository.findAll();
+        return repository.findAll().stream()
+                .filter(item -> !storeScopeService.isCurrentUserRole("EMPLOYEE")
+                        || item.getEmployeeId().equals(storeScopeService.currentEmployeeId()))
+                .toList();
     }
 
     public TestAssignment findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        TestAssignment item = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")
+                && !item.getEmployeeId().equals(storeScopeService.currentEmployeeId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được xem bài kiểm tra của mình");
+        }
+        return item;
     }
 
     @Transactional
     public TestAssignment create(TestAssignmentRequest body) {
-        return repository.save(toEntity(body));
+        TestAssignment item = toEntity(body);
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")) {
+            item.setEmployeeId(storeScopeService.currentEmployeeId());
+        }
+        return repository.save(item);
     }
 
     @Transactional

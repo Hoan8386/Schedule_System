@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class FeedbackService {
@@ -24,6 +25,9 @@ public class FeedbackService {
 
     public List<Feedback> findAll() {
         return repository.findAll().stream()
+                .filter(item -> !storeScopeService.isCurrentUserRole("EMPLOYEE")
+                        || Objects.equals(item.getEmployeeId(), storeScopeService.currentEmployeeId())
+                        || Objects.equals(item.getTargetEmployeeId(), storeScopeService.currentEmployeeId()))
                 .filter(item -> storeScopeService.isGlobalUser()
                         || storeScopeService.canAccessStore(item.getStoreId()))
                 .toList();
@@ -33,12 +37,20 @@ public class FeedbackService {
         Feedback item = repository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
         storeScopeService.requireStoreAccess(item.getStoreId());
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")
+                && !Objects.equals(item.getEmployeeId(), storeScopeService.currentEmployeeId())
+                && !Objects.equals(item.getTargetEmployeeId(), storeScopeService.currentEmployeeId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được xem phản hồi liên quan đến mình");
+        }
         return item;
     }
 
     @Transactional
     public Feedback create(FeedbackRequest body) {
         Feedback item = toEntity(body);
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")) {
+            item.setEmployeeId(storeScopeService.currentEmployeeId());
+        }
         storeScopeService.requireStoreAccess(item.getStoreId());
         return repository.save(item);
     }

@@ -35,6 +35,9 @@ public class ShiftAssignmentService {
 
     public List<ShiftAssignmentResponse> findAll() {
     return repository.findAll().stream()
+                .filter(item -> !storeScopeService.isCurrentUserRole("EMPLOYEE")
+                        || item.getEmployee() != null
+                        && item.getEmployee().getId().equals(storeScopeService.currentEmployeeId()))
                 .filter(item -> storeScopeService.isGlobalUser()
                         || item.getShiftByDate() != null
                         && item.getShiftByDate().getShift() != null
@@ -78,6 +81,11 @@ public class ShiftAssignmentService {
     @Transactional
     public ShiftAssignment create(ShiftAssignmentRequest body) {
         ShiftAssignment entity = toEntity(body);
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")
+                && (entity.getEmployee() == null
+                || !entity.getEmployee().getId().equals(storeScopeService.currentEmployeeId()))) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được đăng ký ca cho mình");
+        }
         requireAccess(entity);
         return repository.save(entity);
     }
@@ -119,6 +127,11 @@ public class ShiftAssignmentService {
     }
 
     private void requireAccess(ShiftAssignment item) {
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")
+                && (item.getEmployee() == null
+                || !item.getEmployee().getId().equals(storeScopeService.currentEmployeeId()))) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được thao tác trên đăng ký ca của mình");
+        }
         Integer storeId = item.getShiftByDate() != null
                 && item.getShiftByDate().getShift() != null
                 && item.getShiftByDate().getShift().getStore() != null

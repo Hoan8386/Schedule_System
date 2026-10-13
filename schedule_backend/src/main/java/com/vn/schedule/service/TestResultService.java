@@ -2,6 +2,7 @@ package com.vn.schedule.service;
 
 import com.vn.schedule.domain.TestResult;
 import com.vn.schedule.repository.TestResultRepository;
+import com.vn.schedule.repository.TestAssignmentRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.dto.request.TestResultRequest;
 import java.time.LocalDateTime;
@@ -16,21 +17,46 @@ import java.util.List;
 @Service
 public class TestResultService {
     private final TestResultRepository repository;
-    public TestResultService(TestResultRepository repository) {
+    private final TestAssignmentRepository assignmentRepository;
+    private final StoreScopeService storeScopeService;
+    public TestResultService(TestResultRepository repository,
+                             TestAssignmentRepository assignmentRepository,
+                             StoreScopeService storeScopeService) {
         this.repository = repository;
+        this.assignmentRepository = assignmentRepository;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<TestResult> findAll() {
-        return repository.findAll();
+        return repository.findAll().stream()
+                .filter(item -> !storeScopeService.isCurrentUserRole("EMPLOYEE")
+                        || belongsToCurrentEmployee(item))
+                .toList();
     }
 
     public TestResult findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        TestResult item = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE") && !belongsToCurrentEmployee(item)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được xem kết quả của mình");
+        }
+        return item;
     }
 
     @Transactional
     public TestResult create(TestResultRequest body) {
-        return repository.save(toEntity(body));
+        TestResult item = toEntity(body);
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE") && !belongsToCurrentEmployee(item)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được nộp bài kiểm tra của mình");
+        }
+        return repository.save(item);
+    }
+
+    private boolean belongsToCurrentEmployee(TestResult item) {
+        return item.getTestAssignmentId() != null
+                && assignmentRepository.findById(item.getTestAssignmentId())
+                .map(assignment -> assignment.getEmployeeId().equals(storeScopeService.currentEmployeeId()))
+                .orElse(false);
     }
 
     @Transactional

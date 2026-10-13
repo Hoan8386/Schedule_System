@@ -55,6 +55,8 @@ public class EmployeeService {
                 : repository.findByStatusOrderByFullName(status);
         Set<Integer> visibleEmployeeIds = storeScopeService.employeeIdsInVisibleStores();
         return employees.stream()
+                .filter(employee -> !storeScopeService.isCurrentUserRole("EMPLOYEE")
+                        || employee.getId().equals(storeScopeService.currentEmployeeId()))
                 .filter(employee -> visibleEmployeeIds == null || visibleEmployeeIds.contains(employee.getId()))
                 .map(this::toResponse)
                 .toList();
@@ -64,6 +66,10 @@ public class EmployeeService {
         Employee employee = repository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi nhân viên"));
         Set<Integer> visibleEmployeeIds = storeScopeService.employeeIdsInVisibleStores();
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")
+                && !employee.getId().equals(storeScopeService.currentEmployeeId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được xem hồ sơ của mình");
+        }
         if (visibleEmployeeIds != null && !visibleEmployeeIds.contains(employee.getId())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập nhân viên này");
         }

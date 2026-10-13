@@ -45,6 +45,30 @@ public class StoreScopeService {
         return visibleStoreIds() == null;
     }
 
+    public boolean isCurrentUserRole(String expectedRole) {
+        String login = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Chưa đăng nhập"));
+        User user = userRepository.findByUsername(login)
+                .or(() -> userRepository.findByEmail(login))
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Tài khoản không tồn tại"));
+        return userRoleRepository.findByUserId(user.getId()).stream()
+                .map(item -> roleRepository.findById(item.getRoleId()).orElse(null))
+                .filter(Objects::nonNull)
+                .map(role -> role.getRoleCode())
+                .anyMatch(expectedRole::equalsIgnoreCase);
+    }
+
+    public Integer currentEmployeeId() {
+        String login = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Chưa đăng nhập"));
+        User user = userRepository.findByUsername(login)
+                .or(() -> userRepository.findByEmail(login))
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Tài khoản không tồn tại"));
+        return employeeRepository.findByUser_Id(user.getId())
+                .map(Employee::getId)
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "Tài khoản chưa có hồ sơ nhân viên"));
+    }
+
     public Set<Integer> visibleStoreIds() {
         String login = SecurityUtil.getCurrentUserLogin()
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Chưa đăng nhập"));

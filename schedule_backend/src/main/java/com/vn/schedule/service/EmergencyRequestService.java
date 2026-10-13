@@ -15,21 +15,37 @@ import java.util.List;
 @Service
 public class EmergencyRequestService {
     private final EmergencyRequestRepository repository;
-    public EmergencyRequestService(EmergencyRequestRepository repository) {
+    private final StoreScopeService storeScopeService;
+    public EmergencyRequestService(EmergencyRequestRepository repository,
+                                   StoreScopeService storeScopeService) {
         this.repository = repository;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<EmergencyRequest> findAll() {
-        return repository.findAll();
+        return repository.findAll().stream()
+                .filter(item -> !storeScopeService.isCurrentUserRole("EMPLOYEE")
+                        || item.getEmployeeId().equals(storeScopeService.currentEmployeeId()))
+                .toList();
     }
 
     public EmergencyRequest findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        EmergencyRequest item = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")
+                && !item.getEmployeeId().equals(storeScopeService.currentEmployeeId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được xem yêu cầu của mình");
+        }
+        return item;
     }
 
     @Transactional
     public EmergencyRequest create(EmergencyRequestRequest body) {
-        return repository.save(toEntity(body));
+        EmergencyRequest item = toEntity(body);
+        if (storeScopeService.isCurrentUserRole("EMPLOYEE")) {
+            item.setEmployeeId(storeScopeService.currentEmployeeId());
+        }
+        return repository.save(item);
     }
 
     @Transactional
