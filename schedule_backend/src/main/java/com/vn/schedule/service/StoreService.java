@@ -15,16 +15,24 @@ import java.util.List;
 @Service
 public class StoreService {
     private final StoreRepository repository;
-    public StoreService(StoreRepository repository) {
+    private final StoreScopeService storeScopeService;
+    public StoreService(StoreRepository repository, StoreScopeService storeScopeService) {
         this.repository = repository;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<Store> findAll() {
-        return repository.findAll();
+        return repository.findAll().stream()
+                .filter(store -> storeScopeService.isGlobalUser()
+                        || storeScopeService.canAccessStore(store.getId()))
+                .toList();
     }
 
     public Store findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        Store store = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        storeScopeService.requireStoreAccess(store.getId());
+        return store;
     }
 
     @Transactional

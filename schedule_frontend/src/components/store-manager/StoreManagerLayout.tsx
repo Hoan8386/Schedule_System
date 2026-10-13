@@ -7,7 +7,6 @@ import {
   Inbox,
   CalendarPlus,
   ShieldAlert,
-  TrendingUp,
   MessageSquare,
   MessageCircle,
   FileText,
@@ -27,7 +26,6 @@ import StoreManagerShiftRequestsPage from "@/components/store-manager/StoreManag
 import StoreManagerViolationPage from "@/components/store-manager/StoreManagerViolationPage";
 import StoreManagerTodoListPage from "@/components/store-manager/StoreManagerTodoListPage";
 import StoreManagerTestManagementPage from "@/components/store-manager/StoreManagerTestManagementPage";
-import StoreManagerStatsPage from "@/components/store-manager/StoreManagerStatsPage";
 import StoreManagerFeedbackPage from "@/components/store-manager/StoreManagerFeedbackPage";
 import StoreManagerMyShiftPage from "@/components/store-manager/StoreManagerMyShiftPage";
 
@@ -43,7 +41,7 @@ const menuItems: MenuItem[] = [
   { id: "yeucau", label: "Xử lý yêu cầu ca", icon: Inbox, badge: "6 chờ duyệt" },
   { id: "dangkyca", label: "Đăng ký ca của tôi", icon: CalendarPlus },
   { id: "vipham", label: "Xử lý vi phạm", icon: ShieldAlert, badge: "2" },
-  { id: "thongke", label: "Thống kê ca làm & tiền", icon: TrendingUp },
+  { id: "xuatca", label: "Xuất danh sách ca", icon: CalendarPlus },
   { id: "feedback_hethong", label: "Feedback hệ thống", icon: MessageSquare },
   { id: "feedback_nhanvien", label: "Feedback nhân viên", icon: MessageCircle },
   { id: "lapbienban", label: "Lập biên bản", icon: FileText },
@@ -245,7 +243,7 @@ export default function StoreManagerLayout() {
           {activeTab === "dangkyca" && <StoreManagerMyShiftPage />}
           {activeTab === "vipham" && <StoreManagerViolationPage />}
           {activeTab === "lapbienban" && <StoreManagerViolationPage initialTab="lapbienban" />}
-          {activeTab === "thongke" && <StoreManagerStatsPage />}
+          {activeTab === "xuatca" && <StoreManagerMyShiftPage exportOnly />}
           {(activeTab === "feedback_hethong" || activeTab === "feedback_nhanvien") && (
             <StoreManagerFeedbackPage initialTab={activeTab === "feedback_hethong" ? "hethong" : "nhanvien"} />
           )}

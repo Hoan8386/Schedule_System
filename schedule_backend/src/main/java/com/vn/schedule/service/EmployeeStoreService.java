@@ -19,16 +19,19 @@ import java.util.Set;
 public class EmployeeStoreService {
     private final EmployeeStoreRepository repository;
     private final StoreManagerRepository storeManagerRepository;
+    private final StoreScopeService storeScopeService;
 
     public EmployeeStoreService(
             EmployeeStoreRepository repository,
-            StoreManagerRepository storeManagerRepository) {
+            StoreManagerRepository storeManagerRepository,
+            StoreScopeService storeScopeService) {
         this.repository = repository;
         this.storeManagerRepository = storeManagerRepository;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<EmployeeStore> findAll() {
-        return repository.findAll();
+        return findByFilters(null, null, null, null);
     }
 
     public List<EmployeeStore> findByFilters(
@@ -41,7 +44,9 @@ public class EmployeeStoreService {
                 .map(manager -> manager.getEmployeeId() + ":" + manager.getStoreId())
                 .collect(java.util.stream.Collectors.toSet());
 
+        Set<Integer> visibleStoreIds = storeScopeService.visibleStoreIds();
         return repository.findAll().stream()
+                .filter(item -> visibleStoreIds == null || visibleStoreIds.contains(item.getStoreId()))
                 .filter(item -> storeId == null || storeId.equals(item.getStoreId()))
                 .filter(item -> status == null || status.equalsIgnoreCase(item.getStatus()))
                 .filter(item -> primary == null || primary.equals(item.getIsPrimary()))
@@ -64,18 +69,24 @@ public class EmployeeStoreService {
     }
 
     public EmployeeStore findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        EmployeeStore item = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        storeScopeService.requireStoreAccess(item.getStoreId());
+        return item;
     }
 
     @Transactional
     public EmployeeStore create(EmployeeStoreRequest body) {
-        return repository.save(toEntity(body));
+        EmployeeStore entity = toEntity(body);
+        storeScopeService.requireStoreAccess(entity.getStoreId());
+        return repository.save(entity);
     }
 
     @Transactional
     public EmployeeStore update(Integer id, EmployeeStoreRequest body) {
         EmployeeStore current = findById(id);
         applyFields(current, body);
+        storeScopeService.requireStoreAccess(current.getStoreId());
         return repository.save(current);
     }
 

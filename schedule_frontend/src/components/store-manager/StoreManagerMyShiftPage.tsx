@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Copy,
   Search,
@@ -9,6 +9,7 @@ import {
   Clock,
   Info,
 } from "lucide-react";
+import { storeManagerApi } from "@/lib/storeManagerAPI";
 
 interface ShiftPlan {
   id: string;
@@ -86,14 +87,83 @@ const initialShifts: ShiftPlan[] = [
   },
 ];
 
-export default function StoreManagerMyShiftPage() {
-  const [shifts, setShifts] = useState<ShiftPlan[]>(initialShifts);
-  const [search, setSearch] = useState("");
+interface StoreManagerMyShiftPageProps {
+  exportOnly?: boolean;
+}
 
-  const handleRegister = (id: string) => {
-    setShifts((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status: "REGISTERED" } : s))
-    );
+export default function StoreManagerMyShiftPage({
+  exportOnly = false,
+}: StoreManagerMyShiftPageProps) {
+  const [shifts, setShifts] = useState<ShiftPlan[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      storeManagerApi.getShiftsByDate(),
+      storeManagerApi.getShiftAssignments(),
+    ])
+      .then(([shiftResponse, assignmentResponse]) => {
+        if (!active) return;
+        const assignedIds = new Set(
+          assignmentResponse.data
+            .filter((assignment) => assignment.status !== "CANCELLED")
+            .map((assignment) => String(assignment.shiftByDateId ?? ""))
+        );
+        const mapped = shiftResponse.data.map((shift) => {
+          const id = String(shift.shiftByDateId ?? shift.id ?? "");
+          const capacity = Number(shift.capacity ?? 0);
+          const maxCapacity = Number(shift.maxCapacity ?? 0);
+          return {
+            id,
+            day: shift.workDate ?? "",
+            shiftName: shift.shiftName ?? "Ca làm việc",
+            shiftHours: `${shift.startTime ?? "--:--"} – ${shift.endTime ?? "--:--"}`,
+            capacityText: `${capacity} / ${maxCapacity || "-"}`,
+            rateText: `${Number(shift.payRate ?? 0).toLocaleString("vi-VN")} VND`,
+            status: assignedIds.has(id)
+              ? "REGISTERED"
+              : maxCapacity > 0 && capacity >= maxCapacity
+                ? "FULL"
+                : "AVAILABLE",
+          } as ShiftPlan;
+        });
+        setShifts(mapped);
+      })
+      .catch((requestError: Error) => {
+        if (active) {
+          setError(requestError.message);
+          setShifts([]);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleRegister = async (id: string) => {
+    try {
+      const savedUser =
+        typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem("bloan_user") || "{}")
+          : {};
+      await storeManagerApi.createShiftAssignment({
+        shiftByDateId: Number(id),
+        employeeId: Number(savedUser.employeeId),
+        status: "PENDING",
+        registeredAt: new Date().toISOString(),
+      });
+      setShifts((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, status: "REGISTERED" } : s))
+      );
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    }
   };
 
   const registeredCount = shifts.filter((s) => s.status === "REGISTERED").length;
@@ -104,18 +174,50 @@ export default function StoreManagerMyShiftPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">
-            Đăng ký ca làm việc của tôi
+            {exportOnly ? "Xuất danh sách ca làm" : "Đăng ký ca làm việc của tôi"}
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Chọn ca cho chính bạn tại BLOAN Nguyễn Trãi. Không đăng ký thay nhân viên.
+            {exportOnly
+              ? "Xuất danh sách ca trong phạm vi cửa hàng hiện tại."
+              : "Chọn ca cho chính bạn tại BLOAN Nguyễn Trãi. Không đăng ký thay nhân viên."}
           </p>
         </div>
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+            {error}
+          </div>
+        )}
         <button
-          onClick={() => alert("Đã sao chép lịch ca giống kỳ trước cho bạn!")}
+          onClick={() => {
+            if (exportOnly) {
+              const csv = [
+                "Ngày làm,Tên ca,Giờ,Sức chứa,Tình trạng",
+                ...shifts.map((shift) =>
+                  [
+                    shift.day,
+                    shift.shiftName,
+                    shift.shiftHours,
+                    shift.capacityText,
+                    shift.status,
+                  ].join(",")
+                ),
+              ].join("\n");
+              const url = URL.createObjectURL(
+                new Blob([csv], { type: "text/csv;charset=utf-8" })
+              );
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = "danh-sach-ca-lam.csv";
+              link.click();
+              URL.revokeObjectURL(url);
+              return;
+            }
+            alert("Đã sao chép lịch ca giống kỳ trước cho bạn!");
+          }}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
         >
           <Copy className="w-4 h-4 text-slate-500" />
-          <span>Thêm giống kỳ trước</span>
+          <span>{exportOnly ? "Tải CSV" : "Thêm giống kỳ trước"}</span>
         </button>
       </div>
 
@@ -185,7 +287,19 @@ export default function StoreManagerMyShiftPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {shifts.map((s) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-slate-400">
+                    Đang tải ca từ cửa hàng...
+                  </td>
+                </tr>
+              ) : shifts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-slate-400">
+                    Chưa có ca nào trong kỳ hiện tại.
+                  </td>
+                </tr>
+              ) : shifts.map((s) => (
                 <tr key={s.id} className="hover:bg-slate-50/70 transition-colors">
                   <td className="py-3 px-4 font-bold text-slate-800">{s.day}</td>
                   <td className="py-3 px-4">

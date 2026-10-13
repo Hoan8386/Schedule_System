@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   MessageSquare,
   MessageCircle,
@@ -11,6 +11,7 @@ import {
   Send,
   AlertCircle,
 } from "lucide-react";
+import { storeManagerApi } from "@/lib/storeManagerAPI";
 
 interface FeedbackItem {
   id: string;
@@ -84,17 +85,66 @@ export default function StoreManagerFeedbackPage({
   initialTab = "nhanvien",
 }: StoreManagerFeedbackPageProps) {
   const [tab, setTab] = useState<"nhanvien" | "hethong">(initialTab);
-  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>(mockEmployeeFeedbacks);
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [search, setSearch] = useState("");
   const [activeItem, setActiveItem] = useState<FeedbackItem | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [error, setError] = useState("");
 
-  const handleResolve = (id: string) => {
-    setFeedbacks((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, status: "RESOLVED" } : f))
-    );
-    setActiveItem(null);
-    alert("Đã đánh dấu giải quyết và phản hồi tới nhân viên!");
+  useEffect(() => {
+    let active = true;
+    storeManagerApi
+      .getFeedback()
+      .then(({ data }) => {
+        if (!active) return;
+        setFeedbacks(
+          data.map((item) => ({
+            id: String(item.feedbackId ?? item.id ?? ""),
+            senderName: String(item.senderName ?? `Nhân viên #${item.employeeId ?? "-"}`),
+            senderCode: String(item.senderCode ?? ""),
+            title: String(item.title ?? item.subject ?? "Feedback"),
+            content: String(item.content ?? item.message ?? ""),
+            shiftDetail: String(item.shiftDetail ?? ""),
+            date: String(item.createdAt ?? ""),
+            status:
+              item.status === "RESOLVED"
+                ? "RESOLVED"
+                : item.status === "PROCESSING"
+                  ? "PROCESSING"
+                  : "NEW",
+          }))
+        );
+      })
+      .catch((requestError: Error) => {
+        if (active) {
+          setError(requestError.message);
+          setFeedbacks([]);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleResolve = async (id: string) => {
+    const feedback = feedbacks.find((item) => item.id === id);
+    if (!feedback) return;
+    try {
+      await storeManagerApi.updateFeedback(Number(id), {
+        feedbackId: Number(id),
+        title: feedback.title,
+        content: feedback.content,
+        status: "RESOLVED",
+        processNote: replyText,
+      });
+      setFeedbacks((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, status: "RESOLVED" } : item))
+      );
+      setActiveItem(null);
+      setReplyText("");
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    }
   };
 
   const newCount = feedbacks.filter((f) => f.status === "NEW").length;
@@ -112,6 +162,11 @@ export default function StoreManagerFeedbackPage({
           Lắng nghe và phản hồi nhân viên tại chi nhánh BLOAN Nguyễn Trãi.
         </p>
       </div>
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* 3 Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -19,38 +19,50 @@ import java.util.List;
 public class ShiftService {
     private final ShiftRepository repository;
     private final StoreRepository storeRepository;
+    private final StoreScopeService storeScopeService;
 
-    public ShiftService(ShiftRepository repository, StoreRepository storeRepository) {
+    public ShiftService(ShiftRepository repository, StoreRepository storeRepository,
+                        StoreScopeService storeScopeService) {
         this.repository = repository;
         this.storeRepository = storeRepository;
+        this.storeScopeService = storeScopeService;
     }
 
     @Transactional(readOnly = true)
     public List<Shift> findAll() {
-        return repository.findAll();
+        return findAll(null, null);
     }
 
     @Transactional(readOnly = true)
     public List<Shift> findAll(Integer storeId, String status) {
         return repository.findAll().stream()
+                .filter(shift -> storeScopeService.isGlobalUser()
+                        || shift.getStore() != null
+                        && storeScopeService.visibleStoreIds().contains(shift.getStore().getId()))
                 .filter(shift -> storeId == null || shift.getStore().getId().equals(storeId))
                 .filter(shift -> status == null || status.isBlank() || status.equalsIgnoreCase(shift.getStatus()))
                 .toList();
     }
 
     public Shift findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        Shift shift = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        storeScopeService.requireStoreAccess(shift.getStore() == null ? null : shift.getStore().getId());
+        return shift;
     }
 
     @Transactional
     public Shift create(ShiftRequest body) {
-        return repository.save(toEntity(body));
+        Shift entity = toEntity(body);
+        storeScopeService.requireStoreAccess(entity.getStore() == null ? null : entity.getStore().getId());
+        return repository.save(entity);
     }
 
     @Transactional
     public Shift update(Integer id, ShiftRequest body) {
         Shift current = findById(id);
         applyFields(current, body);
+        storeScopeService.requireStoreAccess(current.getStore() == null ? null : current.getStore().getId());
         return repository.save(current);
     }
 

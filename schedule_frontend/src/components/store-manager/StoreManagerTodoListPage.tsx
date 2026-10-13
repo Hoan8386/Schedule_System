@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ListTodo,
   Clock,
@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Filter,
 } from "lucide-react";
+import { storeManagerApi } from "@/lib/storeManagerAPI";
 
 interface TaskItem {
   id: number;
@@ -88,7 +89,8 @@ const initialTasks: TaskItem[] = [
 ];
 
 export default function StoreManagerTodoListPage() {
-  const [tasks, setTasks] = useState<TaskItem[]>(initialTasks);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"ALL" | "TODO" | "DOING" | "DONE">("ALL");
   const [search, setSearch] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("all");
@@ -100,34 +102,104 @@ export default function StoreManagerTodoListPage() {
   const [newDue, setNewDue] = useState("06/10/2026 · 16:00");
   const [newPriority, setNewPriority] = useState<"Cao" | "Vừa" | "Thấp">("Vừa");
 
-  const toggleTaskStatus = (id: number) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const nextStatus = t.status === "DONE" ? "TODO" : "DONE";
-          return { ...t, status: nextStatus };
-        }
-        return t;
+  useEffect(() => {
+    let active = true;
+    storeManagerApi
+      .getTodos()
+      .then(({ data }) => {
+        if (!active) return;
+        setTasks(
+          data.map((todo) => ({
+            id: Number(todo.todoId ?? todo.id),
+            title: String(todo.title ?? todo.todoName ?? "Công việc"),
+            sub: String(todo.description ?? ""),
+            assignee: String(todo.assigneeName ?? ""),
+            assigneeCode: String(todo.assigneeCode ?? ""),
+            due: String(todo.dueAt ?? todo.dueDate ?? ""),
+            priority:
+              todo.priority === "HIGH"
+                ? "Cao"
+                : todo.priority === "LOW"
+                  ? "Thấp"
+                  : "Vừa",
+            status:
+              todo.status === "DONE"
+                ? "DONE"
+                : todo.status === "DOING" || todo.status === "IN_PROGRESS"
+                  ? "DOING"
+                  : "TODO",
+          }))
+        );
       })
-    );
+      .catch((requestError: Error) => {
+        if (active) {
+          setError(requestError.message);
+          setTasks(initialTasks);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const toggleTaskStatus = async (id: number) => {
+    const task = tasks.find((item) => item.id === id);
+    if (!task) return;
+    const nextStatus = task.status === "DONE" ? "TODO" : "DONE";
+    try {
+      await storeManagerApi.updateTodo(id, {
+        todoId: id,
+        title: task.title,
+        description: task.sub,
+        dueDate: task.due,
+        priority:
+          task.priority === "Cao"
+            ? "HIGH"
+            : task.priority === "Thấp"
+              ? "LOW"
+              : "MEDIUM",
+        status: nextStatus,
+      });
+      setTasks((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, status: nextStatus } : item))
+      );
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    }
   };
 
-  const handleAddTask = (e: React.FormEvent) => {
+  const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    const newTask: TaskItem = {
-      id: Date.now(),
-      title: newTitle,
-      sub: "Giao việc mới từ Trưởng cửa hàng",
-      assignee: newAssignee.split(" · ")[0],
-      assigneeCode: newAssignee.split(" · ")[1] || "NV",
-      due: newDue,
-      priority: newPriority,
-      status: "TODO",
-    };
-    setTasks([...tasks, newTask]);
-    setNewTitle("");
-    alert("Đã thêm công việc mới vào danh sách!");
+    const assignee = newAssignee.split(" · ");
+    try {
+      const response = await storeManagerApi.createTodo({
+        title: newTitle.trim(),
+        description: "Giao việc mới từ Trưởng cửa hàng",
+        assigneeCode: assignee[1] || "NV",
+        dueDate: newDue,
+        priority:
+          newPriority === "Cao" ? "HIGH" : newPriority === "Thấp" ? "LOW" : "MEDIUM",
+        status: "TODO",
+      });
+      const todo = response.data;
+      setTasks((prev) => [
+        {
+          id: Number(todo.todoId ?? todo.id),
+          title: String(todo.title ?? newTitle),
+          sub: String(todo.description ?? "Giao việc mới từ Trưởng cửa hàng"),
+          assignee: String(todo.assigneeName ?? assignee[0]),
+          assigneeCode: String(todo.assigneeCode ?? assignee[1] ?? "NV"),
+          due: String(todo.dueDate ?? newDue),
+          priority: newPriority,
+          status: "TODO",
+        },
+        ...prev,
+      ]);
+      setNewTitle("");
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    }
   };
 
   const filtered = tasks.filter((t) => {
@@ -155,6 +227,11 @@ export default function StoreManagerTodoListPage() {
             Theo dõi công việc và người phụ trách tại BLOAN Nguyễn Trãi.
           </p>
         </div>
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+            {error}
+          </div>
+        )}
         <a
           href="#add-task-form"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200"
@@ -477,7 +554,9 @@ export default function StoreManagerTodoListPage() {
             <div className="flex items-center gap-3">
               <select
                 value={newPriority}
-                onChange={(e) => setNewPriority(e.target.value as any)}
+                onChange={(e) =>
+                  setNewPriority(e.target.value as "Cao" | "Vừa" | "Thấp")
+                }
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-hidden"
               >
                 <option value="Vừa">Ưu tiên: Vừa</option>

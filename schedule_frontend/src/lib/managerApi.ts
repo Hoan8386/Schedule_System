@@ -15,7 +15,7 @@ function getHeaders(): Headers {
   return headers;
 }
 
-async function requestManagerApi<T>(
+export async function requestManagerApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
@@ -500,7 +500,7 @@ export const managerApi = {
     }),
   deleteEmployee: (id: number) =>
     requestManagerApi<void>(`/api/v1/employees/${id}`, { method: "DELETE" }),
-  uploadAttachment: async (file: File): Promise<ApiResponse<AttachmentResponse>> => {
+  uploadAttachmentLegacy: async (file: File): Promise<ApiResponse<AttachmentResponse>> => {
     const formData = new FormData();
     formData.append("file", file);
     const response = await fetch(`${API_BASE_URL}/api/v1/attachment/upload`, {

@@ -16,27 +16,38 @@ import java.util.List;
 @Service
 public class FeedbackService {
     private final FeedbackRepository repository;
-    public FeedbackService(FeedbackRepository repository) {
+    private final StoreScopeService storeScopeService;
+    public FeedbackService(FeedbackRepository repository, StoreScopeService storeScopeService) {
         this.repository = repository;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<Feedback> findAll() {
-        return repository.findAll();
+        return repository.findAll().stream()
+                .filter(item -> storeScopeService.isGlobalUser()
+                        || storeScopeService.canAccessStore(item.getStoreId()))
+                .toList();
     }
 
     public Feedback findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        Feedback item = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        storeScopeService.requireStoreAccess(item.getStoreId());
+        return item;
     }
 
     @Transactional
     public Feedback create(FeedbackRequest body) {
-        return repository.save(toEntity(body));
+        Feedback item = toEntity(body);
+        storeScopeService.requireStoreAccess(item.getStoreId());
+        return repository.save(item);
     }
 
     @Transactional
     public Feedback update(Integer id, FeedbackRequest body) {
         Feedback current = findById(id);
         applyFields(current, body);
+        storeScopeService.requireStoreAccess(current.getStoreId());
         return repository.save(current);
     }
 

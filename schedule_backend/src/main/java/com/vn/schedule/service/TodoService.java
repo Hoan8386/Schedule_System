@@ -15,27 +15,55 @@ import java.util.List;
 @Service
 public class TodoService {
     private final TodoRepository repository;
-    public TodoService(TodoRepository repository) {
+    private final StoreScopeService storeScopeService;
+    public TodoService(TodoRepository repository, StoreScopeService storeScopeService) {
         this.repository = repository;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<Todo> findAll() {
-        return repository.findAll();
+        java.util.Set<Integer> visibleEmployeeIds = storeScopeService.employeeIdsInVisibleStores();
+        return repository.findAll().stream()
+                .filter(item -> visibleEmployeeIds == null
+                        || visibleEmployeeIds.contains(item.getAssigneeId())
+                        || visibleEmployeeIds.contains(item.getCreatedBy()))
+                .toList();
     }
 
     public Todo findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        Todo item = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        java.util.Set<Integer> visibleEmployeeIds = storeScopeService.employeeIdsInVisibleStores();
+        if (visibleEmployeeIds != null
+                && !visibleEmployeeIds.contains(item.getAssigneeId())
+                && !visibleEmployeeIds.contains(item.getCreatedBy())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập công việc này");
+        }
+        return item;
     }
 
     @Transactional
     public Todo create(TodoRequest body) {
-        return repository.save(toEntity(body));
+        Todo item = toEntity(body);
+        java.util.Set<Integer> visibleEmployeeIds = storeScopeService.employeeIdsInVisibleStores();
+        if (visibleEmployeeIds != null
+                && !visibleEmployeeIds.contains(item.getAssigneeId())
+                && !visibleEmployeeIds.contains(item.getCreatedBy())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Công việc phải thuộc cửa hàng bạn đang quản lý");
+        }
+        return repository.save(item);
     }
 
     @Transactional
     public Todo update(Integer id, TodoRequest body) {
         Todo current = findById(id);
         applyFields(current, body);
+        java.util.Set<Integer> visibleEmployeeIds = storeScopeService.employeeIdsInVisibleStores();
+        if (visibleEmployeeIds != null
+                && !visibleEmployeeIds.contains(current.getAssigneeId())
+                && !visibleEmployeeIds.contains(current.getCreatedBy())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Công việc phải thuộc cửa hàng bạn đang quản lý");
+        }
         return repository.save(current);
     }
 

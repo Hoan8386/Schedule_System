@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -29,6 +30,7 @@ public class EmployeeService {
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final StoreScopeService storeScopeService;
 
     public EmployeeService(
             EmployeeRepository repository,
@@ -36,25 +38,36 @@ public class EmployeeService {
             RoleRepository roleRepository,
             UserRoleRepository userRoleRepository,
             PasswordEncoder passwordEncoder,
-            EmailService emailService) {
+            EmailService emailService,
+            StoreScopeService storeScopeService) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<EmployeeResponse> findAll(String status) {
         List<Employee> employees = status == null
                 ? repository.findAll()
                 : repository.findByStatusOrderByFullName(status);
-        return employees.stream().map(this::toResponse).toList();
+        Set<Integer> visibleEmployeeIds = storeScopeService.employeeIdsInVisibleStores();
+        return employees.stream()
+                .filter(employee -> visibleEmployeeIds == null || visibleEmployeeIds.contains(employee.getId()))
+                .map(this::toResponse)
+                .toList();
     }
 
     public Employee findEntityById(Integer id) {
-        return repository.findById(id)
+        Employee employee = repository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi nhân viên"));
+        Set<Integer> visibleEmployeeIds = storeScopeService.employeeIdsInVisibleStores();
+        if (visibleEmployeeIds != null && !visibleEmployeeIds.contains(employee.getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập nhân viên này");
+        }
+        return employee;
     }
 
     @Transactional

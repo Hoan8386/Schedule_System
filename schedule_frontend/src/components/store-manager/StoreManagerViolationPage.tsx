@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FileText,
   Search,
@@ -11,6 +11,7 @@ import {
   Check,
   Info,
 } from "lucide-react";
+import { storeManagerApi } from "@/lib/storeManagerAPI";
 
 interface ViolationItem {
   id: string;
@@ -83,10 +84,46 @@ interface StoreManagerViolationPageProps {
 export default function StoreManagerViolationPage({
   initialTab,
 }: StoreManagerViolationPageProps) {
-  const [violations, setViolations] = useState<ViolationItem[]>(mockViolations);
+  const [violations, setViolations] = useState<ViolationItem[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(initialTab === "lapbienban");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    storeManagerApi
+      .getViolations()
+      .then(({ data }) => {
+        if (!active) return;
+        setViolations(
+          data.map((item) => ({
+            id: String(item.violationId ?? item.id ?? ""),
+            staffName: String(item.employeeName ?? `Nhân viên #${item.employeeId ?? "-"}`),
+            staffCode: String(item.employeeCode ?? ""),
+            title: String(item.description ?? "Vi phạm"),
+            shiftDetail: String(item.shiftDetail ?? ""),
+            category: String(item.category ?? "Khác"),
+            time: String(item.violationTime ?? ""),
+            status:
+              item.status === "COMPLETED"
+                ? "COMPLETED"
+                : item.status === "PROCESSING"
+                  ? "PROCESSING"
+                  : "PENDING_VERIFY",
+          }))
+        );
+      })
+      .catch((requestError: Error) => {
+        if (active) {
+          setError(requestError.message);
+          setViolations([]);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Form states for creating a new report
   const [staff, setStaff] = useState("Nguyễn Minh Anh · NV024");
@@ -94,21 +131,34 @@ export default function StoreManagerViolationPage({
   const [description, setDescription] = useState("");
   const [resolution, setResolution] = useState("Nhắc nhở nội bộ");
 
-  const handleCreateReport = (e: React.FormEvent) => {
+  const handleCreateReport = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newV: ViolationItem = {
-      id: `VP-01${violations.length + 1}`,
-      staffName: staff.split(" · ")[0],
-      staffCode: staff.split(" · ")[1],
-      title: description.slice(0, 30) || "Ghi nhận sự việc mới",
-      shiftDetail: "Ca hiện tại",
-      category: violationType,
-      time: "05/10/2026 10:30",
-      status: "PROCESSING",
-    };
-    setViolations([newV, ...violations]);
-    setIsRecordModalOpen(false);
-    alert("Đã lập biên bản sự việc và gửi thông báo tới nhân viên!");
+    const [staffName, staffCode] = staff.split(" · ");
+    try {
+      const response = await storeManagerApi.createViolation({
+        employeeCode: staffCode,
+        description: description.trim() || "Ghi nhận sự việc mới",
+        category: violationType,
+        status: "PROCESSING",
+      });
+      const item = response.data;
+      setViolations((prev) => [
+        {
+          id: String(item.violationId ?? item.id ?? ""),
+          staffName: String(item.employeeName ?? staffName),
+          staffCode: String(item.employeeCode ?? staffCode),
+          title: String(item.description ?? description),
+          shiftDetail: String(item.shiftDetail ?? "Ca hiện tại"),
+          category: String(item.category ?? violationType),
+          time: String(item.violationTime ?? new Date().toISOString()),
+          status: "PROCESSING",
+        },
+        ...prev,
+      ]);
+      setIsRecordModalOpen(false);
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    }
   };
 
   const filtered = violations.filter((v) => {
@@ -138,6 +188,11 @@ export default function StoreManagerViolationPage({
             Ghi nhận, xác minh và theo dõi sự việc của nhân viên tại BLOAN Nguyễn Trãi.
           </p>
         </div>
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+            {error}
+          </div>
+        )}
         <button
           onClick={() => setIsRecordModalOpen(true)}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200"

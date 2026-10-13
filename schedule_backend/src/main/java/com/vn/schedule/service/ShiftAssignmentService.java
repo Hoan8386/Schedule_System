@@ -22,16 +22,25 @@ public class ShiftAssignmentService {
     private final ShiftAssignmentRepository repository;
     private final EmployeeRepository employeeRepository;
     private final ShiftByDateRepository shiftByDateRepository;
+    private final StoreScopeService storeScopeService;
 
     public ShiftAssignmentService(ShiftAssignmentRepository repository, EmployeeRepository employeeRepository,
-                                  ShiftByDateRepository shiftByDateRepository) {
+                                  ShiftByDateRepository shiftByDateRepository,
+                                  StoreScopeService storeScopeService) {
         this.repository = repository;
         this.employeeRepository = employeeRepository;
         this.shiftByDateRepository = shiftByDateRepository;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<ShiftAssignmentResponse> findAll() {
     return repository.findAll().stream()
+                .filter(item -> storeScopeService.isGlobalUser()
+                        || item.getShiftByDate() != null
+                        && item.getShiftByDate().getShift() != null
+                        && item.getShiftByDate().getShift().getStore() != null
+                        && storeScopeService.visibleStoreIds().contains(
+                                item.getShiftByDate().getShift().getStore().getId()))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -60,18 +69,24 @@ public class ShiftAssignmentService {
     }
 
     public ShiftAssignment findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        ShiftAssignment item = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        requireAccess(item);
+        return item;
     }
 
     @Transactional
     public ShiftAssignment create(ShiftAssignmentRequest body) {
-        return repository.save(toEntity(body));
+        ShiftAssignment entity = toEntity(body);
+        requireAccess(entity);
+        return repository.save(entity);
     }
 
     @Transactional
     public ShiftAssignment update(Integer id, ShiftAssignmentRequest body) {
         ShiftAssignment current = findById(id);
         applyFields(current, body);
+        requireAccess(current);
         return repository.save(current);
     }
 
@@ -101,6 +116,15 @@ public class ShiftAssignmentService {
         entity.setCancellationReason((String) body.get("cancellationReason"));
         entity.setNote((String) body.get("note"));
         return entity;
+    }
+
+    private void requireAccess(ShiftAssignment item) {
+        Integer storeId = item.getShiftByDate() != null
+                && item.getShiftByDate().getShift() != null
+                && item.getShiftByDate().getShift().getStore() != null
+                ? item.getShiftByDate().getShift().getStore().getId()
+                : null;
+        storeScopeService.requireStoreAccess(storeId);
     }
 
     private void applyFields(ShiftAssignment entity, ShiftAssignmentRequest body) {

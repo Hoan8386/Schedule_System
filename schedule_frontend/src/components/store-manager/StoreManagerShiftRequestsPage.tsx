@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Search,
   Check,
@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
+import { storeManagerApi } from "@/lib/storeManagerAPI";
 
 interface RequestItem {
   id: string;
@@ -24,7 +25,7 @@ interface RequestItem {
   status: "PENDING" | "APPROVED" | "REJECTED";
 }
 
-const mockRequests: RequestItem[] = [
+const fallbackRequests: RequestItem[] = [
   {
     id: "DK-031",
     type: "REGISTER",
@@ -88,22 +89,78 @@ const mockRequests: RequestItem[] = [
 ];
 
 export default function StoreManagerShiftRequestsPage() {
-  const [requests, setRequests] = useState<RequestItem[]>(mockRequests);
+  const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"REGISTER" | "SWAP" | "CANCEL">("REGISTER");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const handleApprove = (id: string) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "APPROVED" } : r))
-    );
+  useEffect(() => {
+    let active = true;
+    storeManagerApi
+      .getEmergencyRequests()
+      .then(({ data }) => {
+        if (!active) return;
+        const mapped = data.map((item) => ({
+          id: String(item.emergencyRequestId ?? item.id ?? ""),
+          type:
+            item.requestType === "CHANGE"
+              ? "SWAP"
+              : item.requestType === "CANCEL"
+                ? "CANCEL"
+                : "REGISTER",
+          staffName: String(item.employeeName ?? `Nhân viên #${item.employeeId ?? "-"}`),
+          staffCode: String(item.employeeCode ?? ""),
+          shiftDetail: String(item.shiftDetail ?? "Chưa có thông tin ca"),
+          reason: String(item.reason ?? ""),
+          submitTime: String(item.requestedAt ?? ""),
+          status:
+            item.status === "APPROVED"
+              ? "APPROVED"
+              : item.status === "REJECTED"
+                ? "REJECTED"
+                : "PENDING",
+        })) as RequestItem[];
+        setRequests(mapped);
+      })
+      .catch((requestError: Error) => {
+        if (active) {
+          setError(requestError.message);
+          setRequests([]);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const updateRequestStatus = async (id: string, status: "APPROVED" | "REJECTED") => {
+    const current = requests.find((request) => request.id === id);
+    if (!current) return;
+    try {
+      await storeManagerApi.updateEmergencyRequest(Number(id), {
+        emergencyRequestId: Number(id),
+        requestType:
+          current.type === "SWAP"
+            ? "CHANGE"
+            : current.type,
+        reason: current.reason,
+        status,
+      });
+      setRequests((prev) =>
+        prev.map((request) => (request.id === id ? { ...request, status } : request))
+      );
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    }
   };
 
-  const handleReject = (id: string) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "REJECTED" } : r))
-    );
-  };
+  const handleApprove = (id: string) => updateRequestStatus(id, "APPROVED");
+  const handleReject = (id: string) => updateRequestStatus(id, "REJECTED");
 
   const filteredRequests = requests.filter((r) => {
     if (r.type !== activeTab) return false;
@@ -136,6 +193,11 @@ export default function StoreManagerShiftRequestsPage() {
           Xem xét đăng ký, đổi và hủy ca của nhân viên tại cửa hàng.
         </p>
       </div>
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Info notice */}
       <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center gap-3 text-xs text-amber-900">
@@ -238,7 +300,19 @@ export default function StoreManagerShiftRequestsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filteredRequests.map((r) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-slate-400">
+                    Đang tải yêu cầu từ cửa hàng...
+                  </td>
+                </tr>
+              ) : filteredRequests.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-slate-400">
+                    Không có yêu cầu phù hợp.
+                  </td>
+                </tr>
+              ) : filteredRequests.map((r) => (
                 <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
                   <td className="py-3.5 px-4">
                     <p className="font-bold text-slate-800">{r.staffName}</p>

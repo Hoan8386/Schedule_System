@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FileCheck,
   Search,
@@ -13,6 +13,7 @@ import {
   BookOpen,
   CheckSquare,
 } from "lucide-react";
+import { storeManagerApi } from "@/lib/storeManagerAPI";
 
 interface TestPlan {
   id: string;
@@ -80,9 +81,46 @@ interface StoreManagerTestManagementPageProps {
 export default function StoreManagerTestManagementPage({
   mode = "quanlytest",
 }: StoreManagerTestManagementPageProps) {
-  const [tests, setTests] = useState<TestPlan[]>(mockTests);
+  const [tests, setTests] = useState<TestPlan[]>([]);
   const [search, setSearch] = useState("");
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    storeManagerApi
+      .getTests()
+      .then(({ data }) => {
+        if (!active) return;
+        setTests(
+          data.map((test) => ({
+            id: String(test.testId ?? test.id ?? ""),
+            code: test.testCode,
+            title: test.testName,
+            duration: `${test.durationMinutes ?? 0} phút`,
+            status:
+              test.status === "CLOSED"
+                ? "CLOSED"
+                : test.status === "DRAFT"
+                  ? "DRAFT"
+                  : "ASSIGNED",
+            dueDate: String(test.dueAt ?? test.dueDate ?? ""),
+            questionCount: Number(test.questionCount ?? 0),
+            submittedCount: Number(test.submittedCount ?? 0),
+            totalAssigned: Number(test.totalAssigned ?? 0),
+          }))
+        );
+      })
+      .catch((requestError: Error) => {
+        if (active) {
+          setError(requestError.message);
+          setTests([]);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Draft form states
   const [testName, setTestName] = useState("Quy trình vệ sinh cuối ca");
@@ -109,10 +147,53 @@ export default function StoreManagerTestManagementPage({
     );
   };
 
-  const handleSaveAndAssign = () => {
-    alert(
-      `Đã lưu và giao bài test "${testName}" thành công tới ${selectedStaff.length} nhân viên của cửa hàng!`
-    );
+  const handleSaveAndAssign = async () => {
+    try {
+      const response = await storeManagerApi.createTest({
+        testCode: testName
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]+/g, "-")
+          .slice(0, 30),
+        testName: testName.trim(),
+        durationMinutes: Number.parseInt(duration, 10) || 10,
+        status: "ASSIGNED",
+      });
+      const testId = Number(response.data.testId ?? response.data.id);
+      if (testId && selectedStaff.length > 0) {
+        const employees = await storeManagerApi.getEmployees("ACTIVE");
+        await Promise.all(
+          employees.data
+            .filter((employee) =>
+              selectedStaff.includes(String(employee.employeeCode ?? ""))
+            )
+            .map((employee) =>
+              storeManagerApi.createTestAssignment({
+                testId,
+                employeeId: employee.id,
+                status: "ASSIGNED",
+                dueAt: dueDate,
+              })
+            )
+        );
+      }
+      setTests((prev) => [
+        {
+          id: String(testId),
+          code: String(response.data.testCode ?? "NEW-TEST"),
+          title: String(response.data.testName ?? testName),
+          duration: `${response.data.durationMinutes ?? 10} phút`,
+          status: "ASSIGNED",
+          dueDate,
+          questionCount: 0,
+          submittedCount: 0,
+          totalAssigned: selectedStaff.length,
+        },
+        ...prev,
+      ]);
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    }
   };
 
   return (
@@ -138,6 +219,11 @@ export default function StoreManagerTestManagementPage({
           <span>Tạo bài test</span>
         </button>
       </div>
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Test List Table */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">

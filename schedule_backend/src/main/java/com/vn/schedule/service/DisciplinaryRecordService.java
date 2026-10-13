@@ -16,27 +16,39 @@ import java.util.List;
 @Service
 public class DisciplinaryRecordService {
     private final DisciplinaryRecordRepository repository;
-    public DisciplinaryRecordService(DisciplinaryRecordRepository repository) {
+    private final StoreScopeService storeScopeService;
+    public DisciplinaryRecordService(DisciplinaryRecordRepository repository,
+                                     StoreScopeService storeScopeService) {
         this.repository = repository;
+        this.storeScopeService = storeScopeService;
     }
 
     public List<DisciplinaryRecord> findAll() {
-        return repository.findAll();
+        return repository.findAll().stream()
+                .filter(item -> storeScopeService.isGlobalUser()
+                        || storeScopeService.canAccessStore(item.getStoreId()))
+                .toList();
     }
 
     public DisciplinaryRecord findById(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        DisciplinaryRecord item = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
+        storeScopeService.requireStoreAccess(item.getStoreId());
+        return item;
     }
 
     @Transactional
     public DisciplinaryRecord create(DisciplinaryRecordRequest body) {
-        return repository.save(toEntity(body));
+        DisciplinaryRecord item = toEntity(body);
+        storeScopeService.requireStoreAccess(item.getStoreId());
+        return repository.save(item);
     }
 
     @Transactional
     public DisciplinaryRecord update(Integer id, DisciplinaryRecordRequest body) {
         DisciplinaryRecord current = findById(id);
         applyFields(current, body);
+        storeScopeService.requireStoreAccess(current.getStoreId());
         return repository.save(current);
     }
 
