@@ -15,14 +15,37 @@ import {
   X,
 } from "lucide-react";
 import {
+  EmployeeStoreResponse,
   managerApi,
+  StoreResponse,
+  TestAssignmentResponse,
   TestOptionResponse,
   TestQuestionResponse,
   TestResponse,
+  TestResultResponse,
 } from "@/lib/managerApi";
 
-const idOf = (item: { id?: number; testId?: number; questionId?: number }) =>
-  Number(item.id ?? item.testId ?? item.questionId ?? 0);
+const idOf = (item: {
+  id?: number;
+  testId?: number;
+  questionId?: number;
+  optionId?: number;
+  testAssignmentId?: number;
+  testResultId?: number;
+  storeId?: number;
+  employeeId?: number;
+}) =>
+  Number(
+    item.id ??
+      item.testId ??
+      item.questionId ??
+      item.optionId ??
+      item.testAssignmentId ??
+      item.testResultId ??
+      item.storeId ??
+      item.employeeId ??
+      0
+  );
 
 const listData = <T,>(value: unknown): T[] =>
   Array.isArray(value) ? (value as T[]) : [];
@@ -43,6 +66,30 @@ type TestForm = {
   status: string;
 };
 
+type QuestionOptionDraft = {
+  id?: number;
+  text: string;
+  isCorrect: boolean;
+};
+
+type QuestionModalState = {
+  id?: number;
+  text: string;
+  score: string;
+  options: QuestionOptionDraft[];
+};
+
+type StoreSummary = {
+  storeId: number;
+  storeName: string;
+  assignedCount: number;
+  completedCount: number;
+  passedCount: number;
+  testCount: number;
+  employeeCount: number;
+  avgScore: number | null;
+};
+
 const emptyForm: TestForm = {
   testCode: "",
   testName: "",
@@ -56,6 +103,10 @@ export default function QuanLyTestPage() {
   const [tests, setTests] = useState<TestResponse[]>([]);
   const [questions, setQuestions] = useState<TestQuestionResponse[]>([]);
   const [options, setOptions] = useState<TestOptionResponse[]>([]);
+  const [stores, setStores] = useState<StoreResponse[]>([]);
+  const [employeeStores, setEmployeeStores] = useState<EmployeeStoreResponse[]>([]);
+  const [assignments, setAssignments] = useState<TestAssignmentResponse[]>([]);
+  const [testResults, setTestResults] = useState<TestResultResponse[]>([]);
   const [selectedTestId, setSelectedTestId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
@@ -64,21 +115,44 @@ export default function QuanLyTestPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [testModal, setTestModal] = useState<{ id?: number; form: TestForm } | null>(null);
-  const [questionModal, setQuestionModal] = useState<{ id?: number; text: string; score: string } | null>(null);
+  const [questionModal, setQuestionModal] = useState<QuestionModalState | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [testResponse, questionResponse, optionResponse] = await Promise.all([
+      const [
+        testResponse,
+        questionResponse,
+        optionResponse,
+        storeResponse,
+        employeeStoreResponse,
+        assignmentResponse,
+        resultResponse,
+      ] = await Promise.all([
         managerApi.getTests(),
         managerApi.getTestQuestions(),
         managerApi.getTestOptions(),
+        managerApi.getStores(),
+        managerApi.getEmployeeStores({ status: "ACTIVE" }),
+        managerApi.getTestAssignments(),
+        managerApi.getTestResults(),
       ]);
       const nextTests = listData<TestResponse>(testResponse.data);
+      const nextQuestions = listData<TestQuestionResponse>(questionResponse.data);
+      const nextOptions = listData<TestOptionResponse>(optionResponse.data);
+      const nextStores = listData<StoreResponse>(storeResponse.data);
+      const nextEmployeeStores = listData<EmployeeStoreResponse>(employeeStoreResponse.data);
+      const nextAssignments = listData<TestAssignmentResponse>(assignmentResponse.data);
+      const nextResults = listData<TestResultResponse>(resultResponse.data);
+
       setTests(nextTests);
-      setQuestions(listData<TestQuestionResponse>(questionResponse.data));
-      setOptions(listData<TestOptionResponse>(optionResponse.data));
+      setQuestions(nextQuestions);
+      setOptions(nextOptions);
+      setStores(nextStores);
+      setEmployeeStores(nextEmployeeStores);
+      setAssignments(nextAssignments);
+      setTestResults(nextResults);
       setSelectedTestId((current) =>
         current && nextTests.some((item) => idOf(item) === current)
           ? current
@@ -113,6 +187,109 @@ export default function QuanLyTestPage() {
   const selectedQuestions = questions.filter((item) => item.testId === selectedTestId);
   const activeCount = tests.filter((item) => item.status === "ACTIVE").length;
   const draftCount = tests.filter((item) => item.status === "DRAFT").length;
+
+  const storeSummaries = useMemo<StoreSummary[]>(() => {
+    const employeeStoreMap = new Map<number, number>();
+    for (const assignment of employeeStores) {
+      const employeeId = assignment.employeeId;
+      const storeId = assignment.storeId;
+      if (!employeeId || !storeId) continue;
+      const status = assignment.status?.toUpperCase() ?? "ACTIVE";
+      if (status === "ACTIVE" || status === "CURRENT" || status === "PRESENT") {
+        employeeStoreMap.set(employeeId, storeId);
+      }
+    }
+
+    const summaryMap = new Map<number, StoreSummary>();
+    for (const store of stores) {
+      const storeId = idOf(store as { id?: number; storeId?: number });
+      if (!storeId) continue;
+      summaryMap.set(storeId, {
+        storeId,
+        storeName: store.storeName ?? `Cửa hàng #${storeId}`,
+        assignedCount: 0,
+        completedCount: 0,
+        passedCount: 0,
+        testCount: 0,
+        employeeCount: 0,
+        avgScore: null,
+      });
+    }
+
+    const employeeCountByStore = new Map<number, Set<number>>();
+    for (const [employeeId, storeId] of employeeStoreMap.entries()) {
+      if (!employeeCountByStore.has(storeId)) {
+        employeeCountByStore.set(storeId, new Set<number>());
+      }
+      employeeCountByStore.get(storeId)!.add(employeeId);
+    }
+
+    for (const [storeId, employeeSet] of employeeCountByStore.entries()) {
+      const summary = summaryMap.get(storeId);
+      if (summary) {
+        summary.employeeCount = employeeSet.size;
+      }
+    }
+
+    const scoreTotals = new Map<number, { totalScore: number; count: number }>();
+    for (const result of testResults) {
+      const assignmentId = Number(result.testAssignmentId ?? result.id ?? 0);
+      if (!assignmentId) continue;
+      const scoreValue = Number(result.score ?? 0);
+      if (!Number.isFinite(scoreValue)) continue;
+      const current = scoreTotals.get(assignmentId) ?? { totalScore: 0, count: 0 };
+      current.totalScore += scoreValue;
+      current.count += 1;
+      scoreTotals.set(assignmentId, current);
+    }
+
+    const assignmentByStore = new Map<number, Set<number>>();
+    for (const assignment of assignments) {
+      const assignmentId = Number(assignment.testAssignmentId ?? assignment.id ?? 0);
+      const employeeId = assignment.employeeId;
+      const storeId = employeeId ? employeeStoreMap.get(employeeId) : undefined;
+      if (!assignmentId || !storeId) continue;
+      const summary = summaryMap.get(storeId) ?? {
+        storeId,
+        storeName: stores.find((store) => idOf(store as { id?: number; storeId?: number }) === storeId)?.storeName ?? `Cửa hàng #${storeId}`,
+        assignedCount: 0,
+        completedCount: 0,
+        passedCount: 0,
+        testCount: 0,
+        employeeCount: employeeCountByStore.get(storeId)?.size ?? 0,
+        avgScore: null,
+      };
+      summary.assignedCount += 1;
+      summary.testCount = new Set(
+        assignments.filter((item) => {
+          const itemStoreId = item.employeeId ? employeeStoreMap.get(item.employeeId) : undefined;
+          return itemStoreId === storeId;
+        }).map((item) => item.testId)
+      ).size;
+      summaryMap.set(storeId, summary);
+
+      if (!assignmentByStore.has(storeId)) {
+        assignmentByStore.set(storeId, new Set<number>());
+      }
+      assignmentByStore.get(storeId)!.add(assignmentId);
+
+      const result = testResults.find((item) => Number(item.testAssignmentId ?? item.id ?? 0) === assignmentId);
+      if (result) {
+        summary.completedCount += 1;
+        if (result.passed) {
+          summary.passedCount += 1;
+        }
+        const scoreInfo = scoreTotals.get(assignmentId);
+        if (scoreInfo && scoreInfo.count > 0) {
+          const avg = scoreInfo.totalScore / scoreInfo.count;
+          const currentAvg = summary.avgScore ?? 0;
+          summary.avgScore = summary.completedCount > 0 ? (currentAvg * (summary.completedCount - 1) + avg) / summary.completedCount : avg;
+        }
+      }
+    }
+
+    return Array.from(summaryMap.values()).sort((a, b) => b.assignedCount - a.assignedCount);
+  }, [assignments, employeeStores, stores, testResults]);
 
   const showNotice = (message: string) => {
     setNotice(message);
@@ -163,6 +340,21 @@ export default function QuanLyTestPage() {
 
   const saveQuestion = async () => {
     if (!questionModal || !selectedTestId || !questionModal.text.trim()) return;
+
+    const normalizedOptions = questionModal.options
+      .map((item) => ({ ...item, text: item.text.trim() }))
+      .filter((item) => item.text.length > 0);
+
+    if (normalizedOptions.length < 2) {
+      setError("Vui lòng nhập ít nhất 2 đáp án cho câu hỏi.");
+      return;
+    }
+
+    if (!normalizedOptions.some((item) => item.isCorrect)) {
+      setError("Vui lòng chọn ít nhất 1 đáp án đúng.");
+      return;
+    }
+
     setSaving(true);
     setError("");
     try {
@@ -172,8 +364,30 @@ export default function QuanLyTestPage() {
         questionType: "SINGLE_CHOICE",
         score: Number(questionModal.score) || 1,
       };
-      if (questionModal.id) await managerApi.updateTestQuestion(questionModal.id, body);
-      else await managerApi.createTestQuestion(body);
+
+      const response = questionModal.id
+        ? await managerApi.updateTestQuestion(questionModal.id, body)
+        : await managerApi.createTestQuestion(body);
+      const questionId = idOf((response.data ?? {}) as { id?: number; questionId?: number });
+
+      if (questionId) {
+        const existingOptions = options.filter((option) => option.questionId === questionId);
+        await Promise.all(
+          existingOptions.map((option) => managerApi.deleteTestOption(idOf(option as { id?: number; optionId?: number })))
+        );
+
+        await Promise.all(
+          normalizedOptions.map((option, index) =>
+            managerApi.createTestOption({
+              questionId,
+              optionText: option.text,
+              isCorrect: option.isCorrect,
+              displayOrder: index + 1,
+            })
+          )
+        );
+      }
+
       setQuestionModal(null);
       showNotice("Đã lưu câu hỏi.");
       await load();
@@ -188,12 +402,45 @@ export default function QuanLyTestPage() {
     const questionId = idOf(question);
     if (!questionId || !window.confirm("Xóa câu hỏi này?")) return;
     try {
+      const questionOptions = options.filter((option) => option.questionId === questionId);
+      await Promise.all(
+        questionOptions.map((option) => managerApi.deleteTestOption(idOf(option as { id?: number; optionId?: number })))
+      );
       await managerApi.deleteTestQuestion(questionId);
       showNotice("Đã xóa câu hỏi.");
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể xóa câu hỏi");
     }
+  };
+
+  const openQuestionModal = (question?: TestQuestionResponse) => {
+    if (!selectedTestId) return;
+
+    const questionId = question ? idOf(question) : undefined;
+    const existingOptions = questionId
+      ? options.filter((option) => option.questionId === questionId)
+      : [];
+
+    const nextOptions =
+      existingOptions.length > 0
+        ? existingOptions.map((option) => ({
+            id: idOf(option as { id?: number; optionId?: number }),
+            text: option.optionText,
+            isCorrect: Boolean(option.isCorrect),
+          }))
+        : [
+            { text: "", isCorrect: true },
+            { text: "", isCorrect: false },
+            { text: "", isCorrect: false },
+          ];
+
+    setQuestionModal({
+      id: questionId,
+      text: question?.questionText ?? "",
+      score: String(question?.score ?? 1),
+      options: nextOptions,
+    });
   };
 
   return (
@@ -238,6 +485,47 @@ export default function QuanLyTestPage() {
         ))}
       </div>
 
+      <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">Tổng hợp theo từng cửa hàng</h2>
+            <p className="text-[11px] text-slate-400 mt-1">Theo dõi trạng thái giao bài và kết quả làm test tại từng chi nhánh.</p>
+          </div>
+        </div>
+        <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {storeSummaries.length === 0 && <div className="col-span-full p-8 text-center text-slate-400 text-xs">Chưa có dữ liệu tổng hợp theo cửa hàng.</div>}
+          {storeSummaries.map((summary) => (
+            <div key={summary.storeId} className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-slate-800">{summary.storeName}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">{summary.employeeCount} nhân viên · {summary.testCount} bài test</p>
+                </div>
+                <span className="px-2 py-1 rounded-md bg-amber-50 text-[10px] font-bold text-amber-700">{summary.assignedCount} giao</span>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-xl bg-white p-2 border border-slate-200">
+                  <p className="text-[10px] text-slate-400">Đã giao</p>
+                  <p className="text-lg font-black text-slate-700">{summary.assignedCount}</p>
+                </div>
+                <div className="rounded-xl bg-white p-2 border border-slate-200">
+                  <p className="text-[10px] text-slate-400">Hoàn thành</p>
+                  <p className="text-lg font-black text-slate-700">{summary.completedCount}</p>
+                </div>
+                <div className="rounded-xl bg-white p-2 border border-slate-200">
+                  <p className="text-[10px] text-slate-400">Đạt</p>
+                  <p className="text-lg font-black text-emerald-600">{summary.passedCount}</p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+                <span>Điểm TB</span>
+                <span className="font-bold text-slate-700">{summary.avgScore === null ? "—" : `${summary.avgScore.toFixed(1)} / 10`}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-5">
         <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -278,14 +566,14 @@ export default function QuanLyTestPage() {
         <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
             <div><h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">Ngân hàng câu hỏi</h2><p className="text-[11px] text-slate-400 mt-1">{selectedTest?.testName ?? "Chọn một bài test để xem chi tiết"}</p></div>
-            {selectedTest && <button onClick={() => setQuestionModal({ text: "", score: "1" })} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 text-white text-[11px] font-bold hover:bg-slate-700"><Plus className="w-3.5 h-3.5" /> Thêm câu</button>}
+            {selectedTest && <button onClick={() => openQuestionModal()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 text-white text-[11px] font-bold hover:bg-slate-700"><Plus className="w-3.5 h-3.5" /> Thêm câu</button>}
           </div>
           {!selectedTest ? <div className="p-10 text-center text-slate-400 text-xs"><FileQuestion className="w-8 h-8 mx-auto mb-2 text-slate-300" />Chọn bài test bên trái.</div> :
             <div className="p-3 space-y-2 max-h-[470px] overflow-y-auto">
               {selectedQuestions.length === 0 && <div className="p-8 text-center text-slate-400 text-xs">Bài test chưa có câu hỏi.</div>}
               {selectedQuestions.map((question, index) => <div key={idOf(question)} className="p-3 rounded-xl border border-slate-100 hover:border-amber-200 transition-colors">
                 <div className="flex items-start gap-3"><span className="w-6 h-6 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-[11px] font-black shrink-0">{index + 1}</span><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-slate-700">{question.questionText}</p><p className="text-[10px] text-slate-400 mt-1">{question.questionType} · {question.score ?? 1} điểm · {options.filter((option) => option.questionId === idOf(question)).length} đáp án</p></div>
-                  <button onClick={() => setQuestionModal({ id: idOf(question), text: question.questionText, score: String(question.score ?? 1) })} aria-label="Sửa câu hỏi" className="p-1.5 text-slate-400 hover:text-amber-600"><Pencil className="w-3.5 h-3.5" /></button><button onClick={() => void removeQuestion(question)} aria-label="Xóa câu hỏi" className="p-1.5 text-slate-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => openQuestionModal(question)} aria-label="Sửa câu hỏi" className="p-1.5 text-slate-400 hover:text-amber-600"><Pencil className="w-3.5 h-3.5" /></button><button onClick={() => void removeQuestion(question)} aria-label="Xóa câu hỏi" className="p-1.5 text-slate-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>)}
             </div>}
@@ -307,6 +595,25 @@ export default function QuanLyTestPage() {
       {questionModal && <Modal title={questionModal.id ? "Chỉnh sửa câu hỏi" : "Thêm câu hỏi"} onClose={() => setQuestionModal(null)}>
         <label className="block text-xs font-semibold text-slate-600">Nội dung câu hỏi<textarea autoFocus value={questionModal.text} onChange={(event) => setQuestionModal({ ...questionModal, text: event.target.value })} rows={4} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-amber-400" /></label>
         <Field label="Điểm" type="number" value={questionModal.score} onChange={(value) => setQuestionModal({ ...questionModal, score: value })} />
+
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600">Đáp án</p>
+            <button type="button" onClick={() => setQuestionModal({ ...questionModal, options: [...questionModal.options, { text: "", isCorrect: false }] })} className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] font-semibold text-slate-700 hover:bg-slate-50"> <Plus className="w-3.5 h-3.5" /> Thêm</button>
+          </div>
+          <div className="space-y-2">
+            {questionModal.options.map((option, index) => (
+              <div key={`${index}-${option.text || "new"}`} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+                <button type="button" onClick={() => setQuestionModal({ ...questionModal, options: questionModal.options.map((item, itemIndex) => itemIndex === index ? { ...item, isCorrect: !item.isCorrect } : item) })} className={`w-7 h-7 rounded-lg border text-[11px] font-bold ${option.isCorrect ? "border-emerald-200 bg-emerald-100 text-emerald-700" : "border-slate-200 bg-white text-slate-500"}`}>
+                  {option.isCorrect ? "Đ" : "A"}
+                </button>
+                <input value={option.text} onChange={(event) => setQuestionModal({ ...questionModal, options: questionModal.options.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item) })} placeholder={`Đáp án ${index + 1}`} className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-amber-400" />
+                <button type="button" onClick={() => setQuestionModal({ ...questionModal, options: questionModal.options.filter((_, itemIndex) => itemIndex !== index) })} className="p-2 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label="Xóa đáp án"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <ModalActions saving={saving} onClose={() => setQuestionModal(null)} onSave={() => void saveQuestion()} />
       </Modal>}
     </div>

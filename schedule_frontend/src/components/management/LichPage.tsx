@@ -19,19 +19,38 @@ import {
 } from "lucide-react";
 import {
   managerApi,
+  EmployeeResponse,
+  EmergencyRequestResponse,
   SchedulePeriodResponse,
+  ScheduleRoundResponse,
+  ScheduleSessionResponse,
   ShiftAssignmentResponse,
   ShiftByDateResponse,
+  ShiftGroupResponse,
   ShiftResponse,
+  SpecialEventResponse,
   StoreResponse,
-  EmployeeResponse,
 } from "@/lib/managerApi";
 
 const text = (value: unknown, fallback = "—") =>
   value === null || value === undefined || value === "" ? fallback : String(value);
 
 const idOf = (item: Record<string, unknown>) =>
-  Number(item.id ?? item.schedulePeriodId ?? item.shiftId ?? item.shiftByDateId ?? item.shiftAssignmentId ?? 0);
+  Number(
+    item.id ??
+      item.schedulePeriodId ??
+      item.shiftId ??
+      item.shiftByDateId ??
+      item.shiftAssignmentId ??
+      item.scheduleRoundId ??
+      item.scheduleSessionId ??
+      item.shiftGroupId ??
+      item.eventId ??
+      item.emergencyRequestId ??
+      item.roundId ??
+      item.sessionId ??
+      0
+  );
 
 const date = (value: unknown) =>
   value ? new Date(String(value)).toLocaleDateString("vi-VN") : "—";
@@ -49,8 +68,8 @@ const dayKey = (value: string | null | undefined) => {
   return safe.toISOString().slice(0, 10);
 };
 
-type TabKey = "period" | "shift" | "calendar";
-type Kind = "period" | "shift" | "shiftDate" | "assignment";
+type TabKey = "period" | "shift" | "calendar" | "round" | "session" | "group" | "event" | "emergency";
+type Kind = "period" | "shift" | "shiftDate" | "assignment" | "round" | "session" | "group" | "event" | "emergency";
 type CalendarView = "month" | "week";
 
 export default function LichPage() {
@@ -58,6 +77,11 @@ export default function LichPage() {
   const [shifts, setShifts] = useState<ShiftResponse[]>([]);
   const [shiftDates, setShiftDates] = useState<ShiftByDateResponse[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignmentResponse[]>([]);
+  const [rounds, setRounds] = useState<ScheduleRoundResponse[]>([]);
+  const [sessions, setSessions] = useState<ScheduleSessionResponse[]>([]);
+  const [shiftGroups, setShiftGroups] = useState<ShiftGroupResponse[]>([]);
+  const [specialEvents, setSpecialEvents] = useState<SpecialEventResponse[]>([]);
+  const [emergencyRequests, setEmergencyRequests] = useState<EmergencyRequestResponse[]>([]);
   const [stores, setStores] = useState<StoreResponse[]>([]);
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +110,7 @@ export default function LichPage() {
       const storeResponse = await managerApi.getStores();
       setStores(listData<StoreResponse>(storeResponse.data));
 
-      const [periodResponse, shiftResponse, dateResponse, assignmentResponse, employeeResponse] = await Promise.all([
+      const [periodResponse, shiftResponse, dateResponse, assignmentResponse, employeeResponse, roundResponse, sessionResponse, groupResponse, eventResponse, emergencyResponse] = await Promise.all([
         managerApi.getSchedulePeriods({
           q: filters.q || undefined,
           from: filters.from || undefined,
@@ -107,6 +131,11 @@ export default function LichPage() {
         }),
         managerApi.getShiftAssignments(),
         managerApi.getEmployees("ACTIVE"),
+        managerApi.getScheduleRounds(),
+        managerApi.getScheduleSessions(),
+        managerApi.getShiftGroups(),
+        managerApi.getSpecialEvents(),
+        managerApi.getEmergencyRequests(),
       ]);
 
       setPeriods(listData<SchedulePeriodResponse>(periodResponse.data));
@@ -114,6 +143,11 @@ export default function LichPage() {
       setShiftDates(listData<ShiftByDateResponse>(dateResponse.data));
       setAssignments(listData<ShiftAssignmentResponse>(assignmentResponse.data));
       setEmployees(listData<EmployeeResponse>(employeeResponse.data));
+      setRounds(listData<ScheduleRoundResponse>(roundResponse.data));
+      setSessions(listData<ScheduleSessionResponse>(sessionResponse.data));
+      setShiftGroups(listData<ShiftGroupResponse>(groupResponse.data));
+      setSpecialEvents(listData<SpecialEventResponse>(eventResponse.data));
+      setEmergencyRequests(listData<EmergencyRequestResponse>(emergencyResponse.data));
 
       const loadedPeriods = listData<SchedulePeriodResponse>(periodResponse.data);
       if (!selectedPeriodId && loadedPeriods.length > 0) {
@@ -298,6 +332,11 @@ export default function LichPage() {
       if (kind === "shift") await managerApi.deleteShift(id);
       if (kind === "shiftDate") await managerApi.deleteShiftByDate(id);
       if (kind === "assignment") await managerApi.deleteShiftAssignment(id);
+      if (kind === "round") await managerApi.deleteScheduleRound(id);
+      if (kind === "session") await managerApi.deleteScheduleSession(id);
+      if (kind === "group") await managerApi.deleteShiftGroup(id);
+      if (kind === "event") await managerApi.deleteSpecialEvent(id);
+      if (kind === "emergency") await managerApi.deleteEmergencyRequest(id);
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể xóa dữ liệu");
@@ -334,6 +373,26 @@ export default function LichPage() {
         if (id) await managerApi.updateShiftAssignment(id, body);
         else await managerApi.createShiftAssignment(body);
       }
+      if (modal.kind === "round") {
+        if (id) await managerApi.updateScheduleRound(id, body);
+        else await managerApi.createScheduleRound(body);
+      }
+      if (modal.kind === "session") {
+        if (id) await managerApi.updateScheduleSession(id, body);
+        else await managerApi.createScheduleSession(body);
+      }
+      if (modal.kind === "group") {
+        if (id) await managerApi.updateShiftGroup(id, body);
+        else await managerApi.createShiftGroup(body);
+      }
+      if (modal.kind === "event") {
+        if (id) await managerApi.updateSpecialEvent(id, body);
+        else await managerApi.createSpecialEvent(body);
+      }
+      if (modal.kind === "emergency") {
+        if (id) await managerApi.updateEmergencyRequest(id, body);
+        else await managerApi.createEmergencyRequest(body);
+      }
       setModal(null);
       await load();
     } catch (cause) {
@@ -358,6 +417,23 @@ export default function LichPage() {
     </label>
   );
 
+  const enumSelect = (name: string, label: string, options: readonly string[], required = true) => (
+    <label className="text-xs font-semibold text-slate-600">
+      {label}
+      <select
+        name={name}
+        required={required}
+        defaultValue={value(name)}
+        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+      >
+        <option value="">Chọn...</option>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  );
+
   const select = (name: string, label: string, options: { id: number; label: string }[], required = true) => (
     <label className="text-xs font-semibold text-slate-600">
       {label}
@@ -375,11 +451,33 @@ export default function LichPage() {
     </label>
   );
 
+  const statusOptionsByKind = {
+    period: ["DRAFT", "OPEN", "CLOSED", "PENDING", "FINALIZED"],
+    round: ["OPEN", "CLOSED"],
+    session: ["OPEN", "PENDING", "CLOSED"],
+    shift: ["ACTIVE", "INACTIVE"],
+    shiftDate: ["OPEN", "FULL", "CLOSED", "CANCELLED"],
+    assignment: ["PENDING", "APPROVED", "REJECTED", "CANCELLED", "COMPLETED"],
+    group: ["ACTIVE", "INACTIVE"],
+    event: ["ACTIVE", "INACTIVE", "SCHEDULED", "CANCELLED"],
+    emergency: ["PENDING", "APPROVED", "REJECTED", "CANCELLED"],
+  } as const;
+
+  const typeOptionsByKind = {
+    period: ["WEEK", "MONTH"],
+    event: ["SALE", "PROMOTION", "HOLIDAY"],
+    emergency: ["SHIFT_SWAP", "ABSENCE", "REPLACEMENT"],
+  } as const;
+
   const storeOptions = stores.map((item) => ({ id: Number(item.id), label: text(item.storeName, `Cửa hàng #${item.id}`) }));
   const shiftOptions = shifts.map((item) => ({ id: Number(item.id), label: text(item.shiftName, `Ca #${item.id}`) }));
   const periodOptions = periods.map((item) => ({ id: Number(item.id ?? item.schedulePeriodId ?? 0), label: text(item.periodName, `Kỳ #${item.id ?? item.schedulePeriodId ?? 0}`) }));
   const shiftDateOptions = shiftDates.map((item) => ({ id: Number(item.id ?? item.shiftByDateId ?? 0), label: `${text(item.shiftName, `Ca #${item.shiftId}`)} - ${date(item.workDate)}` }));
   const employeeOptions = employees.map((item) => ({ id: Number(item.id), label: text(item.fullName, `NV #${item.id}`) }));
+  const shiftGroupOptions = shiftGroups.map((item) => ({
+    id: Number(item.id ?? item.shiftGroupId ?? 0),
+    label: text(item.shiftGroupName, `Nhóm ca #${item.id ?? item.shiftGroupId ?? 0}`),
+  }));
 
   const form = modal && (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true">
@@ -398,12 +496,12 @@ export default function LichPage() {
             <>
               {select("store", "Cửa hàng", storeOptions)}
               {input("periodName", "Tên kỳ", "text", true)}
-              {input("periodType", "Loại kỳ", "text", true)}
+              {enumSelect("periodType", "Loại kỳ", typeOptionsByKind.period, true)}
               {input("startDate", "Ngày bắt đầu", "date", true)}
               {input("endDate", "Ngày kết thúc", "date", true)}
               {input("registrationOpenAt", "Mở đăng ký", "datetime-local")}
               {input("registrationCloseAt", "Đóng đăng ký", "datetime-local")}
-              {input("status", "Trạng thái", "text", true)}
+              {enumSelect("status", "Trạng thái", statusOptionsByKind.period, true)}
             </>
           )}
 
@@ -416,7 +514,7 @@ export default function LichPage() {
               {input("endTime", "Kết thúc", "time", true)}
               {input("maxCapacity", "Số lượng", "number", true)}
               {input("payRate", "Lương theo giờ", "number")}
-              {input("status", "Trạng thái", "text", true)}
+              {enumSelect("status", "Trạng thái", statusOptionsByKind.shift, true)}
             </>
           )}
 
@@ -429,7 +527,7 @@ export default function LichPage() {
               {input("shiftName", "Tên ca hiển thị")}
               {input("startTime", "Bắt đầu", "time")}
               {input("endTime", "Kết thúc", "time")}
-              {input("status", "Trạng thái", "text", true)}
+              {enumSelect("status", "Trạng thái", statusOptionsByKind.shiftDate, true)}
             </>
           )}
 
@@ -437,8 +535,60 @@ export default function LichPage() {
             <>
               {select("shiftByDate", "Ca theo ngày", shiftDateOptions)}
               {select("employee", "Nhân viên", employeeOptions)}
-              {input("status", "Trạng thái", "text", true)}
+              {enumSelect("status", "Trạng thái", statusOptionsByKind.assignment, true)}
               {input("note", "Ghi chú")}
+            </>
+          )}
+
+          {modal.kind === "round" && (
+            <>
+              {input("roundName", "Tên đợt đăng ký", "text", true)}
+              {input("registrationStartAt", "Bắt đầu đăng ký", "datetime-local", true)}
+              {input("registrationEndAt", "Kết thúc đăng ký", "datetime-local", true)}
+              {enumSelect("status", "Trạng thái", statusOptionsByKind.round, true)}
+            </>
+          )}
+
+          {modal.kind === "session" && (
+            <>
+              {input("sessionName", "Tên session", "text", true)}
+              {input("sessionOpenAt", "Mở session", "datetime-local", true)}
+              {input("sessionCloseAt", "Đóng session", "datetime-local", true)}
+              {select("shiftGroup", "Nhóm ca", shiftGroupOptions)}
+              {enumSelect("status", "Trạng thái", statusOptionsByKind.session, true)}
+            </>
+          )}
+
+          {modal.kind === "group" && (
+            <>
+              {select("store", "Cửa hàng", storeOptions)}
+              {input("shiftGroupCode", "Mã nhóm ca", "text", true)}
+              {input("shiftGroupName", "Tên nhóm ca", "text", true)}
+              {input("description", "Mô tả", "text")}
+              {input("payRate", "Mức lương", "number")}
+              {enumSelect("status", "Trạng thái", statusOptionsByKind.group, true)}
+            </>
+          )}
+
+          {modal.kind === "event" && (
+            <>
+              {input("eventName", "Tên sự kiện", "text", true)}
+              {input("description", "Mô tả", "text")}
+              {enumSelect("eventType", "Loại sự kiện", typeOptionsByKind.event, true)}
+              {input("startDate", "Ngày bắt đầu", "date", true)}
+              {input("endDate", "Ngày kết thúc", "date", true)}
+              {enumSelect("status", "Trạng thái", statusOptionsByKind.event, true)}
+            </>
+          )}
+
+          {modal.kind === "emergency" && (
+            <>
+              {select("employee", "Nhân viên", employeeOptions)}
+              {enumSelect("requestType", "Loại yêu cầu", typeOptionsByKind.emergency, true)}
+              {input("sourceAssignmentId", "Ca gốc", "number")}
+              {input("targetAssignmentId", "Ca đích", "number")}
+              {input("reason", "Lý do", "text", true)}
+              {enumSelect("status", "Trạng thái", statusOptionsByKind.emergency, true)}
             </>
           )}
         </div>
@@ -506,6 +656,11 @@ export default function LichPage() {
             { key: "period", label: "Kỳ", icon: CalendarRange },
             { key: "shift", label: "Shift", icon: Clock3 },
             { key: "calendar", label: "Thời khóa biểu", icon: Calendar },
+            { key: "round", label: "Đợt đăng ký", icon: CalendarRange },
+            { key: "session", label: "Session", icon: Users },
+            { key: "group", label: "Nhóm ca", icon: Award },
+            { key: "event", label: "Sự kiện", icon: AlertTriangle },
+            { key: "emergency", label: "Khẩn cấp", icon: AlertCircle },
           ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -959,6 +1114,170 @@ export default function LichPage() {
             </div>
           )}
         </>
+      )}
+
+      {activeTab === "round" && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CalendarRange className="h-4 w-4 text-amber-600" />
+              <h2 className="text-sm font-bold text-slate-800">Đợt đăng ký lịch ({rounds.length})</h2>
+            </div>
+            {add("round")}
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {rounds.map((item) => {
+              const id = Number(item.id ?? item.scheduleRoundId ?? 0);
+              return (
+                <div key={id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-800">{text(item.roundName, `Đợt #${id}`)}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">{date(item.registrationStartAt)} – {date(item.registrationEndAt)}</p>
+                    </div>
+                    {actions("round", item as Record<string, unknown>)}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-[11px]">
+                    <span className="rounded-full bg-amber-100 px-2 py-1 font-bold text-amber-800">{text(item.status)}</span>
+                    <span className="text-slate-500">{text(item.createdBy, "—")}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {activeTab === "session" && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-blue-600" />
+              <h2 className="text-sm font-bold text-slate-800">Session lịch ({sessions.length})</h2>
+            </div>
+            {add("session")}
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {sessions.map((item) => {
+              const id = Number(item.id ?? item.scheduleSessionId ?? 0);
+              return (
+                <div key={id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-800">{text(item.sessionName, `Session #${id}`)}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">{date(item.sessionOpenAt)} – {date(item.sessionCloseAt)}</p>
+                    </div>
+                    {actions("session", item as Record<string, unknown>)}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-[11px]">
+                    <span className="rounded-full bg-blue-100 px-2 py-1 font-bold text-blue-700">{text(item.status)}</span>
+                    <span className="text-slate-500">Nhóm ca #{text(item.shiftGroupId, "—")}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {activeTab === "group" && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Award className="h-4 w-4 text-amber-600" />
+              <h2 className="text-sm font-bold text-slate-800">Nhóm ca ({shiftGroups.length})</h2>
+            </div>
+            {add("group")}
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {shiftGroups.map((item) => {
+              const id = Number(item.id ?? item.shiftGroupId ?? 0);
+              return (
+                <div key={id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-800">{text(item.shiftGroupName, `Nhóm ca #${id}`)}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">{text(item.shiftGroupCode)}</p>
+                    </div>
+                    {actions("group", item as Record<string, unknown>)}
+                  </div>
+                  <p className="mt-3 text-[11px] text-slate-600">{text(item.description, "Không có mô tả")}</p>
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-slate-600">
+                    <span className="rounded-full bg-emerald-100 px-2 py-1 font-bold text-emerald-700">{text(item.status)}</span>
+                    <span>{text(item.payRate, "0đ")}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {activeTab === "event" && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <h2 className="text-sm font-bold text-slate-800">Sự kiện đặc biệt ({specialEvents.length})</h2>
+            </div>
+            {add("event")}
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {specialEvents.map((item) => {
+              const id = Number(item.id ?? item.eventId ?? 0);
+              return (
+                <div key={id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-800">{text(item.eventName, `Sự kiện #${id}`)}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">{text(item.eventType)}</p>
+                    </div>
+                    {actions("event", item as Record<string, unknown>)}
+                  </div>
+                  <p className="mt-3 text-[11px] text-slate-600">{text(item.description, "Không có mô tả")}</p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                    <span className="rounded-full bg-slate-100 px-2 py-1">{date(item.startDate)}</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-1">{date(item.endDate)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {activeTab === "emergency" && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-rose-600" />
+              <h2 className="text-sm font-bold text-slate-800">Yêu cầu khẩn cấp ({emergencyRequests.length})</h2>
+            </div>
+            {add("emergency")}
+          </div>
+          <div className="space-y-3">
+            {emergencyRequests.map((item) => {
+              const id = Number(item.id ?? item.emergencyRequestId ?? 0);
+              return (
+                <div key={id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-800">{text(item.requestType, `Yêu cầu #${id}`)}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">Nhân viên #{text(item.employeeId, "—")}</p>
+                    </div>
+                    {actions("emergency", item as Record<string, unknown>)}
+                  </div>
+                  <p className="mt-3 text-[11px] text-slate-600">{text(item.reason, "Không có lý do")}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+                    <span className="rounded-full bg-rose-100 px-2 py-1 font-bold text-rose-700">{text(item.status)}</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">Từ #{text(item.sourceAssignmentId, "—")}</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">Đến #{text(item.targetAssignmentId, "—")}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
     </div>
   );

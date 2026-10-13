@@ -18,7 +18,7 @@ chức năng
         Xữ lý yêu cầu đổi / hủy / đk
         Đăng ký ca làm việc (kh đk nv khác)
         Xữ lý vi phạm 
-        thông kê danh sách ca làm của nhân viên/tiền
+        thông kê danh sách ca làm của nhân viên/tiền // bỏ
         xuất danh sách ca làm
         feedback hệ thống 
         quản lý feedback của nhân viên tại chi nhanh 

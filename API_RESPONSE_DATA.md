@@ -880,18 +880,28 @@ Module 3 gồm các nghiệp vụ:
 
 | Nghiệp vụ | Resource | Endpoint |
 |---|---|---|
+| Lịch tổng hợp / đăng ký ca | `SCHEDULE` | `/api/v1/schedule` |
 | Kỳ lập lịch | `SCHEDULE_PERIOD` | `/api/v1/schedule_period` |
 | Ca làm việc mẫu | `SHIFT` | `/api/v1/shift` |
 | Ca làm việc theo ngày | `SHIFT_BY_DATE` | `/api/v1/shift_by_date` |
-| phân bổ nhân viên vào ca | `SHIFT_ASSIGNMENT` | `/api/v1/shift_assignment` |
+| Phân bổ nhân viên vào ca | `SHIFT_ASSIGNMENT` | `/api/v1/shift_assignment` |
+| Đợt đăng ký lịch | `SCHEDULE_ROUND` | `/api/v1/schedule_round` |
+| Session lịch | `SCHEDULE_SESSION` | `/api/v1/schedule_session` |
+| Nhóm ca | `SHIFT_GROUP` | `/api/v1/shift_group` |
+| Sự kiện đặc biệt | `SPECIAL_EVENT` | `/api/v1/special_event` |
 | Yêu cầu khẩn cấp | `EMERGENCY_REQUEST` | `/api/v1/emergency_request` |
 
 Các controller tương ứng:
 
+- `ScheduleController`
 - `SchedulePeriodController`
 - `ShiftController`
 - `ShiftByDateController`
 - `ShiftAssignmentController`
+- `ScheduleRoundController`
+- `ScheduleSessionController`
+- `ShiftGroupController`
+- `SpecialEventController`
 - `EmergencyRequestController`
 
 ## 15. Quy ước chung Module 3
@@ -1138,6 +1148,253 @@ Khi hủy:
   "cancellationReason": "Nhân viên có việc đột xuất"
 }
 ```
+
+---
+
+## 15D1. SCHEDULE API (`/api/v1/schedule`)
+
+Controller: `ScheduleController`.
+
+Endpoint này không phải CRUD thuần túy; nó tổng hợp dữ liệu lịch theo cửa hàng,
+ca làm việc và phân công nhân viên, và được dùng cho màn hình lịch làm việc và
+đăng ký ca trực tiếp.
+
+### 15D1.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Query params | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/schedule/periods` | Lấy kỳ lập lịch theo store | `storeId` | Không | `200` | `ScheduleResponse[]` |
+| `GET` | `/api/v1/schedule/shifts` | Lấy danh sách ca hoạt động theo store | `storeId` | Không | `200` | `ScheduleResponse[]` |
+| `GET` | `/api/v1/schedule/calendar` | Lấy lịch ca theo khoảng ngày | `from`, `to` | Không | `200` | `ScheduleResponse[]` |
+| `GET` | `/api/v1/schedule/assignments` | Lấy phân công ca theo nhân viên hoặc ca | `employeeId`, `shiftByDateId` | Không | `200` | `ScheduleResponse[]` |
+| `POST` | `/api/v1/schedule/assignments` | Đăng ký nhân viên vào ca | JSON | `AssignmentRequest` | `201` | `ScheduleResponse` |
+
+### 15D1.2 Query params / business rules
+
+```http
+GET /api/v1/schedule/calendar?from=2026-10-01&to=2026-10-31
+GET /api/v1/schedule/assignments?employeeId=12
+GET /api/v1/schedule/assignments?shiftByDateId=42
+```
+
+- `GET /schedule/calendar` yêu cầu `from` và `to` bắt buộc.
+- Range không được hợp lệ hoặc dài hơn 3 tháng: backend trả `400 Bad Request`.
+- `POST /schedule/assignments` chỉ cho phép đăng ký khi `shift.status = OPEN`.
+- Nhân viên không được đăng ký trùng `shiftByDateId` trong cùng ca.
+- Nếu `capacity > 0` và số lượng `APPROVED` đã đạt giới hạn thì trả `409 Conflict`.
+
+### 15D1.3 Request `AssignmentRequest`
+
+```json
+{
+  "shiftByDateId": 42,
+  "employeeId": 12
+}
+```
+
+`AssignmentRequest` là record với 2 field:
+
+| Field | Kiểu | Mô tả |
+|---|---|---|
+| `shiftByDateId` | `number` | ID của ca theo ngày. |
+| `employeeId` | `number` | ID của nhân viên đăng ký. |
+
+> Lưu ý: response của `ScheduleController` không phải schema cố định; nó được xây bằng `DtoMapper.toMap(...)` nên dữ liệu trả ra phụ thuộc vào entity thực tế và từng endpoint.
+
+---
+
+## 15D2. SCHEDULE_ROUND API (`/api/v1/schedule_round`)
+
+Controller: `ScheduleRoundController`.
+
+Đây là module đợt đăng ký lịch. Request/response dùng kiểu dữ liệu động (`Map<String, Object>`) thay vì DTO tĩnh.
+
+### 15D2.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/schedule_round` | Lấy toàn bộ đợt đăng ký | Không | `200` | `ScheduleRoundResponse[]` |
+| `GET` | `/api/v1/schedule_round/{id}` | Lấy đợt theo ID | Không | `200` | `ScheduleRoundResponse` |
+| `POST` | `/api/v1/schedule_round` | Tạo đợt mới | JSON | `201` | `ScheduleRoundResponse` |
+| `PUT` | `/api/v1/schedule_round/{id}` | Cập nhật đợt | JSON | `200` | `ScheduleRoundResponse` |
+| `DELETE` | `/api/v1/schedule_round/{id}` | Xóa đợt | Không | `204` | Không có body |
+
+### 15D2.2 Field thường gặp trong response
+
+Các trường có thể xuất hiện tùy dữ liệu thực tế:
+
+| Field | Kiểu | Mô tả |
+|---|---|---|
+| `id` | `number` | ID đợt đăng ký (`schedule_round_id`). |
+| `roundName` | `string` | Tên đợt. |
+| `registrationStartAt` | `string` (ISO 8601) | Thời điểm bắt đầu đăng ký. |
+| `registrationEndAt` | `string` (ISO 8601) | Thời điểm kết thúc đăng ký. |
+| `status` | `string` | Trạng thái đợt, ví dụ `OPEN`, `CLOSED`. |
+| `createdBy` | `number` | ID người tạo. |
+| `createdAt` | `string` (ISO 8601) | Thời điểm tạo. |
+
+### 15D2.3 Request body
+
+Do controller dùng `ScheduleRoundRequest` mở rộng bằng `@JsonAnySetter`, payload
+không bị ràng buộc chặt theo schema tĩnh. Client có thể gửi object JSON với
+các field do nghiệp vụ cần, ví dụ:
+
+```json
+{
+  "roundName": "Đợt 1 tháng 10",
+  "registrationStartAt": "2026-10-01T08:00:00",
+  "registrationEndAt": "2026-10-03T23:59:59",
+  "status": "OPEN",
+  "createdBy": 1
+}
+```
+
+---
+
+## 15D3. SCHEDULE_SESSION API (`/api/v1/schedule_session`)
+
+Controller: `ScheduleSessionController`.
+
+Đây là module session lịch, nơi mỗi session gắn với một `shiftGroup` nếu có.
+
+### 15D3.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/schedule_session` | Lấy toàn bộ session lịch | Không | `200` | `ScheduleSessionResponse[]` |
+| `GET` | `/api/v1/schedule_session/{id}` | Lấy session theo ID | Không | `200` | `ScheduleSessionResponse` |
+| `POST` | `/api/v1/schedule_session` | Tạo session lịch mới | JSON | `201` | `ScheduleSessionResponse` |
+| `PUT` | `/api/v1/schedule_session/{id}` | Cập nhật session lịch | JSON | `200` | `ScheduleSessionResponse` |
+| `DELETE` | `/api/v1/schedule_session/{id}` | Xóa session lịch | Không | `204` | Không có body |
+
+### 15D3.2 Field thường gặp trong response
+
+| Field | Kiểu | Mô tả |
+|---|---|---|
+| `id` | `number` | ID session (`schedule_session_id`). |
+| `sessionName` | `string` | Tên session. |
+| `sessionOpenAt` | `string` (ISO 8601) | Thời gian mở session. |
+| `sessionCloseAt` | `string` (ISO 8601) | Thời gian đóng session. |
+| `shiftGroupId` | `number` | ID nhóm ca nếu session gắn với `shift_group`. |
+| `status` | `string` | Trạng thái session, ví dụ `OPEN`, `CLOSED`. |
+| `createdBy` | `number` | ID người tạo. |
+| `createdAt` | `string` (ISO 8601) | Thời điểm tạo. |
+
+### 15D3.3 Request body
+
+```json
+{
+  "sessionName": "Session 1",
+  "sessionOpenAt": "2026-10-01T08:00:00",
+  "sessionCloseAt": "2026-10-03T23:59:59",
+  "shiftGroupId": 5,
+  "status": "OPEN",
+  "createdBy": 1
+}
+```
+
+> `ScheduleSessionRequest` cũng là JSON mở rộng, nên các field khác nếu cần cũng được chấp nhận theo backend.
+
+---
+
+## 15D4. SHIFT_GROUP API (`/api/v1/shift_group`)
+
+Controller: `ShiftGroupController`.
+
+Nhóm ca là đơn vị gom ca làm việc theo một cửa hàng, có thông tin `storeId`,
+`shiftGroupCode`, `shiftGroupName`, `payRate` và `status`.
+
+### 15D4.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/shift_group` | Lấy toàn bộ nhóm ca | Không | `200` | `ShiftGroupResponse[]` |
+| `GET` | `/api/v1/shift_group/{id}` | Lấy nhóm ca theo ID | Không | `200` | `ShiftGroupResponse` |
+| `POST` | `/api/v1/shift_group` | Tạo nhóm ca | JSON | `201` | `ShiftGroupResponse` |
+| `PUT` | `/api/v1/shift_group/{id}` | Cập nhật nhóm ca | JSON | `200` | `ShiftGroupResponse` |
+| `DELETE` | `/api/v1/shift_group/{id}` | Xóa nhóm ca | Không | `204` | Không có body |
+
+### 15D4.2 Field thường gặp trong response
+
+| Field | Kiểu | Mô tả |
+|---|---|---|
+| `id` | `number` | ID nhóm ca (`shift_group_id`). |
+| `storeId` | `number` | ID cửa hàng sở hữu nhóm ca. |
+| `storeName` | `string` | Tên cửa hàng (nếu mapper đính kèm). |
+| `shiftGroupCode` | `string` | Mã nhóm ca. |
+| `shiftGroupName` | `string` | Tên nhóm ca. |
+| `description` | `string` | Mô tả nhóm ca. |
+| `payRate` | `number` | Mức thanh toán theo nhóm ca. |
+| `status` | `string` | Trạng thái, ví dụ `ACTIVE`, `INACTIVE`. |
+| `createdBy` | `number` | ID người tạo. |
+| `createdAt` | `string` (ISO 8601) | Thời điểm tạo. |
+| `updatedAt` | `string` (ISO 8601) | Thời điểm cập nhật. |
+
+### 15D4.3 Request body
+
+```json
+{
+  "storeId": 1,
+  "shiftGroupCode": "MORNING_GRP",
+  "shiftGroupName": "Nhóm ca sáng",
+  "description": "Gồm ca sáng và ca trưa",
+  "payRate": 250000,
+  "status": "ACTIVE",
+  "createdBy": 1
+}
+```
+
+> `ShiftGroupRequest` được triển khai dạng map động; backend chấp nhận JSON hiện trường theo yêu cầu doanh nghiệp.
+
+---
+
+## 15D5. SPECIAL_EVENT API (`/api/v1/special_event`)
+
+Controller: `SpecialEventController`.
+
+Quản lý sự kiện đặc biệt của hệ thống lịch làm việc, ví dụ chương trình, lễ, sự
+kiện riêng của cửa hàng hoặc thời điểm hoạt động khác biệt.
+
+### 15D5.1 Danh sách endpoints
+
+| Method | Endpoint | Mô tả | Request Body | HTTP Status | Response `data` |
+|---|---|---|---|:---:|---|
+| `GET` | `/api/v1/special_event` | Lấy toàn bộ sự kiện đặc biệt | Không | `200` | `SpecialEventResponse[]` |
+| `GET` | `/api/v1/special_event/{id}` | Lấy sự kiện theo ID | Không | `200` | `SpecialEventResponse` |
+| `POST` | `/api/v1/special_event` | Tạo sự kiện đặc biệt mới | JSON | `201` | `SpecialEventResponse` |
+| `PUT` | `/api/v1/special_event/{id}` | Cập nhật sự kiện đặc biệt | JSON | `200` | `SpecialEventResponse` |
+| `DELETE` | `/api/v1/special_event/{id}` | Xóa sự kiện đặc biệt | Không | `204` | Không có body |
+
+### 15D5.2 Field thường gặp trong response
+
+| Field | Kiểu | Mô tả |
+|---|---|---|
+| `eventId` | `number` | ID sự kiện. |
+| `eventName` | `string` | Tên sự kiện. |
+| `description` | `string` | Mô tả sự kiện. |
+| `eventType` | `string` | Loại sự kiện, ví dụ `SALE`, `PROMOTION`, `HOLIDAY`. |
+| `startDate` | `string` (`YYYY-MM-DD`) | Ngày bắt đầu. |
+| `endDate` | `string` (`YYYY-MM-DD`) | Ngày kết thúc. |
+| `status` | `string` | Trạng thái sự kiện. |
+| `createdBy` | `number` | ID người tạo. |
+| `createdAt` | `string` (ISO 8601) | Thời điểm tạo. |
+| `updatedAt` | `string` (ISO 8601) | Thời điểm cập nhật. |
+
+### 15D5.3 Request body
+
+```json
+{
+  "eventName": "Khuyến mãi cuối năm",
+  "description": "Áp dụng chương trình tăng ca cuối năm",
+  "eventType": "PROMOTION",
+  "startDate": "2026-12-20",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE",
+  "createdBy": 1
+}
+```
+
+> `SpecialEventRequest` cũng là payload động theo kiểu `Map<String, Object>`, nên tên field có thể thay đổi theo nhu cầu phát triển và không cần khớp schema cứng.
 
 ---
 

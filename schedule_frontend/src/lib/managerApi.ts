@@ -176,6 +176,62 @@ export interface ShiftAssignmentResponse {
   [key: string]: unknown;
 }
 
+export interface ScheduleRoundResponse {
+  id?: number;
+  scheduleRoundId?: number;
+  roundName?: string | null;
+  registrationStartAt?: string | null;
+  registrationEndAt?: string | null;
+  status?: string | null;
+  createdBy?: number | null;
+  createdAt?: string | null;
+  [key: string]: unknown;
+}
+
+export interface ScheduleSessionResponse {
+  id?: number;
+  scheduleSessionId?: number;
+  sessionName?: string | null;
+  sessionOpenAt?: string | null;
+  sessionCloseAt?: string | null;
+  shiftGroupId?: number | null;
+  status?: string | null;
+  createdBy?: number | null;
+  createdAt?: string | null;
+  [key: string]: unknown;
+}
+
+export interface ShiftGroupResponse {
+  id?: number;
+  shiftGroupId?: number;
+  storeId?: number | null;
+  storeName?: string | null;
+  shiftGroupCode?: string | null;
+  shiftGroupName?: string | null;
+  description?: string | null;
+  payRate?: number | null;
+  status?: string | null;
+  createdBy?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  [key: string]: unknown;
+}
+
+export interface SpecialEventResponse {
+  id?: number;
+  eventId?: number;
+  eventName?: string | null;
+  description?: string | null;
+  eventType?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  status?: string | null;
+  createdBy?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  [key: string]: unknown;
+}
+
 export interface EmergencyRequestResponse {
   id?: number;
   emergencyRequestId?: number;
@@ -542,6 +598,38 @@ export const managerApi = {
     requestManagerApi<ShiftAssignmentResponse>(`/api/v1/shift_assignment/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteShiftAssignment: (id: number) =>
     requestManagerApi<void>(`/api/v1/shift_assignment/${id}`, { method: "DELETE" }),
+  getScheduleRounds: () =>
+    requestManagerApi<ScheduleRoundResponse[]>("/api/v1/schedule_round"),
+  createScheduleRound: (body: Record<string, unknown>) =>
+    requestManagerApi<ScheduleRoundResponse>("/api/v1/schedule_round", { method: "POST", body: JSON.stringify(body) }),
+  updateScheduleRound: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<ScheduleRoundResponse>(`/api/v1/schedule_round/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteScheduleRound: (id: number) =>
+    requestManagerApi<void>(`/api/v1/schedule_round/${id}`, { method: "DELETE" }),
+  getScheduleSessions: () =>
+    requestManagerApi<ScheduleSessionResponse[]>("/api/v1/schedule_session"),
+  createScheduleSession: (body: Record<string, unknown>) =>
+    requestManagerApi<ScheduleSessionResponse>("/api/v1/schedule_session", { method: "POST", body: JSON.stringify(body) }),
+  updateScheduleSession: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<ScheduleSessionResponse>(`/api/v1/schedule_session/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteScheduleSession: (id: number) =>
+    requestManagerApi<void>(`/api/v1/schedule_session/${id}`, { method: "DELETE" }),
+  getShiftGroups: () =>
+    requestManagerApi<ShiftGroupResponse[]>("/api/v1/shift_group"),
+  createShiftGroup: (body: Record<string, unknown>) =>
+    requestManagerApi<ShiftGroupResponse>("/api/v1/shift_group", { method: "POST", body: JSON.stringify(body) }),
+  updateShiftGroup: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<ShiftGroupResponse>(`/api/v1/shift_group/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteShiftGroup: (id: number) =>
+    requestManagerApi<void>(`/api/v1/shift_group/${id}`, { method: "DELETE" }),
+  getSpecialEvents: () =>
+    requestManagerApi<SpecialEventResponse[]>("/api/v1/special_event"),
+  createSpecialEvent: (body: Record<string, unknown>) =>
+    requestManagerApi<SpecialEventResponse>("/api/v1/special_event", { method: "POST", body: JSON.stringify(body) }),
+  updateSpecialEvent: (id: number, body: Record<string, unknown>) =>
+    requestManagerApi<SpecialEventResponse>(`/api/v1/special_event/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteSpecialEvent: (id: number) =>
+    requestManagerApi<void>(`/api/v1/special_event/${id}`, { method: "DELETE" }),
   getEmergencyRequests: () =>
     requestManagerApi<EmergencyRequestResponse[]>("/api/v1/emergency_request"),
   createEmergencyRequest: (body: Record<string, unknown>) =>
