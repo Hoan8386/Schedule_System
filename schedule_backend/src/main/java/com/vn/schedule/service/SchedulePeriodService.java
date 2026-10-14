@@ -17,6 +17,7 @@ import com.vn.schedule.util.SecurityUtil;
 import com.vn.schedule.dto.request.SchedulePeriodRequest;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

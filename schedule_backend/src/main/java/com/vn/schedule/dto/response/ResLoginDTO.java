@@ -1,9 +1,6 @@
 package com.vn.schedule.dto.response;
 
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,7 +18,6 @@ public class ResLoginDTO {
 
     @Getter
     @Setter
-    @AllArgsConstructor
     @NoArgsConstructor
     public static class UserLogin {
         private long id;
@@ -32,23 +28,43 @@ public class ResLoginDTO {
         private Integer roleId;
         private String roleCode;
         private String roleName;
+
+        public UserLogin(long id, String username, String email, String phone,
+                         String status, Integer roleId, String roleCode, String roleName) {
+            this.id = id;
+            this.username = username;
+            this.email = email;
+            this.phone = phone;
+            this.status = status;
+            this.roleId = roleId;
+            this.roleCode = roleCode;
+            this.roleName = roleName;
+        }
     }
 
     @Getter
     @Setter
-    @AllArgsConstructor
     @NoArgsConstructor
     public static class UserGetAccount {
         private UserLogin user;
+
+        public UserGetAccount(UserLogin user) {
+            this.user = user;
+        }
     }
 
     @Getter
     @Setter
-    @AllArgsConstructor
     @NoArgsConstructor
     public static class UserInsideToken {
         private long id;
         private String username;
         private String email;
+
+        public UserInsideToken(long id, String username, String email) {
+            this.id = id;
+            this.username = username;
+            this.email = email;
+        }
     }
 }

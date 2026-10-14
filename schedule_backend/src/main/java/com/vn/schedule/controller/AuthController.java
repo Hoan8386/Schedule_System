@@ -10,7 +10,6 @@ import com.vn.schedule.domain.User;
 import com.vn.schedule.dto.*;
 import com.vn.schedule.dto.request.*;
 import com.vn.schedule.dto.response.*;
-import com.vn.schedule.dto.response.ResLoginDTO;
 import com.vn.schedule.service.AuthService;
 import com.vn.schedule.util.anotation.ApiMessage;
 
@@ -18,9 +17,12 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@RequiredArgsConstructor
 public class AuthController {
-    private final AuthService authService;
+     private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
 
     @PostMapping("/register")
     @ApiMessage("Đăng ký thành công, vui lòng xác nhận tài khoản")

@@ -1,11 +1,16 @@
 package com.vn.schedule.dto.response;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-@AllArgsConstructor
+@NoArgsConstructor
 public class AuthTokenResponse {
     private String message;
     private String token;
+
+    public AuthTokenResponse(String message, String token) {
+        this.message = message;
+        this.token = token;
+    }
 }

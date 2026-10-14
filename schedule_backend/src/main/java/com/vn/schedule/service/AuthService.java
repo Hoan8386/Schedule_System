@@ -20,13 +20,25 @@ import com.vn.schedule.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityUtil securityUtil;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            SecurityUtil securityUtil,
+            RoleRepository roleRepository,
+            UserRoleRepository userRoleRepository) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.securityUtil = securityUtil;
+        this.roleRepository = roleRepository;
+        this.userRoleRepository = userRoleRepository;
+    }
 
     @Transactional
     public User register(AuthRegisterRequest request) {
