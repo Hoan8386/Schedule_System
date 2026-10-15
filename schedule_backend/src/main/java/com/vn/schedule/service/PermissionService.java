@@ -43,7 +43,7 @@ public class PermissionService {
         repository.delete(findById(id));
     }
 
-    @Transactional
+    @Transactional  
     public Permission save(PermissionRequest body) {
         return repository.save(toEntity(body));
     }

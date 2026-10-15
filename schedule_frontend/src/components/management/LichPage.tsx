@@ -115,7 +115,6 @@ export default function LichPage() {
           q: filters.q || undefined,
           from: filters.from || undefined,
           to: filters.to || undefined,
-          storeId: filters.storeId ? Number(filters.storeId) : undefined,
           status: filters.status || undefined,
         }),
         managerApi.getShifts({
@@ -494,7 +493,6 @@ export default function LichPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {modal.kind === "period" && (
             <>
-              {select("store", "Cửa hàng", storeOptions)}
               {input("periodName", "Tên kỳ", "text", true)}
               {enumSelect("periodType", "Loại kỳ", typeOptionsByKind.period, true)}
               {input("startDate", "Ngày bắt đầu", "date", true)}

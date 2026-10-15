@@ -39,7 +39,7 @@ public class ScheduleController {
     @GetMapping("/periods")
     @ApiMessage("Lấy dữ liệu")
     public ResponseEntity<List<ScheduleResponse>> periods(@RequestParam(required = false) Integer storeId) {
-        return ResponseEntity.ok(responses(storeId == null ? periods.findAll() : periods.findByStoreIdOrderByStartDateDesc(storeId)));
+        return ResponseEntity.ok(responses(periods.findAll()));
     }
 
     @GetMapping("/shifts")

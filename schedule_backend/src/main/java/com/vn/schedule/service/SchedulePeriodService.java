@@ -1,14 +1,12 @@
 package com.vn.schedule.service;
 
 import com.vn.schedule.domain.SchedulePeriod;
-import com.vn.schedule.domain.Store;
 import com.vn.schedule.domain.User;
 import com.vn.schedule.domain.Employee;
 import com.vn.schedule.repository.EmployeeRepository;
 import com.vn.schedule.repository.EmployeeStoreRepository;
 import com.vn.schedule.repository.SchedulePeriodRepository;
 import com.vn.schedule.repository.StoreManagerRepository;
-import com.vn.schedule.repository.StoreRepository;
 import com.vn.schedule.repository.UserRepository;
 import com.vn.schedule.repository.UserRoleRepository;
 import com.vn.schedule.repository.RoleRepository;
@@ -30,7 +28,6 @@ import java.util.stream.Collectors;
 @Service
 public class SchedulePeriodService {
     private final SchedulePeriodRepository repository;
-    private final StoreRepository storeRepository;
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
     private final RoleRepository roleRepository;
@@ -38,13 +35,12 @@ public class SchedulePeriodService {
     private final EmployeeStoreRepository employeeStoreRepository;
     private final StoreManagerRepository storeManagerRepository;
 
-    public SchedulePeriodService(SchedulePeriodRepository repository, StoreRepository storeRepository,
+    public SchedulePeriodService(SchedulePeriodRepository repository,
                                 UserRepository userRepository, UserRoleRepository userRoleRepository,
                                 RoleRepository roleRepository, EmployeeRepository employeeRepository,
                                 EmployeeStoreRepository employeeStoreRepository,
                                 StoreManagerRepository storeManagerRepository) {
         this.repository = repository;
-        this.storeRepository = storeRepository;
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
         this.roleRepository = roleRepository;
@@ -58,19 +54,15 @@ public class SchedulePeriodService {
     }
 
     public List<SchedulePeriod> findAll(String q, LocalDate from, LocalDate to, Integer storeId, String status) {
-        Set<Integer> visibleStoreIds = visibleStoreIds();
         String normalizedQuery = q == null ? "" : q.trim().toLowerCase();
 
         return repository.findAll().stream()
-                .filter(item -> visibleStoreIds == null || visibleStoreIds.contains(item.getStore().getId()))
-                .filter(item -> storeId == null || item.getStore().getId().equals(storeId))
                 .filter(item -> from == null || !item.getStartDate().isBefore(from))
                 .filter(item -> to == null || !item.getEndDate().isAfter(to))
                 .filter(item -> status == null || status.isBlank() || status.equalsIgnoreCase(item.getStatus()))
                 .filter(item -> normalizedQuery.isBlank()
                         || contains(item.getPeriodName(), normalizedQuery)
-                        || contains(item.getPeriodType(), normalizedQuery)
-                        || contains(item.getStore() != null && item.getStore().getStoreName() != null ? item.getStore().getStoreName() : null, normalizedQuery))
+                        || contains(item.getPeriodType(), normalizedQuery))
                 .toList();
     }
 
@@ -143,47 +135,105 @@ public class SchedulePeriodService {
     }
     private SchedulePeriod toEntity(SchedulePeriodRequest body) {
         SchedulePeriod entity = new SchedulePeriod();
-        entity.setId((Integer) body.get("id"));
-        entity.setStore(resolveStore(body));
-        entity.setPeriodName((String) body.get("periodName"));
-        entity.setPeriodType((String) body.get("periodType"));
-        entity.setStartDate((LocalDate) body.get("startDate"));
-        entity.setEndDate((LocalDate) body.get("endDate"));
-        entity.setRegistrationOpenAt((LocalDateTime) body.get("registrationOpenAt"));
-        entity.setRegistrationCloseAt((LocalDateTime) body.get("registrationCloseAt"));
-        entity.setStatus((String) body.get("status"));
-        entity.setCreatedBy((Integer) body.get("createdBy"));
-        entity.setFinalizedBy((Integer) body.get("finalizedBy"));
-        entity.setFinalizedAt((LocalDateTime) body.get("finalizedAt"));
+        entity.setId(asInteger(body.get("id"), "id"));
+        entity.setPeriodName(asString(body.get("periodName"), "periodName"));
+        entity.setPeriodType(asString(body.get("periodType"), "periodType"));
+        entity.setStartDate(parseLocalDate(body.get("startDate"), "startDate"));
+        entity.setEndDate(parseLocalDate(body.get("endDate"), "endDate"));
+        entity.setRegistrationOpenAt(parseLocalDateTime(body.get("registrationOpenAt"), "registrationOpenAt"));
+        entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
+        entity.setStatus(asString(body.get("status"), "status"));
+        entity.setCreatedBy(asInteger(body.get("createdBy"), "createdBy"));
+        entity.setFinalizedBy(asInteger(body.get("finalizedBy"), "finalizedBy"));
+        entity.setFinalizedAt(parseLocalDateTime(body.get("finalizedAt"), "finalizedAt"));
         return entity;
     }
 
     private void applyFields(SchedulePeriod entity, SchedulePeriodRequest body) {
-        entity.setId((Integer) body.get("id"));
-        entity.setStore(resolveStore(body));
-        entity.setPeriodName((String) body.get("periodName"));
-        entity.setPeriodType((String) body.get("periodType"));
-        entity.setStartDate((LocalDate) body.get("startDate"));
-        entity.setEndDate((LocalDate) body.get("endDate"));
-        entity.setRegistrationOpenAt((LocalDateTime) body.get("registrationOpenAt"));
-        entity.setRegistrationCloseAt((LocalDateTime) body.get("registrationCloseAt"));
-        entity.setStatus((String) body.get("status"));
-        entity.setCreatedBy((Integer) body.get("createdBy"));
-        entity.setFinalizedBy((Integer) body.get("finalizedBy"));
-        entity.setFinalizedAt((LocalDateTime) body.get("finalizedAt"));
+        entity.setId(asInteger(body.get("id"), "id"));
+        entity.setPeriodName(asString(body.get("periodName"), "periodName"));
+        entity.setPeriodType(asString(body.get("periodType"), "periodType"));
+        entity.setStartDate(parseLocalDate(body.get("startDate"), "startDate"));
+        entity.setEndDate(parseLocalDate(body.get("endDate"), "endDate"));
+        entity.setRegistrationOpenAt(parseLocalDateTime(body.get("registrationOpenAt"), "registrationOpenAt"));
+        entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
+        entity.setStatus(asString(body.get("status"), "status"));
+        entity.setCreatedBy(asInteger(body.get("createdBy"), "createdBy"));
+        entity.setFinalizedBy(asInteger(body.get("finalizedBy"), "finalizedBy"));
+        entity.setFinalizedAt(parseLocalDateTime(body.get("finalizedAt"), "finalizedAt"));
     }
 
-    private Store resolveStore(SchedulePeriodRequest body) {
-        return storeRepository.getReferenceById(requiredId(body.get("store"), "store"));
+    private String asString(Object value, String fieldName) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String text) {
+            return text;
+        }
+        throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " phải là chuỗi");
     }
 
-    private Integer requiredId(Object value, String fieldName) {
+    private Integer asInteger(Object value, String fieldName) {
+        if (value == null) {
+            return null;
+        }
         if (value instanceof Number number) {
             return number.intValue();
         }
-        if (value instanceof java.util.Map<?, ?> map && map.get("id") instanceof Number number) {
-            return number.intValue();
+        if (value instanceof String text && !text.isBlank()) {
+            try {
+                return Integer.parseInt(text.trim());
+            } catch (NumberFormatException ex) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " không hợp lệ");
+            }
         }
-        throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " is required");
+        throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " không hợp lệ");
     }
+
+    private LocalDate parseLocalDate(Object value, String fieldName) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof LocalDate localDate) {
+            return localDate;
+        }
+        if (value instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            try {
+                return LocalDate.parse(trimmed);
+            } catch (DateTimeParseException ex) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " không hợp lệ: " + trimmed);
+            }
+        }
+        throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " phải là kiểu ngày");
+    }
+
+    private LocalDateTime parseLocalDateTime(Object value, String fieldName) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof LocalDateTime localDateTime) {
+            return localDateTime;
+        }
+        if (value instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            try {
+                return LocalDateTime.parse(trimmed);
+            } catch (DateTimeParseException ex) {
+                try {
+                    return LocalDate.parse(trimmed).atStartOfDay();
+                } catch (DateTimeParseException inner) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " không hợp lệ: " + trimmed);
+                }
+            }
+        }
+        throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " phải là kiểu ngày giờ");
+    }
+
 }

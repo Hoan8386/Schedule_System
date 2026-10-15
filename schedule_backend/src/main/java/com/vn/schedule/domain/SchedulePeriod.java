@@ -18,9 +18,6 @@ public class SchedulePeriod {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "schedule_period_id")
     private Integer id;
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "store_id", nullable = false)
-    private Store store;
     @Column(name = "period_name", nullable = false)
     private String periodName;
     @Column(name = "period_type", nullable = false)
@@ -42,4 +39,3 @@ public class SchedulePeriod {
     @Column(name = "finalized_at")
     private LocalDateTime finalizedAt;
 }
-
