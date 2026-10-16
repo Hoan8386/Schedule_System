@@ -7,8 +7,6 @@ import {
   Clock,
   Wallet,
   Search,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import {
   BarChart,
@@ -19,6 +17,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { chartAxisTick, chartColors, chartTooltipStyle } from "@/lib/theme";
 
 const dailyHours = [
   { day: "01/10", hours: 6 },
@@ -178,20 +177,20 @@ export default function EmployeeStatsPage() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailyHours} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#64748B" }} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                <XAxis dataKey="day" tick={chartAxisTick} tickLine={false} />
                 <YAxis
                   domain={[0, 8]}
                   ticks={[0, 3, 6]}
-                  tick={{ fontSize: 11, fill: "#64748B" }}
+                  tick={chartAxisTick}
                   tickLine={false}
                   unit=" giờ"
                 />
                 <Tooltip
-                  formatter={(val: any) => [`${val} giờ`, "Giờ làm"]}
-                  contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0", fontSize: 12 }}
+                  formatter={(val: unknown) => [`${val} giờ`, "Giờ làm"]}
+                  contentStyle={chartTooltipStyle}
                 />
-                <Bar dataKey="hours" fill="#F59E0B" radius={[6, 6, 0, 0]} maxBarSize={48} />
+                <Bar dataKey="hours" fill={chartColors.brand} radius={[6, 6, 0, 0]} maxBarSize={48} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -214,7 +213,7 @@ export default function EmployeeStatsPage() {
               </div>
               <div className="flex items-center justify-between py-3">
                 <span className="text-slate-700 font-bold">Chưa thanh toán</span>
-                <span className="text-lg font-black text-amber-600">
+                <span className="text-lg font-black text-brand-600">
                   720.000 VND
                 </span>
               </div>
@@ -241,7 +240,7 @@ export default function EmployeeStatsPage() {
               placeholder="Tìm ngày hoặc ca"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-hidden hover:border-slate-300 focus:border-amber-400"
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-hidden hover:border-slate-300 focus:border-brand-400"
             />
           </div>
         </div>
@@ -287,7 +286,7 @@ export default function EmployeeStatsPage() {
             <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-400">
               Trước
             </button>
-            <button className="w-8 h-8 rounded-lg bg-amber-500 text-slate-900 font-bold flex items-center justify-center">
+            <button className="w-8 h-8 rounded-lg bg-brand-500 text-slate-900 font-bold flex items-center justify-center">
               1
             </button>
             <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-400">

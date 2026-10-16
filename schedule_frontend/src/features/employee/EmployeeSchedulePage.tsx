@@ -7,9 +7,6 @@ import {
   ChevronRight,
   Plus,
   Clock,
-  Filter,
-  CheckCircle2,
-  CalendarDays,
   ArrowLeftRight,
   CalendarX,
 } from "lucide-react";
@@ -53,7 +50,7 @@ export default function EmployeeSchedulePage({
         </div>
         <button
           onClick={onOpenRegister}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-brand-200"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           <span>Đăng ký ca</span>
@@ -86,7 +83,7 @@ export default function EmployeeSchedulePage({
 
         <div className="text-slate-500 font-semibold text-xs">
           5 ca · 30 giờ ·{" "}
-          <span className="text-amber-600">Dự kiến 900.000 VND</span>
+          <span className="text-brand-600">Dự kiến 900.000 VND</span>
         </div>
       </div>
 
@@ -147,13 +144,13 @@ export default function EmployeeSchedulePage({
                 <div
                   key={i}
                   className={`py-1 rounded-xl ${
-                    d.isToday ? "bg-amber-50/80 font-bold" : ""
+                    d.isToday ? "bg-brand-50/80 font-bold" : ""
                   }`}
                 >
                   <p className="text-[11px] text-slate-400">{d.day}</p>
                   <p
                     className={`text-base font-extrabold ${
-                      d.isToday ? "text-amber-600" : "text-slate-800"
+                      d.isToday ? "text-brand-600" : "text-slate-800"
                     }`}
                   >
                     {d.date}
@@ -235,17 +232,17 @@ export default function EmployeeSchedulePage({
               </div>
 
               {/* Mon 05 (Today) */}
-              <div className="p-2.5 bg-amber-50/70 border border-amber-300 rounded-xl flex flex-col justify-between shadow-xs">
+              <div className="p-2.5 bg-brand-50/70 border border-brand-300 rounded-xl flex flex-col justify-between shadow-xs">
                 <div>
-                  <p className="text-xs font-extrabold text-amber-900">
+                  <p className="text-xs font-extrabold text-brand-900">
                     Ca tối
                   </p>
-                  <p className="text-[10px] text-amber-800 mt-0.5">
+                  <p className="text-[10px] text-brand-800 mt-0.5">
                     16:00 – 22:00
                   </p>
-                  <p className="text-[10px] text-amber-700">Nguyễn Trãi</p>
+                  <p className="text-[10px] text-brand-700">Nguyễn Trãi</p>
                 </div>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-amber-200/90 text-amber-900 w-fit mt-1">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-brand-200/90 text-brand-900 w-fit mt-1">
                   Đã xác nhận
                 </span>
               </div>
@@ -264,7 +261,7 @@ export default function EmployeeSchedulePage({
                   </p>
                   <p className="text-[10px] text-slate-400">Nguyễn Trãi</p>
                 </div>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-amber-100 text-amber-800 border border-amber-200 w-fit mt-1">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-brand-100 text-brand-800 border border-brand-200 w-fit mt-1">
                   Chờ thay đổi
                 </span>
               </div>
@@ -283,7 +280,7 @@ export default function EmployeeSchedulePage({
                   </p>
                   <p className="text-[10px] text-slate-400">Nguyễn Trãi</p>
                 </div>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-amber-100 text-amber-800 border border-amber-200 w-fit mt-1">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-brand-100 text-brand-800 border border-brand-200 w-fit mt-1">
                   Chờ thay đổi
                 </span>
               </div>
@@ -299,7 +296,7 @@ export default function EmployeeSchedulePage({
               Đã xác nhận
             </span>
             <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              <span className="w-2.5 h-2.5 rounded-full bg-brand-400" />
               Chờ thay đổi
             </span>
           </div>
@@ -312,7 +309,7 @@ export default function EmployeeSchedulePage({
       {/* Bottom Action Banner */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-600 shrink-0">
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>

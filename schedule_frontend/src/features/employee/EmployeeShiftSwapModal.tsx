@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { X, Store, Info, Check } from "lucide-react";
-import { employeeApi } from "@/lib/employeeApi";
+import { employeeApi } from "@/lib/api";
 
 interface EmployeeShiftSwapModalProps {
   isOpen: boolean;
@@ -98,7 +98,7 @@ export default function EmployeeShiftSwapModal({
               <select
                 value={currentShift}
                 onChange={(e) => setCurrentShift(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden hover:border-slate-300 focus:border-amber-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden hover:border-slate-300 focus:border-brand-400"
               >
                 {assignments.map((item) => (
                   <option key={String(item.id ?? item.shiftAssignmentId)} value={String(item.id ?? item.shiftAssignmentId)}>
@@ -120,7 +120,7 @@ export default function EmployeeShiftSwapModal({
               <select
                 value={targetShift}
                 onChange={(e) => setTargetShift(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden hover:border-slate-300 focus:border-amber-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden hover:border-slate-300 focus:border-brand-400"
               >
                 {availableShifts.map((item) => (
                   <option key={String(item.id ?? item.shiftByDateId)} value={String(item.id ?? item.shiftByDateId)}>
@@ -144,13 +144,13 @@ export default function EmployeeShiftSwapModal({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Nhập chi tiết lý do muốn đổi ca..."
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-hidden hover:border-slate-300 focus:border-amber-400 resize-none font-medium"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-hidden hover:border-slate-300 focus:border-brand-400 resize-none font-medium"
               />
             </div>
 
             {/* Warning banner */}
-            <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-amber-900">
-              <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="p-3 bg-brand-50/70 border border-brand-200/80 rounded-xl flex items-start gap-2.5 text-brand-900">
+              <Info className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
               <p className="text-[11px] leading-relaxed">
                 Tiếp tục làm ca hiện tại nếu yêu cầu chưa được duyệt. Ca mới chỉ được xác nhận sau khi quản lý đồng ý.
               </p>
@@ -168,7 +168,7 @@ export default function EmployeeShiftSwapModal({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold transition-all shadow-xs disabled:opacity-50"
+                className="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 font-bold transition-all shadow-xs disabled:opacity-50"
               >
                 {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu đổi ca"}
               </button>

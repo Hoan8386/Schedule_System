@@ -21,7 +21,7 @@ import {
   StoreResponse,
   StoreRequest,
   managerApi,
-} from "@/lib/managerApi";
+} from "@/lib/api";
 
 const text = (value: unknown, fallback = "Chưa cập nhật") =>
   value === null || value === undefined || String(value).trim() === ""
@@ -209,7 +209,7 @@ export default function CuaHangPage() {
         <div className="flex items-center gap-2">
         <button
           onClick={() => openStoreForm()}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 text-xs font-bold"
         >
           <Plus className="w-4 h-4" /> Thêm cửa hàng
         </button>
@@ -267,11 +267,11 @@ export default function CuaHangPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {storeRows.map(({ store, staffCount, managerCount }) => (
             <div key={store.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-              <div className="relative h-32 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center border-b border-slate-100">
+              <div className="relative h-32 bg-gradient-to-br from-brand-100 to-orange-100 flex items-center justify-center border-b border-slate-100">
                 {store.logoImage ? (
                   <img src={store.logoImage} alt={`Logo ${text(store.storeName)}`} className="h-full w-full object-cover" />
                 ) : (
-                  <Store className="w-12 h-12 text-amber-600" />
+                  <Store className="w-12 h-12 text-brand-600" />
                 )}
                 <span className={`absolute top-3 right-3 text-[11px] font-black px-2.5 py-1 rounded-full ${statusClass(store.status)}`}>
                   {statusLabel(store.status)}
@@ -305,7 +305,7 @@ export default function CuaHangPage() {
                   </button>
                   <button
                     onClick={() => openStoreForm(store)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-2 text-xs font-bold text-slate-900 hover:bg-amber-600"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-3 py-2 text-xs font-bold text-slate-900 hover:bg-brand-600"
                   >
                     <Edit className="w-3.5 h-3.5" /> Sửa
                   </button>
@@ -344,7 +344,7 @@ export default function CuaHangPage() {
               <label className="text-xs font-bold text-slate-600 sm:col-span-2">Ảnh cửa hàng<input type="file" accept="image/*" onChange={(event) => selectLogo(event.target.files?.[0] ?? null)} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 font-normal text-xs" />{logoFile && <span className="mt-1 block text-[11px] font-normal text-slate-500">{logoFile.name}</span>}{logoPreview && <img src={logoPreview} alt="Xem trước logo cửa hàng" className="mt-3 h-32 w-full rounded-xl border border-slate-200 object-cover" />}</label>
               <label className="text-xs font-bold text-slate-600">Trạng thái<select value={storeForm.status} onChange={(event) => setStoreForm({ ...storeForm, status: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option><option value="OPENING">OPENING</option></select></label>
             </div>
-            <div className="flex justify-end gap-2"><button type="button" onClick={closeStoreForm} className="rounded-xl border px-4 py-2 text-sm">Hủy</button><button disabled={saving} className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold disabled:opacity-50">{saving ? "Đang lưu..." : "Lưu"}</button></div>
+            <div className="flex justify-end gap-2"><button type="button" onClick={closeStoreForm} className="rounded-xl border px-4 py-2 text-sm">Hủy</button><button disabled={saving} className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-bold disabled:opacity-50">{saving ? "Đang lưu..." : "Lưu"}</button></div>
           </form>
         </div>
       ) : null}
@@ -362,7 +362,7 @@ export default function CuaHangPage() {
               {assignments.filter((assignment) => assignment.storeId === staffStore.id && (!assignment.status || assignment.status.toUpperCase() === "ACTIVE")).map((assignment) => {
                 const employee = employees.find((item) => item.id === assignment.employeeId);
                 const isManager = managers.some((manager) => manager.storeId === staffStore.id && manager.employeeId === assignment.employeeId);
-                return <div key={assignment.employeeStoreId} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3"><div><p className="text-sm font-bold text-slate-800">{text(employee?.fullName, `Nhân viên #${assignment.employeeId}`)}</p><p className="text-xs text-slate-500">{text(employee?.employeeCode)} · {text(employee?.phone)}</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isManager ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"}`}>{isManager ? "TRƯỞNG CỬA HÀNG" : "NHÂN VIÊN"}</span></div>;
+                return <div key={assignment.employeeStoreId} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3"><div><p className="text-sm font-bold text-slate-800">{text(employee?.fullName, `Nhân viên #${assignment.employeeId}`)}</p><p className="text-xs text-slate-500">{text(employee?.employeeCode)} · {text(employee?.phone)}</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isManager ? "bg-brand-50 text-brand-700" : "bg-slate-100 text-slate-600"}`}>{isManager ? "TRƯỞNG CỬA HÀNG" : "NHÂN VIÊN"}</span></div>;
               })}
               {assignments.filter((assignment) => assignment.storeId === staffStore.id && (!assignment.status || assignment.status.toUpperCase() === "ACTIVE")).length === 0 && <p className="py-8 text-center text-sm text-slate-500">Chưa có nhân viên đang làm tại cửa hàng này.</p>}
             </div>

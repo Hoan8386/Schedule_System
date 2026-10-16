@@ -7,8 +7,6 @@ import {
   Clock,
   Wallet,
   Search,
-  ChevronLeft,
-  ChevronRight,
   Info,
 } from "lucide-react";
 
@@ -171,7 +169,7 @@ export default function StoreManagerStatsPage() {
               6 nhân viên · Không gồm ca đã hủy
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+          <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
             <Calendar className="w-5 h-5" />
           </div>
         </div>
@@ -253,7 +251,7 @@ export default function StoreManagerStatsPage() {
                   <td className="py-3.5 px-4">{s.rate}</td>
                   <td className="py-3.5 px-4 font-bold text-slate-800">{s.total}</td>
                   <td className="py-3.5 px-4">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200">
                       {s.status}
                     </span>
                   </td>
@@ -279,7 +277,7 @@ export default function StoreManagerStatsPage() {
             <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-400">
               Trước
             </button>
-            <button className="w-8 h-8 rounded-lg bg-amber-500 text-slate-900 font-bold flex items-center justify-center">
+            <button className="w-8 h-8 rounded-lg bg-brand-500 text-slate-900 font-bold flex items-center justify-center">
               1
             </button>
             <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-400">
@@ -347,7 +345,7 @@ export default function StoreManagerStatsPage() {
             <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-400">
               Trước
             </button>
-            <button className="w-8 h-8 rounded-lg bg-amber-500 text-slate-900 font-bold flex items-center justify-center">
+            <button className="w-8 h-8 rounded-lg bg-brand-500 text-slate-900 font-bold flex items-center justify-center">
               1
             </button>
             <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-400">
@@ -358,8 +356,8 @@ export default function StoreManagerStatsPage() {
       </div>
 
       {/* Info Notice Footer */}
-      <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center gap-3 text-xs text-amber-900">
-        <Info className="w-4 h-4 text-amber-600 shrink-0" />
+      <div className="p-4 rounded-2xl bg-brand-50/70 border border-brand-200/80 flex items-center gap-3 text-xs text-brand-900">
+        <Info className="w-4 h-4 text-brand-600 shrink-0" />
         <p>
           Tiền công minh họa được tính theo giờ đã ghi nhận; chưa đối soát. Hồ sơ vi phạm không tự động khấu trừ tiền công. Báo cáo chỉ gồm nhân viên cửa hàng Nguyễn Trãi.
         </p>

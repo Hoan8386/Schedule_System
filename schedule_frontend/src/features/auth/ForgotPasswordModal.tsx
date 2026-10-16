@@ -110,7 +110,7 @@ export default function ForgotPasswordModal({
 
         {step === "request" && (
           <div>
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#F59E0B] border border-amber-100 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-500 border border-brand-100 flex items-center justify-center mb-4">
               <Mail className="w-6 h-6 stroke-[1.8]" />
             </div>
             <h3 className="text-xl font-bold text-slate-900">
@@ -138,14 +138,14 @@ export default function ForgotPasswordModal({
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nhanvien@bloan.vn"
                   required
-                  className="w-full rounded-xl px-4 py-2.5 text-sm border border-slate-200 focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/20 outline-none"
+                  className="w-full rounded-xl px-4 py-2.5 text-sm border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading || !email.trim()}
-                className="w-full py-3 rounded-xl text-sm font-bold bg-[#F59E0B] hover:bg-[#D97706] text-white transition-all flex items-center justify-center gap-2 disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
+                className="w-full py-3 rounded-xl text-sm font-bold bg-brand-500 hover:bg-brand-600 text-white transition-all flex items-center justify-center gap-2 disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -165,7 +165,7 @@ export default function ForgotPasswordModal({
 
         {step === "reset" && (
           <div>
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#F59E0B] border border-amber-100 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-500 border border-brand-100 flex items-center justify-center mb-4">
               <KeyRound className="w-6 h-6 stroke-[1.8]" />
             </div>
             <h3 className="text-xl font-bold text-slate-900">
@@ -193,7 +193,7 @@ export default function ForgotPasswordModal({
                   onChange={(e) => setToken(e.target.value)}
                   placeholder="Dán mã token được cấp"
                   required
-                  className="w-full rounded-xl px-4 py-2.5 text-xs font-mono border border-slate-200 focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/20 outline-none"
+                  className="w-full rounded-xl px-4 py-2.5 text-xs font-mono border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
                 />
               </div>
 
@@ -207,7 +207,7 @@ export default function ForgotPasswordModal({
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full rounded-xl px-4 py-2.5 text-sm border border-slate-200 focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/20 outline-none"
+                  className="w-full rounded-xl px-4 py-2.5 text-sm border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
                 />
               </div>
 
@@ -221,14 +221,14 @@ export default function ForgotPasswordModal({
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full rounded-xl px-4 py-2.5 text-sm border border-slate-200 focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/20 outline-none"
+                  className="w-full rounded-xl px-4 py-2.5 text-sm border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading || !token.trim() || password.length < 8 || password !== confirmPassword}
-                className="w-full py-3 rounded-xl text-sm font-bold bg-[#F59E0B] hover:bg-[#D97706] text-white transition-all flex items-center justify-center gap-2 disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
+                className="w-full py-3 rounded-xl text-sm font-bold bg-brand-500 hover:bg-brand-600 text-white transition-all flex items-center justify-center gap-2 disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -257,7 +257,7 @@ export default function ForgotPasswordModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-3 rounded-xl text-sm font-bold bg-[#F59E0B] hover:bg-[#D97706] text-white transition-all cursor-pointer"
+              className="w-full py-3 rounded-xl text-sm font-bold bg-brand-500 hover:bg-brand-600 text-white transition-all cursor-pointer"
             >
               Về màn hình Đăng nhập
             </button>

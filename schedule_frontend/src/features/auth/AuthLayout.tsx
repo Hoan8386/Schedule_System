@@ -10,7 +10,7 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen w-full bg-[#FFFFFF] flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900">
+    <div className="min-h-screen w-full bg-white flex flex-col justify-between selection:bg-brand-100 selection:text-brand-900">
       {/* Main Container */}
       <main className="flex-1 max-w-[1440px] w-full mx-auto px-6 sm:px-12 lg:px-20 py-8 lg:py-12 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16">
         
@@ -35,7 +35,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             </header>
 
             {/* Accent Gold/Amber Bar */}
-            <div className="w-12 h-1.5 bg-[#F59E0B] rounded-full mt-12 sm:mt-16 mb-8" />
+            <div className="w-12 h-1.5 bg-brand-500 rounded-full mt-12 sm:mt-16 mb-8" />
 
             {/* Headline */}
             <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-slate-900 tracking-tight leading-[1.2] whitespace-pre-line">
@@ -52,7 +52,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             <div className="mt-10 sm:mt-12 space-y-5">
               {/* Feature 1 */}
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#FFFBEB] border border-[#FEF3C7] flex items-center justify-center shrink-0 text-[#F59E0B]">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0 text-brand-500">
                   <Calendar className="w-5 h-5 stroke-[1.8]" />
                 </div>
                 <span className="text-slate-700 font-medium text-sm sm:text-[15px]">
@@ -62,7 +62,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
               {/* Feature 2 */}
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#FFFBEB] border border-[#FEF3C7] flex items-center justify-center shrink-0 text-[#F59E0B]">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0 text-brand-500">
                   <Users className="w-5 h-5 stroke-[1.8]" />
                 </div>
                 <span className="text-slate-700 font-medium text-sm sm:text-[15px]">
@@ -72,7 +72,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
               {/* Feature 3 */}
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#FFFBEB] border border-[#FEF3C7] flex items-center justify-center shrink-0 text-[#F59E0B]">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0 text-brand-500">
                   <ShieldCheck className="w-5 h-5 stroke-[1.8]" />
                 </div>
                 <span className="text-slate-700 font-medium text-sm sm:text-[15px]">
@@ -105,7 +105,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                 <button
                   type="button"
                   onClick={() => alert("Vui lòng liên hệ bộ phận IT / Nhân sự: admin@bloan.vn hoặc hotline 1900-BLOAN")}
-                  className="text-[#DC2626] font-semibold hover:underline cursor-pointer"
+                  className="text-red-600 font-semibold hover:underline cursor-pointer"
                 >
                   Liên hệ quản trị viên
                 </button>

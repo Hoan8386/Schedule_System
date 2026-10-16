@@ -2,16 +2,10 @@
 
 import React, { useState } from "react";
 import {
-  Hash,
   Sparkles,
   Save,
   RotateCcw,
-  Check,
-  HelpCircle,
-  Play,
   FileDigit,
-  Settings2,
-  Layers,
   Info,
 } from "lucide-react";
 
@@ -123,7 +117,7 @@ export default function CauHinhSinhMaPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-lg">
+            <span className="text-xs font-black uppercase tracking-wider text-brand-800 bg-brand-100 border border-brand-300 px-2.5 py-0.5 rounded-lg">
               ADMIN CENTER
             </span>
             <span className="text-slate-400 text-xs">/</span>
@@ -136,7 +130,7 @@ export default function CauHinhSinhMaPage() {
             <div className="relative group">
               <button
                 type="button"
-                className="w-6 h-6 rounded-full bg-slate-200 hover:bg-amber-100 text-slate-700 hover:text-amber-800 flex items-center justify-center font-bold transition-all cursor-help border border-slate-300 shadow-2xs"
+                className="w-6 h-6 rounded-full bg-slate-200 hover:bg-brand-100 text-slate-700 hover:text-brand-800 flex items-center justify-center font-bold transition-all cursor-help border border-slate-300 shadow-2xs"
                 title="Thông tin sinh mã tự động"
               >
                 <Info className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -159,7 +153,7 @@ export default function CauHinhSinhMaPage() {
           </button>
           <button
             onClick={handleSave}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200 cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-brand-200 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>Lưu quy tắc sinh mã</span>
@@ -168,13 +162,13 @@ export default function CauHinhSinhMaPage() {
       </div>
 
       {/* Overview Card */}
-      <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-5 text-slate-950 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-amber-400">
+      <div className="bg-gradient-to-r from-brand-500 to-brand-600 rounded-2xl p-5 text-slate-950 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-brand-400">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-950 stroke-[2.2]" />
+            <Sparkles className="w-5 h-5 text-brand-950 stroke-[2.2]" />
             <h3 className="font-black text-base tracking-tight text-slate-950">Quy chuẩn sinh mã duy nhất (Unique Identity)</h3>
           </div>
-          <p className="text-xs font-bold text-amber-950/90 max-w-2xl">
+          <p className="text-xs font-bold text-brand-950/90 max-w-2xl">
             Mỗi đối tượng khi được thêm mới sẽ được cấp phát mã tự động theo mẫu đã định nghĩa. Hệ thống đảm bảo không trùng lặp ngay cả khi có hàng nghìn giao dịch đồng thời.
           </p>
         </div>
@@ -193,11 +187,11 @@ export default function CauHinhSinhMaPage() {
           return (
             <div
               key={rule.id}
-              className="bg-white rounded-2xl border border-slate-300 shadow-xs p-5 hover:border-amber-400 transition-all"
+              className="bg-white rounded-2xl border border-slate-300 shadow-xs p-5 hover:border-brand-400 transition-all"
             >
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0 mt-0.5">
+                  <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold shrink-0 mt-0.5">
                     <FileDigit className="w-5 h-5" />
                   </div>
                   <div>
@@ -213,7 +207,7 @@ export default function CauHinhSinhMaPage() {
                       Mẫu mã tiếp theo:
                     </span>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="font-mono text-sm font-black text-amber-800 bg-amber-100/70 border border-amber-300/60 px-2 py-0.5 rounded-md">
+                      <span className="font-mono text-sm font-black text-brand-800 bg-brand-100/70 border border-brand-300/60 px-2 py-0.5 rounded-md">
                         {previewNext1}
                       </span>
                       <span className="text-slate-400 text-xs">→</span>
@@ -233,7 +227,7 @@ export default function CauHinhSinhMaPage() {
                     type="text"
                     value={rule.prefix}
                     onChange={(e) => updateRule(rule.id, { prefix: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono font-bold text-slate-800 outline-hidden focus:border-amber-400"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono font-bold text-slate-800 outline-hidden focus:border-brand-400"
                   />
                 </div>
 
@@ -242,7 +236,7 @@ export default function CauHinhSinhMaPage() {
                   <select
                     value={rule.separator}
                     onChange={(e) => updateRule(rule.id, { separator: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden focus:border-amber-400 bg-white"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden focus:border-brand-400 bg-white"
                   >
                     <option value="-">Gạch ngang (-)</option>
                     <option value="_">Gạch dưới (_)</option>
@@ -256,7 +250,7 @@ export default function CauHinhSinhMaPage() {
                   <select
                     value={rule.paddingDigits}
                     onChange={(e) => updateRule(rule.id, { paddingDigits: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden focus:border-amber-400 bg-white"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden focus:border-brand-400 bg-white"
                   >
                     <option value={2}>2 chữ số (01, 02...)</option>
                     <option value={3}>3 chữ số (001, 002...)</option>
@@ -273,7 +267,7 @@ export default function CauHinhSinhMaPage() {
                         type="checkbox"
                         checked={rule.includeYear}
                         onChange={(e) => updateRule(rule.id, { includeYear: e.target.checked })}
-                        className="rounded accent-amber-500"
+                        className="rounded accent-brand-500"
                       />
                       <span>Năm (YYYY)</span>
                     </label>
@@ -282,7 +276,7 @@ export default function CauHinhSinhMaPage() {
                         type="checkbox"
                         checked={rule.includeMonth}
                         onChange={(e) => updateRule(rule.id, { includeMonth: e.target.checked })}
-                        className="rounded accent-amber-500"
+                        className="rounded accent-brand-500"
                       />
                       <span>Tháng (MM)</span>
                     </label>
@@ -293,8 +287,8 @@ export default function CauHinhSinhMaPage() {
                   <label className="font-bold text-slate-700 block mb-1">Chu kỳ làm mới (Reset):</label>
                   <select
                     value={rule.resetCycle}
-                    onChange={(e) => updateRule(rule.id, { resetCycle: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden focus:border-amber-400 bg-white"
+                    onChange={(e) => updateRule(rule.id, { resetCycle: e.target.value as CodeRule["resetCycle"] })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium text-slate-800 outline-hidden focus:border-brand-400 bg-white"
                   >
                     <option value="NEVER">Không bao giờ (Tăng liên tục)</option>
                     <option value="YEARLY">Hàng năm (Về 001 đầu năm)</option>

@@ -8,8 +8,6 @@ import {
   Inbox,
   ArrowRight,
   Bell,
-  CheckCircle2,
-  AlertCircle,
   FileText,
 } from "lucide-react";
 
@@ -131,7 +129,7 @@ export default function EmployeeDashboard({
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
+                <div className="w-1.5 h-4 bg-brand-500 rounded-full" />
                 <h3 className="text-sm font-bold text-slate-800">
                   Ca làm sắp tới
                 </h3>
@@ -141,9 +139,9 @@ export default function EmployeeDashboard({
               </span>
             </div>
 
-            <div className="flex items-start gap-4 p-3 bg-amber-50/50 rounded-xl border border-amber-100/80">
-              <div className="w-14 h-16 bg-white rounded-xl border border-amber-200 flex flex-col items-center justify-center shrink-0 shadow-xs">
-                <span className="text-[9px] font-bold text-amber-600 uppercase">
+            <div className="flex items-start gap-4 p-3 bg-brand-50/50 rounded-xl border border-brand-100/80">
+              <div className="w-14 h-16 bg-white rounded-xl border border-brand-200 flex flex-col items-center justify-center shrink-0 shadow-xs">
+                <span className="text-[9px] font-bold text-brand-600 uppercase">
                   Thứ Hai
                 </span>
                 <span className="text-xl font-black text-slate-800">05</span>
@@ -156,7 +154,7 @@ export default function EmployeeDashboard({
                 <div className="text-xs text-slate-600">
                   BLOAN Nguyễn Trãi · Quầy bán hàng
                 </div>
-                <div className="text-xs font-semibold text-amber-700">
+                <div className="text-xs font-semibold text-brand-700">
                   6 giờ · 180.000 VND
                 </div>
               </div>
@@ -169,7 +167,7 @@ export default function EmployeeDashboard({
             </span>
             <button
               onClick={onGoToSchedule}
-              className="inline-flex items-center gap-1.5 font-bold text-slate-700 hover:text-amber-600 transition-colors"
+              className="inline-flex items-center gap-1.5 font-bold text-slate-700 hover:text-brand-600 transition-colors"
             >
               <span>Chi tiết ca</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -184,7 +182,7 @@ export default function EmployeeDashboard({
               <h3 className="text-sm font-bold text-slate-800">
                 Yêu cầu đang xử lý
               </h3>
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold border border-amber-200/60">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-semibold border border-brand-200/60">
                 2 yêu cầu
               </span>
             </div>
@@ -202,7 +200,7 @@ export default function EmployeeDashboard({
                     DC-024 · Gửi ngày 04/10
                   </div>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200/80">
+                <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-brand-50 text-brand-700 border border-brand-200/80">
                   Chờ duyệt
                 </span>
               </div>
@@ -219,7 +217,7 @@ export default function EmployeeDashboard({
                     HC-018 · Gửi ngày 04/10
                   </div>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200/80">
+                <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-brand-50 text-brand-700 border border-brand-200/80">
                   Chờ duyệt
                 </span>
               </div>
@@ -229,7 +227,7 @@ export default function EmployeeDashboard({
           <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-end gap-3 text-xs">
             <button
               onClick={onOpenSwap}
-              className="text-amber-600 font-semibold hover:underline"
+              className="text-brand-600 font-semibold hover:underline"
             >
               + Đổi ca khác
             </button>
@@ -296,12 +294,12 @@ export default function EmployeeDashboard({
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-slate-800">Thông báo</h3>
-            <span className="text-xs text-amber-600 font-bold">3 mới</span>
+            <span className="text-xs text-brand-600 font-bold">3 mới</span>
           </div>
 
           <div className="space-y-3.5 text-xs">
             <div className="flex items-start gap-3 pb-3 border-b border-slate-100">
-              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-7 h-7 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 mt-0.5">
                 <Calendar className="w-3.5 h-3.5" />
               </div>
               <div className="space-y-0.5">

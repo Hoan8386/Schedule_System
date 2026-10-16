@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
+import { useInitialLoad } from "@/lib/hooks";
 import {
   AuthConfirmRequest,
   AuthLoginRequest,
@@ -51,8 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserLogin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is already logged in on client mount
+  // Khôi phục phiên đăng nhập đã lưu khi mount (chỉ chạy ở client vì cần localStorage)
+  useInitialLoad(() => {
     try {
       const savedUser = authApi.getSavedUser();
       const token = authApi.getSavedToken();
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  });
 
   const login = async (
     payload: AuthLoginRequest

@@ -1,0 +1,271 @@
+/* ============================================================
+   THEME – Ăn Vặt BLOAN Workforce Management
+   ------------------------------------------------------------
+   File CSS dùng chung cho toàn hệ thống.
+   1. Design tokens (biến CSS) – đổi theme chỉ cần đổi các biến này.
+   2. Ánh xạ token sang Tailwind (bg-brand-500, text-accent, bg-app...).
+   3. Class giao diện dùng chung (.btn, .card, .field-input, .badge...).
+
+   Đổi theme:
+   - Sửa giá trị trong :root, hoặc
+   - Đặt <html data-theme="..."> để dùng một bộ theme khác (xem ví dụ
+     [data-theme="ocean"] bên dưới), hoặc
+   - Gọi applyTheme() trong src/lib/theme.ts để đổi lúc chạy.
+
+   Quy ước: KHÔNG dùng màu hex cứng hoặc palette amber-* trong component.
+   Dùng brand-* cho màu thương hiệu, accent cho màu nhấn (đỏ logo),
+   slate-* cho màu trung tính, emerald/rose/sky... cho trạng thái.
+   ============================================================ */
+
+/* ---------- 1. Design tokens ---------- */
+:root {
+  /* Màu thương hiệu chính (mặc định: vàng cam BLOAN) */
+  --brand-50: #fffbeb;
+  --brand-100: #fef3c7;
+  --brand-200: #fde68a;
+  --brand-300: #fcd34d;
+  --brand-400: #fbbf24;
+  --brand-500: #f59e0b;
+  --brand-600: #d97706;
+  --brand-700: #b45309;
+  --brand-800: #92400e;
+  --brand-900: #78350f;
+  --brand-950: #451a03;
+  /* Màu chữ đặt trên nền brand-500 */
+  --brand-contrast: #0f172a;
+
+  /* Màu nhấn (đỏ logo BLOAN) */
+  --accent: #ed1c24;
+  --accent-hover: #c8161d;
+
+  /* Màu trung tính (mặc định: slate) */
+  --neutral-50: #f8fafc;
+  --neutral-100: #f1f5f9;
+  --neutral-200: #e2e8f0;
+  --neutral-300: #cbd5e1;
+  --neutral-400: #94a3b8;
+  --neutral-500: #64748b;
+  --neutral-600: #475569;
+  --neutral-700: #334155;
+  --neutral-800: #1e293b;
+  --neutral-900: #0f172a;
+  --neutral-950: #020617;
+
+  /* Bề mặt */
+  --app-bg: #f8fafc;
+  --page-bg: #fbfbfc;
+  --surface: #ffffff;
+
+  /* Trạng thái */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #0ea5e9;
+
+  /* Biểu đồ (dùng trong src/lib/theme.ts) */
+  --chart-grid: #f1f5f9;
+  --chart-axis: #64748b;
+  --chart-border: #e2e8f0;
+
+  /* Hình khối */
+  --ui-radius-control: 0.75rem;
+  --ui-radius-card: 1rem;
+  --sidebar-width: 16rem;
+  --topbar-height: 3.5rem;
+}
+
+/* Ví dụ theme thay thế – bật bằng <html data-theme="ocean"> */
+[data-theme="ocean"] {
+  --brand-50: #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-800: #1e40af;
+  --brand-900: #1e3a8a;
+  --brand-950: #172554;
+  --brand-contrast: #ffffff;
+  --warning: #f59e0b;
+}
+
+/* ---------- 2. Ánh xạ sang Tailwind ---------- */
+@theme inline {
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+  --color-brand-contrast: var(--brand-contrast);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+
+  /* slate-* trỏ về bảng trung tính để có thể đổi theo theme */
+  --color-slate-50: var(--neutral-50);
+  --color-slate-100: var(--neutral-100);
+  --color-slate-200: var(--neutral-200);
+  --color-slate-300: var(--neutral-300);
+  --color-slate-400: var(--neutral-400);
+  --color-slate-500: var(--neutral-500);
+  --color-slate-600: var(--neutral-600);
+  --color-slate-700: var(--neutral-700);
+  --color-slate-800: var(--neutral-800);
+  --color-slate-900: var(--neutral-900);
+  --color-slate-950: var(--neutral-950);
+
+  --color-app: var(--app-bg);
+  --color-page: var(--page-bg);
+  --color-surface: var(--surface);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --radius-control: var(--ui-radius-control);
+  --radius-card: var(--ui-radius-card);
+}
+
+/* ---------- 3. Base ---------- */
+@layer base {
+  body {
+    font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ---------- 4. Class dùng chung ---------- */
+@layer components {
+  /* Bố cục trang */
+  .page {
+    @apply mx-auto max-w-7xl space-y-6 p-6;
+  }
+  .page-title {
+    @apply text-2xl font-black text-slate-800;
+  }
+  .page-subtitle {
+    @apply mt-1 text-xs text-slate-500;
+  }
+
+  /* Thẻ / khối nội dung */
+  .card {
+    @apply rounded-2xl border border-slate-200 bg-surface shadow-sm;
+  }
+  .card-header {
+    @apply flex items-center gap-2 border-b border-slate-100 px-5 py-4;
+  }
+  .card-title {
+    @apply text-sm font-bold text-slate-800;
+  }
+  .card-body {
+    @apply p-5;
+  }
+  .tile {
+    @apply rounded-2xl border border-slate-200 bg-slate-50 p-4;
+  }
+
+  /* Nút */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-sm {
+    @apply rounded-lg px-3 py-2;
+  }
+  .btn-primary {
+    @apply bg-brand-500 text-brand-contrast hover:bg-brand-600;
+  }
+  .btn-secondary {
+    @apply border border-slate-200 bg-surface text-slate-600 hover:bg-slate-50;
+  }
+  .btn-danger {
+    @apply bg-rose-600 text-white hover:bg-rose-700;
+  }
+  .btn-ghost {
+    @apply text-slate-600 hover:bg-slate-100;
+  }
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-lg p-2 transition;
+  }
+
+  /* Form */
+  .field-label {
+    @apply text-xs font-semibold text-slate-600;
+  }
+  .field-input {
+    @apply mt-1 w-full rounded-xl border border-slate-200 bg-surface px-3 py-2 text-sm text-slate-800 outline-hidden transition focus:border-brand-400;
+  }
+
+  /* Nhãn trạng thái */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold;
+  }
+  .badge-neutral {
+    @apply bg-slate-100 text-slate-600;
+  }
+  .badge-brand {
+    @apply bg-brand-100 text-brand-800;
+  }
+  .badge-success {
+    @apply bg-emerald-100 text-emerald-700;
+  }
+  .badge-warning {
+    @apply bg-brand-100 text-brand-700;
+  }
+  .badge-danger {
+    @apply bg-rose-100 text-rose-700;
+  }
+  .badge-info {
+    @apply bg-blue-100 text-blue-700;
+  }
+
+  /* Thông báo */
+  .alert {
+    @apply flex items-center gap-2 rounded-xl border p-4 text-xs font-semibold;
+  }
+  .alert-danger {
+    @apply border-rose-200 bg-rose-50 text-rose-700;
+  }
+  .alert-success {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-700;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4;
+  }
+  .modal-panel {
+    @apply max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-surface p-6 shadow-2xl;
+  }
+
+  /* Tab */
+  .tab {
+    @apply inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition;
+  }
+  .tab-active {
+    @apply bg-brand-500 text-brand-contrast shadow-sm;
+  }
+  .tab-inactive {
+    @apply bg-slate-100 text-slate-600 hover:bg-slate-200;
+  }
+
+  /* Trạng thái rỗng */
+  .empty-state {
+    @apply rounded-xl border border-dashed border-slate-200 p-4 text-xs text-slate-500;
+  }
+}
+
+/* ---------- 5. Tiện ích ---------- */
+@utility transition-smooth {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}

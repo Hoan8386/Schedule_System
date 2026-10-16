@@ -3,15 +3,12 @@
 import React, { useEffect, useState } from "react";
 import {
   MessageSquare,
-  MessageCircle,
   Search,
   CheckCircle2,
   Clock,
   X,
-  Send,
-  AlertCircle,
 } from "lucide-react";
-import { storeManagerApi } from "@/lib/storeManagerAPI";
+import { storeManagerApi } from "@/lib/api";
 
 interface FeedbackItem {
   id: string;
@@ -180,7 +177,7 @@ export default function StoreManagerFeedbackPage({
               Chưa có phản hồi của Trưởng cửa hàng
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+          <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
             <MessageSquare className="w-5 h-5" />
           </div>
         </div>
@@ -269,7 +266,7 @@ export default function StoreManagerFeedbackPage({
                   <td className="py-3.5 px-4 text-slate-500">{f.date}</td>
                   <td className="py-3.5 px-4">
                     {f.status === "NEW" && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200">
                         Mới
                       </span>
                     )}
@@ -305,7 +302,7 @@ export default function StoreManagerFeedbackPage({
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-bold text-amber-600 uppercase">
+                <span className="text-[10px] font-bold text-brand-600 uppercase">
                   {activeItem.id} · {activeItem.senderCode}
                 </span>
                 <h3 className="text-base font-extrabold text-slate-800 mt-0.5">
@@ -352,7 +349,7 @@ export default function StoreManagerFeedbackPage({
                 </button>
                 <button
                   onClick={() => handleResolve(activeItem.id)}
-                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-xs transition-all"
+                  className="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 font-bold shadow-xs transition-all"
                 >
                   Gửi phản hồi & Giải quyết
                 </button>

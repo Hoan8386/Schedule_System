@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Download, Filter, Search, Award, TrendingUp, Calendar, FileSpreadsheet, FileText, AlertTriangle } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const top5Data = [
   { name: "Nguyễn Thùy Dương", pct: 98, role: "BLOAN · Lê Lợi" },
@@ -112,7 +112,7 @@ export default function ThongKePage() {
         </div>
         <button
           onClick={() => alert("Đang xuất gói dữ liệu tổng hợp toàn chuỗi...")}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-brand-200"
         >
           <Download className="w-4 h-4" />
           <span>Xuất dữ liệu tổng hợp</span>
@@ -128,7 +128,7 @@ export default function ThongKePage() {
             placeholder="Tìm tên nhân viên..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl outline-hidden hover:border-slate-300 focus:border-amber-400 transition-all font-medium text-slate-800"
+            className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl outline-hidden hover:border-slate-300 focus:border-brand-400 transition-all font-medium text-slate-800"
           />
         </div>
 
@@ -169,12 +169,12 @@ export default function ThongKePage() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
                   <Award className="w-4 h-4" />
                 </div>
                 <h3 className="font-bold text-slate-800 text-sm">Top 5 Nhân sự xuất sắc nhất chuỗi</h3>
               </div>
-              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+              <span className="text-[11px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
                 Tháng 10
               </span>
             </div>
@@ -185,7 +185,7 @@ export default function ThongKePage() {
             <div className="space-y-3">
               {top5Data.map((d, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-900 font-black text-xs flex items-center justify-center shrink-0">
+                  <div className="w-6 h-6 rounded-lg bg-brand-100 text-brand-900 font-black text-xs flex items-center justify-center shrink-0">
                     {i + 1}
                   </div>
                   <div className="w-36 shrink-0 truncate">
@@ -301,7 +301,7 @@ export default function ThongKePage() {
                 <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center border border-amber-200 shrink-0">
+                      <div className="w-8 h-8 rounded-xl bg-brand-100 text-brand-800 font-bold text-xs flex items-center justify-center border border-brand-200 shrink-0">
                         {row.name.split(" ").slice(-1)[0].slice(0, 2).toUpperCase()}
                       </div>
                       <div>
@@ -314,7 +314,7 @@ export default function ThongKePage() {
                   <td className="px-5 py-4 text-center font-bold text-slate-800">{row.shifts}</td>
                   <td className="px-5 py-4 text-center text-slate-600 font-medium">{row.hours}</td>
                   <td className="px-5 py-4 text-center">
-                    <span className="text-amber-500 font-bold tracking-widest">
+                    <span className="text-brand-500 font-bold tracking-widest">
                       {"★".repeat(row.stars)}
                       <span className="text-slate-300">{"★".repeat(5 - row.stars)}</span>
                     </span>
@@ -337,7 +337,7 @@ export default function ThongKePage() {
                       <p className="font-black text-slate-900 text-sm">{row.rate}%</p>
                       <div className="w-20 bg-slate-100 rounded-full h-1.5 ml-auto mt-1">
                         <div
-                          className="h-full rounded-full bg-amber-500"
+                          className="h-full rounded-full bg-brand-500"
                           style={{ width: `${row.rate}%` }}
                         />
                       </div>
@@ -359,7 +359,7 @@ export default function ThongKePage() {
             return (
               <div
                 key={i}
-                className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 hover:border-amber-300 hover:shadow-md transition-all flex flex-col justify-between"
+                className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 hover:border-brand-300 hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start justify-between">

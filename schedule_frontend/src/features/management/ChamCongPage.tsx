@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useInitialLoad } from "@/lib/hooks";
 import { AlertCircle, CheckCircle2, Clock, LogIn, Pencil, Plus, RefreshCw, Search, Trash2, UserX, X } from "lucide-react";
-import { AttendanceResponse, EmployeeResponse, managerApi } from "@/lib/managerApi";
+import { AttendanceResponse, EmployeeResponse, managerApi } from "@/lib/api";
 
 const text = (value: unknown, fallback = "—") =>
   value === null || value === undefined || value === "" ? fallback : String(value);
@@ -49,9 +50,7 @@ export default function ChamCongPage() {
     }
   };
 
-  useEffect(() => {
-    void load();
-  }, []);
+  useInitialLoad(load);
 
   const filtered = useMemo(() => items.filter((item) => {
     const searchable = `${employeeNameOf(item)} ${employeeIdOf(item) ?? ""} ${item.note ?? ""}`.toLowerCase();
@@ -164,7 +163,7 @@ export default function ChamCongPage() {
             <textarea name="note" defaultValue={editing?.note ?? ""} rows={3} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
           </label>
         </div>
-        <button className="w-full rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-slate-900">Lưu chấm công</button>
+        <button className="w-full rounded-xl bg-brand-500 px-4 py-3 text-sm font-black text-slate-900">Lưu chấm công</button>
       </form>
     </div>
   );
@@ -185,10 +184,10 @@ export default function ChamCongPage() {
             <option value="">Chọn nhân viên check-in</option>
             {employees.map((employee) => <option key={employee.id} value={employee.id}>{text(employee.fullName, employee.employeeCode ?? `#${employee.id}`)}</option>)}
           </select>
-          <button onClick={() => void checkIn()} disabled={checkingIn || loading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-900 text-xs font-bold disabled:opacity-50">
+          <button onClick={() => void checkIn()} disabled={checkingIn || loading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-slate-900 text-xs font-bold disabled:opacity-50">
             <LogIn className="w-4 h-4" /> {checkingIn ? "Đang ghi nhận..." : "Check-in"}
           </button>
-          <button onClick={() => setModal("create")} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-xs font-bold"><Plus className="w-4 h-4" /> Thêm thủ công</button>
+          <button onClick={() => setModal("create")} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-brand-300 bg-brand-50 text-brand-800 text-xs font-bold"><Plus className="w-4 h-4" /> Thêm thủ công</button>
           <button onClick={() => void load()} disabled={loading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold disabled:opacity-50">
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Làm mới
           </button>
@@ -199,18 +198,18 @@ export default function ChamCongPage() {
       {message && <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-700"><CheckCircle2 className="w-4 h-4 shrink-0" />{message}</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between"><div><p className="text-xs text-slate-500">Tổng bản ghi</p><p className="text-2xl font-black text-slate-800">{items.length}</p></div><Clock className="w-5 h-5 text-amber-600" /></div>
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between"><div><p className="text-xs text-slate-500">Tổng bản ghi</p><p className="text-2xl font-black text-slate-800">{items.length}</p></div><Clock className="w-5 h-5 text-brand-600" /></div>
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between"><div><p className="text-xs text-slate-500">Chờ check-out</p><p className="text-2xl font-black text-slate-800">{pending}</p></div><Clock className="w-5 h-5 text-blue-600" /></div>
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between"><div><p className="text-xs text-slate-500">Vắng / vi phạm</p><p className="text-2xl font-black text-slate-800">{absent + violations}</p></div><UserX className="w-5 h-5 text-rose-600" /></div>
       </div>
 
       <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1 max-w-sm"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm tên hoặc mã nhân viên..." className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs outline-hidden focus:border-amber-400" /></div>
+          <div className="relative flex-1 max-w-sm"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm tên hoặc mã nhân viên..." className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs outline-hidden focus:border-brand-400" /></div>
           <select value={status} onChange={(event) => setStatus(event.target.value)} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium"><option value="ALL">Tất cả trạng thái</option><option value="PRESENT">Có mặt</option><option value="ABSENT">Vắng</option><option value="LATE">Đi muộn</option></select>
         </div>
         <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-slate-50 text-[11px] text-slate-400 uppercase"><tr><th className="px-4 py-3">Nhân viên</th><th className="px-4 py-3">Ngày</th><th className="px-4 py-3">Ca</th><th className="px-4 py-3">Check-in</th><th className="px-4 py-3">Check-out</th><th className="px-4 py-3">Trạng thái</th><th className="px-4 py-3">Thao tác</th></tr></thead>
-          <tbody className="divide-y divide-slate-100">{!loading && filtered.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">Không có dữ liệu chấm công từ API</td></tr>}{filtered.map((item, index) => <tr key={String(item.id ?? index)}><td className="px-4 py-4"><p className="font-bold text-slate-800">{employeeNameOf(item)}</p><p className="text-[11px] text-slate-400">#{text(employeeIdOf(item))}</p></td><td className="px-4 py-4 text-slate-600">{formatDate(shiftDateOf(item) ?? item.checkInAt ?? item.checkOutAt)}</td><td className="px-4 py-4 text-slate-600">#{text(typeof item.shiftByDate === "object" && item.shiftByDate ? item.shiftByDate.id : item.shiftByDateId)}</td><td className="px-4 py-4 font-bold text-slate-700">{formatTime(item.checkInAt)}</td><td className="px-4 py-4 text-slate-600">{formatTime(item.checkOutAt)}</td><td className="px-4 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">{text(item.attendanceStatus)}</span></td><td className="px-4 py-4"><div className="flex items-center gap-1">{!item.checkOutAt && <button onClick={() => void checkOut(item)} disabled={updatingId === item.id} className="rounded-xl bg-amber-500 px-3 py-1.5 font-bold text-slate-900 disabled:opacity-50">{updatingId === item.id ? "Đang lưu..." : "Check-out"}</button>}<button onClick={() => setModal(item)} className="rounded-lg p-2 text-blue-600 hover:bg-blue-50" aria-label="Chỉnh sửa"><Pencil className="h-4 w-4" /></button><button onClick={() => void deleteAttendance(item)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50" aria-label="Xóa"><Trash2 className="h-4 w-4" /></button></div></td></tr>)}</tbody>
+          <tbody className="divide-y divide-slate-100">{!loading && filtered.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">Không có dữ liệu chấm công từ API</td></tr>}{filtered.map((item, index) => <tr key={String(item.id ?? index)}><td className="px-4 py-4"><p className="font-bold text-slate-800">{employeeNameOf(item)}</p><p className="text-[11px] text-slate-400">#{text(employeeIdOf(item))}</p></td><td className="px-4 py-4 text-slate-600">{formatDate(shiftDateOf(item) ?? item.checkInAt ?? item.checkOutAt)}</td><td className="px-4 py-4 text-slate-600">#{text(typeof item.shiftByDate === "object" && item.shiftByDate ? item.shiftByDate.id : item.shiftByDateId)}</td><td className="px-4 py-4 font-bold text-slate-700">{formatTime(item.checkInAt)}</td><td className="px-4 py-4 text-slate-600">{formatTime(item.checkOutAt)}</td><td className="px-4 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">{text(item.attendanceStatus)}</span></td><td className="px-4 py-4"><div className="flex items-center gap-1">{!item.checkOutAt && <button onClick={() => void checkOut(item)} disabled={updatingId === item.id} className="rounded-xl bg-brand-500 px-3 py-1.5 font-bold text-slate-900 disabled:opacity-50">{updatingId === item.id ? "Đang lưu..." : "Check-out"}</button>}<button onClick={() => setModal(item)} className="rounded-lg p-2 text-blue-600 hover:bg-blue-50" aria-label="Chỉnh sửa"><Pencil className="h-4 w-4" /></button><button onClick={() => void deleteAttendance(item)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50" aria-label="Xóa"><Trash2 className="h-4 w-4" /></button></div></td></tr>)}</tbody>
         </table></div>
       </section>
     </div>

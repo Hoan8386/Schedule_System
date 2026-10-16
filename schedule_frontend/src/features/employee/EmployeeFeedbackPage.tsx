@@ -7,10 +7,8 @@ import {
   Users,
   Send,
   Upload,
-  CheckCircle2,
-  Clock,
 } from "lucide-react";
-import { employeeApi } from "@/lib/employeeApi";
+import { employeeApi } from "@/lib/api";
 
 export default function EmployeeFeedbackPage() {
   const [feedbackType, setFeedbackType] = useState<"system" | "shift" | "colleague">("shift");
@@ -70,7 +68,7 @@ export default function EmployeeFeedbackPage() {
                   onClick={() => setFeedbackType("system")}
                   className={`p-3 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
                     feedbackType === "system"
-                      ? "border-amber-400 bg-amber-50/70 text-amber-900"
+                      ? "border-brand-400 bg-brand-50/70 text-brand-900"
                       : "border-slate-200 hover:border-slate-300 text-slate-600"
                   }`}
                 >
@@ -83,7 +81,7 @@ export default function EmployeeFeedbackPage() {
                   onClick={() => setFeedbackType("shift")}
                   className={`p-3 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
                     feedbackType === "shift"
-                      ? "border-amber-400 bg-amber-50/70 text-amber-900"
+                      ? "border-brand-400 bg-brand-50/70 text-brand-900"
                       : "border-slate-200 hover:border-slate-300 text-slate-600"
                   }`}
                 >
@@ -96,7 +94,7 @@ export default function EmployeeFeedbackPage() {
                   onClick={() => setFeedbackType("colleague")}
                   className={`p-3 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
                     feedbackType === "colleague"
-                      ? "border-amber-400 bg-amber-50/70 text-amber-900"
+                      ? "border-brand-400 bg-brand-50/70 text-brand-900"
                       : "border-slate-200 hover:border-slate-300 text-slate-600"
                   }`}
                 >
@@ -148,7 +146,7 @@ export default function EmployeeFeedbackPage() {
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-hidden hover:border-slate-300 focus:border-amber-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-hidden hover:border-slate-300 focus:border-brand-400"
               />
             </div>
 
@@ -162,7 +160,7 @@ export default function EmployeeFeedbackPage() {
                 required
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-hidden hover:border-slate-300 focus:border-amber-400 resize-none leading-relaxed"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-hidden hover:border-slate-300 focus:border-brand-400 resize-none leading-relaxed"
               />
               <p className="text-[11px] text-slate-400">
                 Vui lòng mô tả rõ tình huống để quản lý hỗ trợ nhanh hơn.
@@ -204,7 +202,7 @@ export default function EmployeeFeedbackPage() {
               <button
                 type="submit"
                 disabled={isSent}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold transition-all shadow-xs"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 font-bold transition-all shadow-xs"
               >
                 <Send className="w-4 h-4" />
                 <span>{isSent ? "Đang gửi..." : "Gửi phản hồi"}</span>
@@ -255,7 +253,7 @@ export default function EmployeeFeedbackPage() {
                 <p className="font-bold text-slate-800 mt-0.5">
                   Lịch ca hiển thị chậm trên điện thoại
                 </p>
-                <span className="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                <span className="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200">
                   Đang xử lý
                 </span>
               </div>

@@ -4,15 +4,10 @@ import React, { useState } from "react";
 import {
   BellRing,
   Send,
-  Users,
-  Store,
   Clock,
   CheckCircle2,
-  AlertTriangle,
-  Radio,
   FileText,
   Info,
-  Calendar,
 } from "lucide-react";
 
 export default function PhatThongBaoPage() {
@@ -83,7 +78,7 @@ export default function PhatThongBaoPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-lg">
+            <span className="text-xs font-black uppercase tracking-wider text-brand-800 bg-brand-100 border border-brand-300 px-2.5 py-0.5 rounded-lg">
               QUẢN LÝ VẬN HÀNH
             </span>
             <span className="text-slate-400 text-xs">/</span>
@@ -96,7 +91,7 @@ export default function PhatThongBaoPage() {
             <div className="relative group">
               <button
                 type="button"
-                className="w-6 h-6 rounded-full bg-slate-200 hover:bg-amber-100 text-slate-700 hover:text-amber-800 flex items-center justify-center font-bold transition-all cursor-help border border-slate-300 shadow-2xs"
+                className="w-6 h-6 rounded-full bg-slate-200 hover:bg-brand-100 text-slate-700 hover:text-brand-800 flex items-center justify-center font-bold transition-all cursor-help border border-slate-300 shadow-2xs"
                 title="Thông tin chức năng"
               >
                 <Info className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -122,7 +117,7 @@ export default function PhatThongBaoPage() {
         {/* Form soạn thông báo (7 cols) */}
         <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-300 shadow-xs p-6 space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200">
-            <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold border border-amber-200">
+            <div className="w-8 h-8 rounded-xl bg-brand-100 text-brand-800 flex items-center justify-center font-bold border border-brand-200">
               <BellRing className="w-4 h-4 stroke-[2.2]" />
             </div>
             <div>
@@ -139,7 +134,7 @@ export default function PhatThongBaoPage() {
               <select
                 value={targetScope}
                 onChange={(e) => setTargetScope(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl outline-hidden focus:border-amber-500 font-bold text-slate-800 bg-white"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl outline-hidden focus:border-brand-500 font-bold text-slate-800 bg-white"
               >
                 <option value="STORE_CURRENT">Chi nhánh hiện tại phụ trách (28 nhân sự)</option>
                 <option value="SHIFT_TODAY">Nhân viên đang trong ca làm việc hôm nay (12 người)</option>
@@ -154,8 +149,8 @@ export default function PhatThongBaoPage() {
                 <label className="font-bold text-slate-800 block mb-1">Mức độ ưu tiên *</label>
                 <select
                   value={priority}
-                  onChange={(e) => setPriority(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl outline-hidden focus:border-amber-500 font-bold text-slate-800 bg-white"
+                  onChange={(e) => setPriority(e.target.value as typeof priority)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl outline-hidden focus:border-brand-500 font-bold text-slate-800 bg-white"
                 >
                   <option value="NORMAL">Bình thường (Thông báo chung)</option>
                   <option value="HIGH">Quan trọng (Cần xác nhận)</option>
@@ -171,7 +166,7 @@ export default function PhatThongBaoPage() {
                       type="checkbox"
                       checked={selectedChannel.app}
                       onChange={(e) => setSelectedChannel({ ...selectedChannel, app: e.target.checked })}
-                      className="rounded accent-amber-500"
+                      className="rounded accent-brand-500"
                     />
                     <span>App</span>
                   </label>
@@ -180,7 +175,7 @@ export default function PhatThongBaoPage() {
                       type="checkbox"
                       checked={selectedChannel.email}
                       onChange={(e) => setSelectedChannel({ ...selectedChannel, email: e.target.checked })}
-                      className="rounded accent-amber-500"
+                      className="rounded accent-brand-500"
                     />
                     <span>Email</span>
                   </label>
@@ -189,7 +184,7 @@ export default function PhatThongBaoPage() {
                       type="checkbox"
                       checked={selectedChannel.zalo}
                       onChange={(e) => setSelectedChannel({ ...selectedChannel, zalo: e.target.checked })}
-                      className="rounded accent-amber-500"
+                      className="rounded accent-brand-500"
                     />
                     <span>Zalo</span>
                   </label>
@@ -206,7 +201,7 @@ export default function PhatThongBaoPage() {
                 placeholder="vd: [LƯU Ý] Điều chỉnh lịch ca làm chiều nay..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-300 rounded-xl outline-hidden focus:border-amber-500 font-bold text-slate-900"
+                className="w-full px-3 py-2.5 border border-slate-300 rounded-xl outline-hidden focus:border-brand-500 font-bold text-slate-900"
               />
             </div>
 
@@ -219,7 +214,7 @@ export default function PhatThongBaoPage() {
                 placeholder="Nhập nội dung thông báo gửi đến các bạn nhân viên..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="w-full p-3 border border-slate-300 rounded-xl outline-hidden focus:border-amber-500 font-medium text-slate-800 leading-relaxed"
+                className="w-full p-3 border border-slate-300 rounded-xl outline-hidden focus:border-brand-500 font-medium text-slate-800 leading-relaxed"
               />
             </div>
 
@@ -227,7 +222,7 @@ export default function PhatThongBaoPage() {
               <button
                 type="submit"
                 disabled={isSending}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-xs transition-all shadow-sm shadow-amber-200 cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 font-black text-xs transition-all shadow-sm shadow-brand-200 cursor-pointer disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
                 <span>{isSending ? "Đang phát thông báo..." : "Phát thông báo ngay"}</span>
@@ -241,7 +236,7 @@ export default function PhatThongBaoPage() {
           {/* Mẫu soạn nhanh */}
           <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-5 space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-              <FileText className="w-4 h-4 text-amber-800 stroke-[2.2]" />
+              <FileText className="w-4 h-4 text-brand-800 stroke-[2.2]" />
               <h3 className="font-bold text-slate-900 text-sm">Mẫu thông báo thông dụng</h3>
             </div>
             <p className="text-[11px] font-medium text-slate-700">
@@ -252,7 +247,7 @@ export default function PhatThongBaoPage() {
                 <div
                   key={i}
                   onClick={() => handleApplyTemplate(tpl)}
-                  className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-300 transition-all cursor-pointer"
+                  className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-brand-50 hover:border-brand-300 transition-all cursor-pointer"
                 >
                   <p className="font-bold text-slate-900 text-xs truncate">{tpl.title}</p>
                   <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{tpl.message}</p>

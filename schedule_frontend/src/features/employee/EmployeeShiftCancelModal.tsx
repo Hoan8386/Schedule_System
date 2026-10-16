@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { X, AlertTriangle, Check, Store } from "lucide-react";
-import { employeeApi } from "@/lib/employeeApi";
+import { employeeApi } from "@/lib/api";
 
 interface EmployeeShiftCancelModalProps {
   isOpen: boolean;

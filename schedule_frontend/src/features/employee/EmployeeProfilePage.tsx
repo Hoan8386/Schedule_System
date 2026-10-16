@@ -6,15 +6,8 @@ import {
   CheckCircle2,
   Lock,
   Store,
-  Phone,
-  Mail,
-  Calendar,
-  CreditCard,
-  Building,
-  UserCheck,
 } from "lucide-react";
-import { employeeApi } from "@/lib/employeeApi";
-import type { EmployeeResponse } from "@/lib/managerApi";
+import { employeeApi, type EmployeeResponse } from "@/lib/api";
 
 export default function EmployeeProfilePage() {
   const [profile, setProfile] = useState<EmployeeResponse | null>(null);
@@ -167,7 +160,7 @@ export default function EmployeeProfilePage() {
               </div>
               <div>
                 <span className="text-slate-400 text-[11px]">Đơn giá giờ làm</span>
-                <p className="font-bold text-amber-600 mt-0.5">30.000 VND / giờ</p>
+                <p className="font-bold text-brand-600 mt-0.5">30.000 VND / giờ</p>
               </div>
             </div>
 
@@ -201,7 +194,7 @@ export default function EmployeeProfilePage() {
                   <Store className="w-4 h-4 text-slate-500" />
                   <span className="font-bold text-slate-800">BLOAN Nguyễn Trãi</span>
                 </div>
-                <p className="text-[10px] text-amber-700 font-bold">Cửa hàng chính</p>
+                <p className="text-[10px] text-brand-700 font-bold">Cửa hàng chính</p>
                 <p className="text-slate-500 text-[11px]">
                   112 Nguyễn Trãi, TP. Hồ Chí Minh
                 </p>

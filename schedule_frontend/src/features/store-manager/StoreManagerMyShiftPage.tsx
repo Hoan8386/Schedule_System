@@ -4,12 +4,9 @@ import React, { useEffect, useState } from "react";
 import {
   Copy,
   Search,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
   Info,
 } from "lucide-react";
-import { storeManagerApi } from "@/lib/storeManagerAPI";
+import { storeManagerApi } from "@/lib/api";
 
 interface ShiftPlan {
   id: string;
@@ -228,7 +225,7 @@ export default function StoreManagerMyShiftPage({
             <h2 className="text-base font-extrabold text-slate-800">
               Tuần 12 – 18/10/2026
             </h2>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-800 border border-brand-200">
               Đang mở
             </span>
           </div>
@@ -248,8 +245,8 @@ export default function StoreManagerMyShiftPage({
       </div>
 
       {/* Role notice */}
-      <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center gap-3 text-xs text-amber-900">
-        <Info className="w-4 h-4 text-amber-600 shrink-0" />
+      <div className="p-4 rounded-2xl bg-brand-50/70 border border-brand-200/80 flex items-center gap-3 text-xs text-brand-900">
+        <Info className="w-4 h-4 text-brand-600 shrink-0" />
         <p>
           Người đang đăng ký: Trần Thu Hà · CH001 · Trưởng cửa hàng. Đơn giá cá nhân: 40.000 VND / giờ. Chỉ áp dụng cho ca của bạn.
         </p>
@@ -324,7 +321,7 @@ export default function StoreManagerMyShiftPage({
                       </span>
                     )}
                     {s.status === "AVAILABLE" && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200">
                         Còn chỗ
                       </span>
                     )}
@@ -349,7 +346,7 @@ export default function StoreManagerMyShiftPage({
                     {s.status === "AVAILABLE" && (
                       <button
                         onClick={() => handleRegister(s.id)}
-                        className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-xs"
+                        className="px-3.5 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 text-xs font-bold transition-all shadow-xs"
                       >
                         Đăng ký ca
                       </button>

@@ -70,7 +70,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   : isError
                   ? "bg-rose-950/95 text-rose-100 border-rose-800 shadow-rose-950/20"
                   : isWarning
-                  ? "bg-amber-950/95 text-amber-100 border-amber-800 shadow-amber-950/20"
+                  ? "bg-brand-950/95 text-brand-100 border-brand-800 shadow-brand-950/20"
                   : "bg-slate-900/95 text-slate-100 border-slate-700 shadow-slate-950/20"
               }`}
             >
@@ -78,7 +78,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <div className="shrink-0 mt-0.5">
                 {isSuccess && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
                 {isError && <AlertCircle className="w-5 h-5 text-rose-400" />}
-                {isWarning && <Info className="w-5 h-5 text-amber-400" />}
+                {isWarning && <Info className="w-5 h-5 text-brand-400" />}
                 {!isSuccess && !isError && !isWarning && (
                   <Info className="w-5 h-5 text-sky-400" />
                 )}

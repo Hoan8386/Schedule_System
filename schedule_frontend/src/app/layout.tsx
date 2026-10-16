@@ -27,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" className={`${plusJakartaSans.variable} h-full antialiased`}>
-      <body className="min-h-full font-sans bg-[#FBFBFC] text-slate-800 flex flex-col selection:bg-amber-200 selection:text-amber-900">
+      <body className="min-h-full font-sans bg-page text-slate-800 flex flex-col selection:bg-brand-200 selection:text-brand-900">
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>
         </ToastProvider>

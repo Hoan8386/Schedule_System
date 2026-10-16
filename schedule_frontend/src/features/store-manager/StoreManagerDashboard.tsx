@@ -8,7 +8,6 @@ import {
   Wallet,
   Inbox,
   ArrowRight,
-  CheckSquare,
   AlertCircle,
   Check,
 } from "lucide-react";
@@ -66,7 +65,7 @@ export default function StoreManagerDashboard({
         </div>
         <button
           onClick={onGoToRequests}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-amber-200"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 text-xs font-bold transition-all shadow-sm shadow-brand-200"
         >
           <Inbox className="w-4 h-4" />
           <span>Xử lý yêu cầu ca</span>
@@ -163,7 +162,7 @@ export default function StoreManagerDashboard({
               <h3 className="text-sm font-bold text-slate-800">
                 Hàng đợi yêu cầu
               </h3>
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold border border-amber-200">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold border border-brand-200">
                 6 chờ duyệt
               </span>
             </div>
@@ -266,7 +265,7 @@ export default function StoreManagerDashboard({
             </span>
             <button
               onClick={onGoToRequests}
-              className="inline-flex items-center gap-1 font-bold text-amber-600 hover:underline"
+              className="inline-flex items-center gap-1 font-bold text-brand-600 hover:underline"
             >
               <span>Xem toàn bộ 6 yêu cầu</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -302,7 +301,7 @@ export default function StoreManagerDashboard({
                 <div className="text-xs text-slate-600">
                   BLOAN Nguyễn Trãi · Điều phối ca
                 </div>
-                <div className="text-xs font-semibold text-amber-700">
+                <div className="text-xs font-semibold text-brand-700">
                   6 giờ · 240.000 VND
                 </div>
               </div>
@@ -342,7 +341,7 @@ export default function StoreManagerDashboard({
                   <div
                     className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
                       item.completed
-                        ? "bg-amber-500 border-amber-500 text-slate-900"
+                        ? "bg-brand-500 border-brand-500 text-slate-900"
                         : "border-slate-300"
                     }`}
                   >
@@ -370,8 +369,8 @@ export default function StoreManagerDashboard({
       </div>
 
       {/* Info notice bar */}
-      <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center gap-3 text-xs text-amber-900">
-        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+      <div className="p-4 rounded-2xl bg-brand-50/70 border border-brand-200/80 flex items-center gap-3 text-xs text-brand-900">
+        <AlertCircle className="w-4 h-4 text-brand-600 shrink-0" />
         <p>
           Kỳ đăng ký 12 – 18/10 đang mở đến 18:00 ngày 09/10. Bài test của bạn: An toàn thực phẩm tại cửa hàng, hạn 07/10.
         </p>

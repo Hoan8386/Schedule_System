@@ -98,22 +98,22 @@ export default function LoginForm({
       <div className="mb-5 transition-all">
         {generalError ? (
           /* Error State Banner */
-          <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-[#DC2626] animate-in fade-in duration-200">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#DC2626]" />
+          <div className="bg-red-50 border border-red-100 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-red-600 animate-in fade-in duration-200">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
             <div className="leading-snug">{generalError}</div>
           </div>
         ) : isLoading ? (
           /* Loading State Banner */
-          <div className="bg-[#FFFBEB] border border-[#FEF3C7] rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-[#92400E] animate-in fade-in duration-200">
-            <Clock className="w-4 h-4 shrink-0 mt-0.5 text-[#F59E0B]" />
+          <div className="bg-brand-50 border border-brand-100 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-brand-800 animate-in fade-in duration-200">
+            <Clock className="w-4 h-4 shrink-0 mt-0.5 text-brand-500" />
             <div className="leading-snug">
               Đang xác thực tài khoản. Vui lòng chờ, không gửi lại yêu cầu.
             </div>
           </div>
         ) : !isFormComplete ? (
           /* Initial / Incomplete Prompt Banner */
-          <div className="bg-[#FFFBEB] border border-[#FEF3C7] rounded-xl p-3 flex items-start gap-2.5 text-xs text-[#92400E]">
-            <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#F59E0B]" />
+          <div className="bg-brand-50 border border-brand-100 rounded-xl p-3 flex items-start gap-2.5 text-xs text-brand-800">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-brand-500" />
             <div className="leading-snug">
               Nhập email hoặc tên đăng nhập và mật khẩu để bật nút Đăng nhập.
             </div>
@@ -148,7 +148,7 @@ export default function LoginForm({
                 isLoading ? "bg-slate-50 cursor-not-allowed" : "bg-white"
               } ${
                 isFocusedIdentifier || identifier
-                  ? "border border-[#F59E0B] ring-2 ring-[#F59E0B]/20"
+                  ? "border border-brand-500 ring-2 ring-brand-500/20"
                   : "border border-slate-200 hover:border-slate-300"
               }`}
             />
@@ -186,8 +186,8 @@ export default function LoginForm({
                 isLoading ? "bg-slate-50 cursor-not-allowed" : "bg-white"
               } ${
                 passwordError
-                  ? "border-2 border-[#EF4444] ring-2 ring-red-100"
-                  : "border border-slate-200 focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/20"
+                  ? "border-2 border-red-500 ring-2 ring-red-100"
+                  : "border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               }`}
             />
             {/* Toggle show/hide password */}
@@ -208,7 +208,7 @@ export default function LoginForm({
 
           {/* Field Error Message */}
           {passwordError && (
-            <p className="text-xs text-[#DC2626] font-medium mt-1.5 pl-1">
+            <p className="text-xs text-red-600 font-medium mt-1.5 pl-1">
               {passwordError}
             </p>
           )}
@@ -226,7 +226,7 @@ export default function LoginForm({
             <div
               className={`w-4 h-4 rounded flex items-center justify-center transition-all ${
                 rememberMe
-                  ? "bg-[#F59E0B] border border-[#F59E0B]"
+                  ? "bg-brand-500 border border-brand-500"
                   : "bg-white border border-slate-300"
               }`}
             >
@@ -245,7 +245,7 @@ export default function LoginForm({
           <button
             type="button"
             onClick={onOpenForgotPassword}
-            className="text-xs font-semibold text-[#B91C1C] hover:text-[#991B1B] hover:underline cursor-pointer"
+            className="text-xs font-semibold text-red-700 hover:text-red-800 hover:underline cursor-pointer"
           >
             Quên mật khẩu?
           </button>
@@ -259,8 +259,8 @@ export default function LoginForm({
               disabled={isLoading}
               className={`w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all flex items-center justify-center gap-2 shadow-sm ${
                 isLoading
-                  ? "bg-[#F59E0B] opacity-90 cursor-wait"
-                  : "bg-[#F59E0B] hover:bg-[#D97706] active:scale-[0.99] cursor-pointer shadow-amber-500/20"
+                  ? "bg-brand-500 opacity-90 cursor-wait"
+                  : "bg-brand-500 hover:bg-brand-600 active:scale-[0.99] cursor-pointer shadow-brand-500/20"
               }`}
             >
               {isLoading ? (
@@ -279,7 +279,7 @@ export default function LoginForm({
             <button
               type="button"
               disabled
-              className="w-full py-3.5 rounded-xl text-sm font-semibold bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed transition-all flex items-center justify-center"
+              className="w-full py-3.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-400 cursor-not-allowed transition-all flex items-center justify-center"
             >
               Đăng nhập
             </button>
@@ -293,7 +293,7 @@ export default function LoginForm({
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="font-bold text-[#DC2626] hover:text-[#B91C1C] hover:underline cursor-pointer ml-1"
+              className="font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer ml-1"
             >
               Đăng ký
             </button>
