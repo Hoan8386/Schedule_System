@@ -7,7 +7,7 @@ import com.vn.schedule.service.ScheduleModule03Service;
 import com.vn.schedule.util.anotation.ApiMessage;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import java.util.*;
 
 @RestController @RequestMapping("/api/v1/schedule_round")
 public class ScheduleRoundController {
@@ -19,5 +19,10 @@ public class ScheduleRoundController {
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public ScheduleRoundResponse create(@RequestBody ScheduleRoundRequest body) { return response(service.createRound(body)); }
     @PutMapping("/{id}") public ScheduleRoundResponse update(@PathVariable Integer id, @RequestBody ScheduleRoundRequest body) { return response(service.updateRound(id, body)); }
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable Integer id) { service.deleteRound(id); }
-    private ScheduleRoundResponse response(ScheduleRound value) { return new ScheduleRoundResponse(DtoMapper.toMap(value)); }
+    private ScheduleRoundResponse response(ScheduleRound value) {
+        Map<String,Object> result = DtoMapper.toMap(value);
+        if (value.getSchedulePeriod() != null) { result.put("schedulePeriodId", value.getSchedulePeriod().getId()); result.put("periodName", value.getSchedulePeriod().getPeriodName()); }
+        if (value.getStore() != null) { result.put("storeId", value.getStore().getId()); result.put("storeName", value.getStore().getStoreName()); }
+        return new ScheduleRoundResponse(result);
+    }
 }

@@ -17,8 +17,12 @@ public class ScheduleSession {
     @Column(name = "session_open_at") private LocalDateTime sessionOpenAt;
     @Column(name = "session_close_at") private LocalDateTime sessionCloseAt;
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "schedule_round_id")
+    private ScheduleRound scheduleRound;
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shift_group_id")
     private ShiftGroup shiftGroup;
+    @Column(columnDefinition = "TEXT") private String description;
     @Column(nullable = false) private String status;
     @Column(name = "created_by") private Integer createdBy;
     @Column(name = "created_at") private LocalDateTime createdAt;

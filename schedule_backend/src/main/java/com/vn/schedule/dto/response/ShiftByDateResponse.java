@@ -11,6 +11,10 @@ public record ShiftByDateResponse(
         Integer shiftId,
         SchedulePeriodSummary schedulePeriod,
         Integer schedulePeriodId,
+        Integer scheduleRoundId,
+        String roundName,
+        Integer scheduleSessionId,
+        String sessionName,
         LocalDate workDate,
         Integer capacity,
         String shiftName,
@@ -19,7 +23,9 @@ public record ShiftByDateResponse(
         Integer maxCapacity,
         BigDecimal payRate,
         String status,
-        String managerNote) {
+        String managerNote,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt) {
 
     public record ShiftSummary(
             Integer id,

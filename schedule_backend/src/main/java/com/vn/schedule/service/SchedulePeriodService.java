@@ -140,6 +140,9 @@ public class SchedulePeriodService {
         entity.setPeriodType(asString(body.get("periodType"), "periodType"));
         entity.setStartDate(parseLocalDate(body.get("startDate"), "startDate"));
         entity.setEndDate(parseLocalDate(body.get("endDate"), "endDate"));
+        entity.setEffectiveStartDate(parseLocalDate(body.get("effectiveStartDate"), "effectiveStartDate"));
+        entity.setEffectiveEndDate(parseLocalDate(body.get("effectiveEndDate"), "effectiveEndDate"));
+        entity.setDescription(asString(body.get("description"), "description"));
         entity.setRegistrationOpenAt(parseLocalDateTime(body.get("registrationOpenAt"), "registrationOpenAt"));
         entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
         entity.setStatus(asString(body.get("status"), "status"));
@@ -155,6 +158,9 @@ public class SchedulePeriodService {
         entity.setPeriodType(asString(body.get("periodType"), "periodType"));
         entity.setStartDate(parseLocalDate(body.get("startDate"), "startDate"));
         entity.setEndDate(parseLocalDate(body.get("endDate"), "endDate"));
+        entity.setEffectiveStartDate(parseLocalDate(body.get("effectiveStartDate"), "effectiveStartDate"));
+        entity.setEffectiveEndDate(parseLocalDate(body.get("effectiveEndDate"), "effectiveEndDate"));
+        entity.setDescription(asString(body.get("description"), "description"));
         entity.setRegistrationOpenAt(parseLocalDateTime(body.get("registrationOpenAt"), "registrationOpenAt"));
         entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
         entity.setStatus(asString(body.get("status"), "status"));

@@ -17,40 +17,41 @@ public class ScheduleModule03Service {
     private final ScheduleSessionRepository sessionRepository;
     private final ShiftGroupRepository groupRepository;
     private final StoreRepository storeRepository;
+    private final SchedulePeriodRepository periodRepository;
 
     public ScheduleModule03Service(ScheduleRoundRepository roundRepository,
             ScheduleSessionRepository sessionRepository, ShiftGroupRepository groupRepository,
-            StoreRepository storeRepository) {
+            StoreRepository storeRepository, SchedulePeriodRepository periodRepository) {
         this.roundRepository = roundRepository;
         this.sessionRepository = sessionRepository;
         this.groupRepository = groupRepository;
         this.storeRepository = storeRepository;
+        this.periodRepository = periodRepository;
     }
 
     public List<ScheduleRound> rounds() { return roundRepository.findAll(); }
     public ScheduleRound round(Integer id) { return roundRepository.findById(id).orElseThrow(() -> notFound("đợt đăng ký")); }
     @Transactional public ScheduleRound createRound(ScheduleRoundRequest b) {
         ScheduleRound e = new ScheduleRound();
-        e.setRoundName(requiredText(b.get("roundName"), "roundName"));
-        e.setRegistrationStartAt(dateTime(b.get("registrationStartAt"), "registrationStartAt"));
-        e.setRegistrationEndAt(dateTime(b.get("registrationEndAt"), "registrationEndAt"));
-        e.setStatus(status(b.get("status"), "OPEN", "CLOSED"));
-        e.setCreatedBy(integer(b.get("createdBy"), "createdBy"));
+        applyRound(e, b);
         e.setCreatedAt(LocalDateTime.now());
-        validateRange(e.getRegistrationStartAt(), e.getRegistrationEndAt(), "registration");
         return roundRepository.save(e);
     }
     @Transactional public ScheduleRound updateRound(Integer id, ScheduleRoundRequest b) {
-        ScheduleRound e = round(id);
+        ScheduleRound e = round(id); applyRound(e, b); return roundRepository.save(e);
+    }
+    @Transactional public void deleteRound(Integer id) { roundRepository.delete(round(id)); }
+    private void applyRound(ScheduleRound e, ScheduleRoundRequest b) {
         e.setRoundName(requiredText(b.get("roundName"), "roundName"));
+        e.setSchedulePeriod(periodRepository.getReferenceById(requiredInteger(b.get("schedulePeriodId"), "schedulePeriodId")));
+        e.setStore(storeRepository.getReferenceById(requiredInteger(b.get("storeId"), "storeId")));
         e.setRegistrationStartAt(dateTime(b.get("registrationStartAt"), "registrationStartAt"));
         e.setRegistrationEndAt(dateTime(b.get("registrationEndAt"), "registrationEndAt"));
+        e.setDescription(text(b.get("description")));
         e.setStatus(status(b.get("status"), "OPEN", "CLOSED"));
         e.setCreatedBy(integer(b.get("createdBy"), "createdBy"));
         validateRange(e.getRegistrationStartAt(), e.getRegistrationEndAt(), "registration");
-        return roundRepository.save(e);
     }
-    @Transactional public void deleteRound(Integer id) { roundRepository.delete(round(id)); }
 
     public List<ScheduleSession> sessions() { return sessionRepository.findAll(); }
     public ScheduleSession session(Integer id) { return sessionRepository.findById(id).orElseThrow(() -> notFound("phiên đăng ký")); }
@@ -68,7 +69,9 @@ public class ScheduleModule03Service {
         e.setSessionName(requiredText(b.get("sessionName"), "sessionName"));
         e.setSessionOpenAt(dateTime(b.get("sessionOpenAt"), "sessionOpenAt"));
         e.setSessionCloseAt(dateTime(b.get("sessionCloseAt"), "sessionCloseAt"));
+        e.setScheduleRound(resolveRound(b.get("scheduleRoundId")));
         e.setShiftGroup(resolveGroup(b.get("shiftGroupId")));
+        e.setDescription(text(b.get("description")));
         e.setStatus(status(b.get("status"), "OPEN", "PENDING", "CLOSED"));
         e.setCreatedBy(integer(b.get("createdBy"), "createdBy"));
         validateRange(e.getSessionOpenAt(), e.getSessionCloseAt(), "session");
@@ -93,6 +96,10 @@ public class ScheduleModule03Service {
         e.setCreatedBy(integer(b.get("createdBy"), "createdBy"));
     }
 
+    private ScheduleRound resolveRound(Object value) {
+        if (value == null || (value instanceof String s && s.isBlank())) return null;
+        return roundRepository.getReferenceById(requiredInteger(value, "scheduleRoundId"));
+    }
     private ShiftGroup resolveGroup(Object value) {
         if (value == null || (value instanceof String s && s.isBlank())) return null;
         return groupRepository.getReferenceById(requiredInteger(value, "shiftGroupId"));

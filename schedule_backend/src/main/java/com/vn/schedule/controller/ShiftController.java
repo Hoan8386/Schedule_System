@@ -67,6 +67,10 @@ public class ShiftController {
             result.put("storeId", value.getStore().getId());
             result.put("storeName", value.getStore().getStoreName());
         }
+        if (value.getShiftGroup() != null) {
+            result.put("shiftGroupId", value.getShiftGroup().getId());
+            result.put("shiftGroupName", value.getShiftGroup().getShiftGroupName());
+        }
         return new ShiftResponse(result);
     }
 }

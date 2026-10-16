@@ -114,15 +114,10 @@ public class ShiftAssignmentService {
     }
     private ShiftAssignment toEntity(ShiftAssignmentRequest body) {
         ShiftAssignment entity = new ShiftAssignment();
-        entity.setId((Integer) body.get("id"));
-        entity.setShiftByDate(resolveShiftByDate(body));
-        entity.setEmployee(resolveEmployee(body));
-        entity.setStatus((String) body.get("status"));
-        entity.setRegisteredAt((LocalDateTime) body.get("registeredAt"));
-        entity.setApprovedAt((LocalDateTime) body.get("approvedAt"));
-        entity.setCancelledAt((LocalDateTime) body.get("cancelledAt"));
-        entity.setCancellationReason((String) body.get("cancellationReason"));
-        entity.setNote((String) body.get("note"));
+        applyFields(entity, body);
+        if (entity.getRegisteredAt() == null) {
+            entity.setRegisteredAt(LocalDateTime.now());
+        }
         return entity;
     }
 
@@ -141,15 +136,57 @@ public class ShiftAssignmentService {
     }
 
     private void applyFields(ShiftAssignment entity, ShiftAssignmentRequest body) {
-        entity.setId((Integer) body.get("id"));
         entity.setShiftByDate(resolveShiftByDate(body));
         entity.setEmployee(resolveEmployee(body));
         entity.setStatus((String) body.get("status"));
-        entity.setRegisteredAt((LocalDateTime) body.get("registeredAt"));
-        entity.setApprovedAt((LocalDateTime) body.get("approvedAt"));
-        entity.setCancelledAt((LocalDateTime) body.get("cancelledAt"));
+        entity.setRegisteredAt(dateTime(body.get("registeredAt"), "registeredAt", entity.getRegisteredAt()));
+        entity.setApprovedBy(integer(body.get("approvedBy"), entity.getApprovedBy()));
+        entity.setApprovedAt(dateTime(body.get("approvedAt"), "approvedAt", entity.getApprovedAt()));
+        entity.setCancelledBy(integer(body.get("cancelledBy"), entity.getCancelledBy()));
+        entity.setCancelledAt(dateTime(body.get("cancelledAt"), "cancelledAt", entity.getCancelledAt()));
         entity.setCancellationReason((String) body.get("cancellationReason"));
         entity.setNote((String) body.get("note"));
+        stampDecision(entity);
+    }
+
+    /** Ghi nhận người duyệt / người hủy khi trạng thái đổi mà client không gửi kèm. */
+    private void stampDecision(ShiftAssignment entity) {
+        String status = entity.getStatus() == null ? "" : entity.getStatus().toUpperCase();
+        if ("APPROVED".equals(status)) {
+            if (entity.getApprovedAt() == null) entity.setApprovedAt(LocalDateTime.now());
+            if (entity.getApprovedBy() == null) entity.setApprovedBy(currentEmployeeIdOrNull());
+        }
+        if ("CANCELLED".equals(status)) {
+            if (entity.getCancelledAt() == null) entity.setCancelledAt(LocalDateTime.now());
+            if (entity.getCancelledBy() == null) entity.setCancelledBy(currentEmployeeIdOrNull());
+        }
+    }
+
+    private Integer currentEmployeeIdOrNull() {
+        try {
+            return storeScopeService.currentEmployeeId();
+        } catch (ApiException ex) {
+            return null;
+        }
+    }
+
+    private Integer integer(Object value, Integer fallback) {
+        if (value == null || (value instanceof String text && text.isBlank())) return fallback;
+        if (value instanceof Number number) return number.intValue();
+        try {
+            return Integer.valueOf(String.valueOf(value).trim());
+        } catch (NumberFormatException ex) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Giá trị không phải số nguyên: " + value);
+        }
+    }
+
+    private LocalDateTime dateTime(Object value, String fieldName, LocalDateTime fallback) {
+        if (value == null || (value instanceof String text && text.isBlank())) return fallback;
+        try {
+            return LocalDateTime.parse(String.valueOf(value).trim());
+        } catch (RuntimeException ex) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " không hợp lệ: " + value);
+        }
     }
 
     private ShiftByDate resolveShiftByDate(ShiftAssignmentRequest body) {

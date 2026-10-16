@@ -19,7 +19,8 @@ public class ScheduleSessionController {
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable Integer id) { service.deleteSession(id); }
     private ScheduleSessionResponse response(ScheduleSession value) {
         Map<String,Object> result = DtoMapper.toMap(value);
-        if (value.getShiftGroup() != null) result.put("shiftGroupId", value.getShiftGroup().getId());
+        if (value.getScheduleRound() != null) { result.put("scheduleRoundId", value.getScheduleRound().getId()); result.put("roundName", value.getScheduleRound().getRoundName()); }
+        if (value.getShiftGroup() != null) { result.put("shiftGroupId", value.getShiftGroup().getId()); result.put("shiftGroupName", value.getShiftGroup().getShiftGroupName()); }
         return new ScheduleSessionResponse(result);
     }
 }

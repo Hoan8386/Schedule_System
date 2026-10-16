@@ -76,7 +76,9 @@ public class ShiftAssignmentController {
 
         response.setStatus(entity.getStatus());
         response.setRegisteredAt(entity.getRegisteredAt());
+        response.setApprovedBy(entity.getApprovedBy());
         response.setApprovedAt(entity.getApprovedAt());
+        response.setCancelledBy(entity.getCancelledBy());
         response.setCancelledAt(entity.getCancelledAt());
         response.setCancellationReason(entity.getCancellationReason());
         response.setNote(entity.getNote());

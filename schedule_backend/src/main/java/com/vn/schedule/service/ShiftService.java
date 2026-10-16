@@ -1,7 +1,9 @@
 package com.vn.schedule.service;
 
 import com.vn.schedule.domain.Shift;
+import com.vn.schedule.domain.ShiftGroup;
 import com.vn.schedule.domain.Store;
+import com.vn.schedule.repository.ShiftGroupRepository;
 import com.vn.schedule.repository.ShiftRepository;
 import com.vn.schedule.repository.StoreRepository;
 import com.vn.schedule.util.ApiException;
@@ -19,12 +21,15 @@ import java.util.List;
 public class ShiftService {
     private final ShiftRepository repository;
     private final StoreRepository storeRepository;
+    private final ShiftGroupRepository shiftGroupRepository;
     private final StoreScopeService storeScopeService;
 
     public ShiftService(ShiftRepository repository, StoreRepository storeRepository,
+                        ShiftGroupRepository shiftGroupRepository,
                         StoreScopeService storeScopeService) {
         this.repository = repository;
         this.storeRepository = storeRepository;
+        this.shiftGroupRepository = shiftGroupRepository;
         this.storeScopeService = storeScopeService;
     }
 
@@ -84,6 +89,7 @@ public class ShiftService {
         Shift entity = new Shift();
         entity.setId(integerValue(body.get("id"), "id"));
         entity.setStore(resolveStore(body));
+        entity.setShiftGroup(resolveShiftGroup(body));
         entity.setShiftCode((String) body.get("shiftCode"));
         entity.setShiftName((String) body.get("shiftName"));
         entity.setStartTime(timeValue(body.get("startTime"), "startTime"));
@@ -99,6 +105,7 @@ public class ShiftService {
     private void applyFields(Shift entity, ShiftRequest body) {
         entity.setId(integerValue(body.get("id"), "id"));
         entity.setStore(resolveStore(body));
+        entity.setShiftGroup(resolveShiftGroup(body));
         entity.setShiftCode((String) body.get("shiftCode"));
         entity.setShiftName((String) body.get("shiftName"));
         entity.setStartTime(timeValue(body.get("startTime"), "startTime"));
@@ -108,6 +115,14 @@ public class ShiftService {
         entity.setStatus((String) body.get("status"));
         entity.setNote((String) body.get("note"));
         entity.setCreatedBy(integerValue(body.get("createdBy"), "createdBy"));
+    }
+
+    private ShiftGroup resolveShiftGroup(ShiftRequest body) {
+        Object value = body.get("shiftGroup");
+        if (value == null || (value instanceof String string && string.isBlank())) {
+            return null;
+        }
+        return shiftGroupRepository.getReferenceById(requiredId(value, "shiftGroup"));
     }
 
     private Store resolveStore(ShiftRequest body) {

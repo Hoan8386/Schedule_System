@@ -3,6 +3,10 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.ShiftByDate;
 import com.vn.schedule.domain.SchedulePeriod;
 import com.vn.schedule.domain.Shift;
+import com.vn.schedule.domain.ScheduleRound;
+import com.vn.schedule.domain.ScheduleSession;
+import com.vn.schedule.repository.ScheduleRoundRepository;
+import com.vn.schedule.repository.ScheduleSessionRepository;
 import com.vn.schedule.repository.ShiftByDateRepository;
 import com.vn.schedule.repository.SchedulePeriodRepository;
 import com.vn.schedule.repository.ShiftRepository;
@@ -18,6 +22,7 @@ import com.vn.schedule.dto.request.ShiftByDateRequest;
 import com.vn.schedule.dto.response.ShiftByDateResponse;
 import java.time.LocalTime;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
 import org.springframework.http.HttpStatus;
@@ -39,6 +44,8 @@ public class ShiftByDateService {
     private final EmployeeRepository employeeRepository;
     private final ShiftAssignmentRepository shiftAssignmentRepository;
     private final StoreManagerRepository storeManagerRepository;
+    private final ScheduleRoundRepository scheduleRoundRepository;
+    private final ScheduleSessionRepository scheduleSessionRepository;
 
     public ShiftByDateService(ShiftByDateRepository repository, ShiftRepository shiftRepository,
                               SchedulePeriodRepository schedulePeriodRepository,
@@ -47,7 +54,9 @@ public class ShiftByDateService {
                               RoleRepository roleRepository,
                               EmployeeRepository employeeRepository,
                               ShiftAssignmentRepository shiftAssignmentRepository,
-                              StoreManagerRepository storeManagerRepository) {
+                              StoreManagerRepository storeManagerRepository,
+                              ScheduleRoundRepository scheduleRoundRepository,
+                              ScheduleSessionRepository scheduleSessionRepository) {
         this.repository = repository;
         this.shiftRepository = shiftRepository;
         this.schedulePeriodRepository = schedulePeriodRepository;
@@ -57,6 +66,8 @@ public class ShiftByDateService {
         this.employeeRepository = employeeRepository;
         this.shiftAssignmentRepository = shiftAssignmentRepository;
         this.storeManagerRepository = storeManagerRepository;
+        this.scheduleRoundRepository = scheduleRoundRepository;
+        this.scheduleSessionRepository = scheduleSessionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -164,34 +175,53 @@ public class ShiftByDateService {
     }
     private ShiftByDate toEntity(ShiftByDateRequest body) {
         ShiftByDate entity = new ShiftByDate();
-        entity.setId((Integer) body.get("id"));
-        entity.setShift(resolveShift(body));
-        entity.setSchedulePeriod(resolveSchedulePeriod(body));
-        entity.setWorkDate((LocalDate) body.get("workDate"));
-        entity.setCapacity((Integer) body.get("capacity"));
-        entity.setShiftName((String) body.get("shiftName"));
-        entity.setStartTime((LocalTime) body.get("startTime"));
-        entity.setEndTime((LocalTime) body.get("endTime"));
-        entity.setMaxCapacity((Integer) body.get("maxCapacity"));
-        entity.setPayRate((BigDecimal) body.get("payRate"));
-        entity.setStatus((String) body.get("status"));
-        entity.setManagerNote((String) body.get("managerNote"));
+        applyFields(entity, body);
+        entity.setCreatedAt(LocalDateTime.now());
         return entity;
     }
 
     private void applyFields(ShiftByDate entity, ShiftByDateRequest body) {
-        entity.setId((Integer) body.get("id"));
         entity.setShift(resolveShift(body));
-        entity.setSchedulePeriod(resolveSchedulePeriod(body));
-        entity.setWorkDate((LocalDate) body.get("workDate"));
-        entity.setCapacity((Integer) body.get("capacity"));
+        entity.setScheduleRound(optionalReference(body.get("scheduleRound"), "scheduleRound", scheduleRoundRepository::getReferenceById));
+        entity.setScheduleSession(optionalReference(body.get("scheduleSession"), "scheduleSession", scheduleSessionRepository::getReferenceById));
+        SchedulePeriod period = resolveSchedulePeriod(body);
+        // Ca theo ngày thuộc đợt; nếu không chọn kỳ thì lấy kỳ của đợt.
+        if (period == null && entity.getScheduleRound() != null) {
+            period = entity.getScheduleRound().getSchedulePeriod();
+        }
+        entity.setSchedulePeriod(period);
+        entity.setWorkDate(parse(body.get("workDate"), "workDate", LocalDate::parse));
+        entity.setCapacity(parse(body.get("capacity"), "capacity", Integer::valueOf));
         entity.setShiftName((String) body.get("shiftName"));
-        entity.setStartTime((LocalTime) body.get("startTime"));
-        entity.setEndTime((LocalTime) body.get("endTime"));
-        entity.setMaxCapacity((Integer) body.get("maxCapacity"));
-        entity.setPayRate((BigDecimal) body.get("payRate"));
+        entity.setStartTime(parse(body.get("startTime"), "startTime", LocalTime::parse));
+        entity.setEndTime(parse(body.get("endTime"), "endTime", LocalTime::parse));
+        entity.setMaxCapacity(parse(body.get("maxCapacity"), "maxCapacity", Integer::valueOf));
+        entity.setPayRate(parse(body.get("payRate"), "payRate", BigDecimal::new));
         entity.setStatus((String) body.get("status"));
         entity.setManagerNote((String) body.get("managerNote"));
+        entity.setUpdatedAt(LocalDateTime.now());
+    }
+
+    /** Nhận giá trị JSON (chuỗi hoặc số) và chuyển sang kiểu đích. */
+    private <T> T parse(Object value, String fieldName, java.util.function.Function<String, T> parser) {
+        if (value == null || (value instanceof String text && text.isBlank())) {
+            return null;
+        }
+        try {
+            return parser.apply(String.valueOf(value).trim());
+        } catch (RuntimeException ex) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " không hợp lệ: " + value);
+        }
+    }
+
+    private <T> T optionalReference(Object value, String fieldName, java.util.function.Function<Integer, T> loader) {
+        if (value == null || (value instanceof String text && text.isBlank())) {
+            return null;
+        }
+        if (value instanceof String text) {
+            return loader.apply(parse(text, fieldName, Integer::valueOf));
+        }
+        return loader.apply(requiredId(value, fieldName));
     }
 
     private Shift resolveShift(ShiftByDateRequest body) {
@@ -217,6 +247,8 @@ public class ShiftByDateService {
     private ShiftByDateResponse toResponse(ShiftByDate item) {
         Shift shift = item.getShift();
         SchedulePeriod period = item.getSchedulePeriod();
+        ScheduleRound round = item.getScheduleRound();
+        ScheduleSession session = item.getScheduleSession();
         return new ShiftByDateResponse(
                 item.getId(),
                 shift == null ? null : new ShiftByDateResponse.ShiftSummary(
@@ -239,6 +271,10 @@ public class ShiftByDateService {
                         period.getRegistrationOpenAt(),
                         period.getRegistrationCloseAt()),
                 period == null ? null : period.getId(),
+                round == null ? null : round.getId(),
+                round == null ? null : round.getRoundName(),
+                session == null ? null : session.getId(),
+                session == null ? null : session.getSessionName(),
                 item.getWorkDate(),
                 item.getCapacity(),
                 item.getShiftName(),
@@ -247,6 +283,8 @@ public class ShiftByDateService {
                 item.getMaxCapacity(),
                 item.getPayRate(),
                 item.getStatus(),
-                item.getManagerNote());
+                item.getManagerNote(),
+                item.getCreatedAt(),
+                item.getUpdatedAt());
     }
 }

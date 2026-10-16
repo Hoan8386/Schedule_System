@@ -27,7 +27,11 @@ public class ShiftAssignment {
     @Column(nullable = false)
     private String status;
     private LocalDateTime registeredAt;
+    @Column(name = "approved_by")
+    private Integer approvedBy;
     private LocalDateTime approvedAt;
+    @Column(name = "cancelled_by")
+    private Integer cancelledBy;
     private LocalDateTime cancelledAt;
     private String cancellationReason;
     private String note;

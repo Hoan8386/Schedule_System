@@ -10,7 +10,9 @@ public class ShiftAssignmentResponse {
     private Integer employeeId;
     private String status;
     private LocalDateTime registeredAt;
+    private Integer approvedBy;
     private LocalDateTime approvedAt;
+    private Integer cancelledBy;
     private LocalDateTime cancelledAt;
     private String cancellationReason;
     private String note;
@@ -56,6 +58,22 @@ public class ShiftAssignmentResponse {
 
     public void setRegisteredAt(LocalDateTime registeredAt) {
         this.registeredAt = registeredAt;
+    }
+
+    public Integer getApprovedBy() {
+        return approvedBy;
+    }
+
+    public void setApprovedBy(Integer approvedBy) {
+        this.approvedBy = approvedBy;
+    }
+
+    public Integer getCancelledBy() {
+        return cancelledBy;
+    }
+
+    public void setCancelledBy(Integer cancelledBy) {
+        this.cancelledBy = cancelledBy;
     }
 
     public LocalDateTime getApprovedAt() {

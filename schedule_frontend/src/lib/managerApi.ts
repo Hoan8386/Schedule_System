@@ -126,6 +126,9 @@ export interface SchedulePeriodResponse {
   periodType?: string | null;
   startDate?: string | null;
   endDate?: string | null;
+  effectiveStartDate?: string | null;
+  effectiveEndDate?: string | null;
+  description?: string | null;
   registrationOpenAt?: string | null;
   registrationCloseAt?: string | null;
   status?: string | null;
@@ -137,6 +140,8 @@ export interface ShiftResponse {
   shiftId?: number;
   storeId?: number | null;
   storeName?: string | null;
+  shiftGroupId?: number | null;
+  shiftGroupName?: string | null;
   shiftCode?: string | null;
   shiftName?: string | null;
   startTime?: string | null;
@@ -153,6 +158,10 @@ export interface ShiftByDateResponse {
   shiftByDateId?: number;
   shiftId?: number | null;
   schedulePeriodId?: number | null;
+  scheduleRoundId?: number | null;
+  roundName?: string | null;
+  scheduleSessionId?: number | null;
+  sessionName?: string | null;
   workDate?: string | null;
   capacity?: number | null;
   shiftName?: string | null;
@@ -173,6 +182,13 @@ export interface ShiftAssignmentResponse {
   shiftByDateId?: number | null;
   employeeId?: number | null;
   status?: string | null;
+  registeredAt?: string | null;
+  approvedBy?: number | null;
+  approvedAt?: string | null;
+  cancelledBy?: number | null;
+  cancelledAt?: string | null;
+  cancellationReason?: string | null;
+  note?: string | null;
   [key: string]: unknown;
 }
 
@@ -180,8 +196,13 @@ export interface ScheduleRoundResponse {
   id?: number;
   scheduleRoundId?: number;
   roundName?: string | null;
+  schedulePeriodId?: number | null;
+  periodName?: string | null;
+  storeId?: number | null;
+  storeName?: string | null;
   registrationStartAt?: string | null;
   registrationEndAt?: string | null;
+  description?: string | null;
   status?: string | null;
   createdBy?: number | null;
   createdAt?: string | null;
@@ -194,7 +215,11 @@ export interface ScheduleSessionResponse {
   sessionName?: string | null;
   sessionOpenAt?: string | null;
   sessionCloseAt?: string | null;
+  scheduleRoundId?: number | null;
+  roundName?: string | null;
   shiftGroupId?: number | null;
+  shiftGroupName?: string | null;
+  description?: string | null;
   status?: string | null;
   createdBy?: number | null;
   createdAt?: string | null;
