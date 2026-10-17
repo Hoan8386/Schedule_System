@@ -83,6 +83,8 @@ export interface StatShift {
   payRate: number;
   wage: number;
   workStatus: WorkStatus;
+  /** Yêu cầu đổi / hủy đang chờ duyệt cho ca này (CHANGE / CANCEL ...) */
+  pendingRequestType: string | null;
 }
 
 export interface StatPayroll {

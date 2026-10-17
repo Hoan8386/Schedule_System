@@ -85,7 +85,9 @@ public final class StatisticsResponse {
             BigDecimal payRate,
             BigDecimal wage,
             /** COMPLETED / IN_PROGRESS / ABSENT / UPCOMING / PENDING / CANCELLED */
-            String workStatus) {
+            String workStatus,
+            /** Loại yêu cầu đổi/hủy đang chờ duyệt cho ca này (CHANGE / CANCEL ...), null nếu không có */
+            String pendingRequestType) {
     }
 
     public record PayrollInfo(

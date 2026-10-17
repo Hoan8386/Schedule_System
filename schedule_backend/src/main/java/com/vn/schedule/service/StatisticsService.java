@@ -259,7 +259,11 @@ public class StatisticsService {
                        COALESCE(sbd.start_time, sh.start_time),
                        COALESCE(sbd.end_time, sh.end_time),
                        COALESCE(sbd.pay_rate, sh.pay_rate, sg.pay_rate, 0),
-                       sa.status, a.attendance_status, a.check_in_at, a.check_out_at, a.worked_hours
+                       sa.status, a.attendance_status, a.check_in_at, a.check_out_at, a.worked_hours,
+                       (SELECT er.request_type FROM emergency_request er
+                        WHERE er.status = 'PENDING' AND er.employee_id = sa.employee_id
+                          AND (er.assignment_id = sa.assignment_id OR er.from_shift_assignment_id = sa.shift_by_date_id)
+                        ORDER BY er.emergency_request_id DESC LIMIT 1)
                 FROM shift_assignment sa
                 JOIN shift_by_date sbd ON sbd.shift_by_date_id = sa.shift_by_date_id
                 JOIN shift sh ON sh.shift_id = sbd.shift_id
@@ -304,7 +308,8 @@ public class StatisticsService {
             result.add(new ShiftRow(toInt(row[0]), toInt(row[1]), toInt(row[2]), text(row[3]), text(row[4]),
                     toInt(row[5]), text(row[6]), workDate == null ? null : workDate.toString(), text(row[8]),
                     formatTime(start), formatTime(end), assignmentStatus, attendanceStatus,
-                    formatDateTime(checkIn), formatDateTime(checkOut), round(hours, 2), money(payRate), wage, workStatus));
+                    formatDateTime(checkIn), formatDateTime(checkOut), round(hours, 2), money(payRate), wage, workStatus,
+                    text(row[17])));
         }
         return result;
     }

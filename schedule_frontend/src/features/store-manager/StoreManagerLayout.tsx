@@ -50,7 +50,13 @@ export default function StoreManagerLayout() {
   const renderPage = () => {
     switch (activeTab) {
       case "dashboard":
-        return <StoreManagerDashboard onGoToRequests={() => setActiveTab("yeucau")} onGoToMyShift={() => setActiveTab("dangkyca")} />;
+        return (
+          <StoreManagerDashboard
+            onGoToRequests={() => setActiveTab("yeucau")}
+            onGoToMyShift={() => setActiveTab("dangkyca")}
+            onGoToTodos={() => setActiveTab("todo")}
+          />
+        );
       case "yeucau":
         return <StoreManagerShiftRequestsPage />;
       case "dangkyca":

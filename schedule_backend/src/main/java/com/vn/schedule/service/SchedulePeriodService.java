@@ -254,21 +254,33 @@ public class SchedulePeriodService {
         return entity;
     }
 
+    /**
+     * Cập nhật một phần: chỉ ghi các trường có trong body (form bỏ trường rỗng),
+     * không bao giờ đổi khóa chính của bản ghi đang sửa.
+     */
     private void applyFields(SchedulePeriod entity, SchedulePeriodRequest body) {
-        entity.setId(asInteger(body.get("id"), "id"));
-        entity.setPeriodName(asString(body.get("periodName"), "periodName"));
-        entity.setPeriodType(asString(body.get("periodType"), "periodType"));
-        entity.setStartDate(parseLocalDate(body.get("startDate"), "startDate"));
-        entity.setEndDate(parseLocalDate(body.get("endDate"), "endDate"));
-        entity.setEffectiveStartDate(parseLocalDate(body.get("effectiveStartDate"), "effectiveStartDate"));
-        entity.setEffectiveEndDate(parseLocalDate(body.get("effectiveEndDate"), "effectiveEndDate"));
-        entity.setDescription(asString(body.get("description"), "description"));
-        entity.setRegistrationOpenAt(parseLocalDateTime(body.get("registrationOpenAt"), "registrationOpenAt"));
-        entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
-        entity.setStatus(asString(body.get("status"), "status"));
-        entity.setCreatedBy(asInteger(body.get("createdBy"), "createdBy"));
-        entity.setFinalizedBy(asInteger(body.get("finalizedBy"), "finalizedBy"));
-        entity.setFinalizedAt(parseLocalDateTime(body.get("finalizedAt"), "finalizedAt"));
+        Map<String, Object> values = body.values();
+        if (values.containsKey("periodName")) entity.setPeriodName(asString(body.get("periodName"), "periodName"));
+        if (values.containsKey("periodType")) entity.setPeriodType(asString(body.get("periodType"), "periodType"));
+        if (values.containsKey("startDate")) entity.setStartDate(parseLocalDate(body.get("startDate"), "startDate"));
+        if (values.containsKey("endDate")) entity.setEndDate(parseLocalDate(body.get("endDate"), "endDate"));
+        if (values.containsKey("effectiveStartDate")) {
+            entity.setEffectiveStartDate(parseLocalDate(body.get("effectiveStartDate"), "effectiveStartDate"));
+        }
+        if (values.containsKey("effectiveEndDate")) {
+            entity.setEffectiveEndDate(parseLocalDate(body.get("effectiveEndDate"), "effectiveEndDate"));
+        }
+        if (values.containsKey("description")) entity.setDescription(asString(body.get("description"), "description"));
+        if (values.containsKey("registrationOpenAt")) {
+            entity.setRegistrationOpenAt(parseLocalDateTime(body.get("registrationOpenAt"), "registrationOpenAt"));
+        }
+        if (values.containsKey("registrationCloseAt")) {
+            entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
+        }
+        if (values.containsKey("status")) entity.setStatus(asString(body.get("status"), "status"));
+        if (values.containsKey("createdBy")) entity.setCreatedBy(asInteger(body.get("createdBy"), "createdBy"));
+        if (values.containsKey("finalizedBy")) entity.setFinalizedBy(asInteger(body.get("finalizedBy"), "finalizedBy"));
+        if (values.containsKey("finalizedAt")) entity.setFinalizedAt(parseLocalDateTime(body.get("finalizedAt"), "finalizedAt"));
     }
 
     private String asString(Object value, String fieldName) {
