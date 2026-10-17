@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { managerApi } from "@/lib/api";
+import type { SchedulePeriodDeletePreview } from "@/lib/api/types/schedule.types";
 import type { Entity, Kind } from "./constants";
 import { useScheduleData, type ScheduleData } from "./useScheduleData";
 import { useScheduleLookups, type ScheduleLookups } from "./useScheduleLookups";
@@ -18,6 +19,17 @@ export interface ShiftDetailState {
   ids: number[];
 }
 
+/** Bản ghi đang chờ người dùng xác nhận xóa. */
+export interface PendingDeleteState {
+  kind: Kind;
+  id: number;
+  /** Chỉ có với kỳ: số dữ liệu liên quan sẽ bị xóa theo */
+  preview?: SchedulePeriodDeletePreview;
+  loadingPreview?: boolean;
+  deleting?: boolean;
+  error?: string;
+}
+
 interface ScheduleContextValue extends ScheduleData {
   loading: boolean;
   error: string;
@@ -30,7 +42,11 @@ interface ScheduleContextValue extends ScheduleData {
   shiftDetail: ShiftDetailState | null;
   openShiftDetail: (dateKey: string, ids: number[]) => void;
   closeShiftDetail: () => void;
+  /** Mở popup xác nhận xóa */
   remove: (kind: Kind, id: number) => Promise<void>;
+  pendingDelete: PendingDeleteState | null;
+  confirmDelete: () => Promise<void>;
+  cancelDelete: () => void;
 }
 
 const ScheduleContext = createContext<ScheduleContextValue | null>(null);
@@ -53,18 +69,40 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
   const [modal, setModal] = useState<ModalState | null>(null);
   const [shiftDetail, setShiftDetail] = useState<ShiftDetailState | null>(null);
 
-  const remove = useCallback(
-    async (kind: Kind, id: number) => {
-      if (!id || !window.confirm("Bạn có chắc muốn xóa dữ liệu này?")) return;
-      try {
-        await DELETE_ACTION[kind](id);
-        await reload();
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Không thể xóa dữ liệu");
-      }
-    },
-    [reload, setError]
-  );
+  const [pendingDelete, setPendingDelete] = useState<PendingDeleteState | null>(null);
+
+  const remove = useCallback(async (kind: Kind, id: number) => {
+    if (!id) return;
+    if (kind !== "period") {
+      setPendingDelete({ kind, id });
+      return;
+    }
+    setPendingDelete({ kind, id, loadingPreview: true });
+    try {
+      const { data: preview } = await managerApi.getSchedulePeriodDeletePreview(id);
+      setPendingDelete((current) => (current?.id === id ? { ...current, preview, loadingPreview: false } : current));
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Không thể tải dữ liệu liên quan";
+      setPendingDelete((current) => (current?.id === id ? { ...current, error: message, loadingPreview: false } : current));
+    }
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDelete) return;
+    setPendingDelete({ ...pendingDelete, deleting: true, error: undefined });
+    try {
+      await DELETE_ACTION[pendingDelete.kind](pendingDelete.id);
+      setPendingDelete(null);
+      await reload();
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Không thể xóa dữ liệu";
+      setPendingDelete((current) => (current ? { ...current, deleting: false, error: message } : current));
+    }
+  }, [pendingDelete, reload]);
+
+  const cancelDelete = useCallback(() => {
+    setPendingDelete((current) => (current?.deleting ? current : null));
+  }, []);
 
   const value = useMemo<ScheduleContextValue>(
     () => ({
@@ -81,8 +119,11 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
       openShiftDetail: (dateKey, ids) => setShiftDetail({ dateKey, ids }),
       closeShiftDetail: () => setShiftDetail(null),
       remove,
+      pendingDelete,
+      confirmDelete,
+      cancelDelete,
     }),
-    [data, loading, error, setError, reload, lookups, modal, shiftDetail, remove]
+    [data, loading, error, setError, reload, lookups, modal, shiftDetail, remove, pendingDelete, confirmDelete, cancelDelete]
   );
 
   return <ScheduleContext.Provider value={value}>{children}</ScheduleContext.Provider>;

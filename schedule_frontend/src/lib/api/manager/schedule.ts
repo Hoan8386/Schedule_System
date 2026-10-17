@@ -1,6 +1,7 @@
 import { crud, http, withQuery } from "../http";
 import type {
   EmergencyRequestResponse,
+  SchedulePeriodDeletePreview,
   SchedulePeriodResponse,
   ScheduleRoundResponse,
   ScheduleSessionResponse,
@@ -29,6 +30,8 @@ export const scheduleApi = {
   createSchedulePeriod: periods.create,
   updateSchedulePeriod: periods.update,
   deleteSchedulePeriod: periods.remove,
+  getSchedulePeriodDeletePreview: (id: number) =>
+    http.get<SchedulePeriodDeletePreview>(`/api/v1/schedule_period/${id}/delete-preview`),
 
   getShifts: (filters?: { storeId?: number; status?: string }) => http.get<ShiftResponse[]>(withQuery("/api/v1/shift", filters)),
   createShift: shifts.create,

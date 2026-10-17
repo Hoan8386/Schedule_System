@@ -17,6 +17,17 @@ export interface SchedulePeriodResponse {
   [key: string]: unknown;
 }
 
+/** Số bản ghi sẽ bị xóa cùng một kỳ lập lịch. */
+export interface SchedulePeriodDeletePreview {
+  rounds: number;
+  sessions: number;
+  shiftByDates: number;
+  assignments: number;
+  attendances: number;
+  emergencyRequests: number;
+  eventScopes: number;
+}
+
 export interface ShiftResponse {
   id?: number;
   shiftId?: number;

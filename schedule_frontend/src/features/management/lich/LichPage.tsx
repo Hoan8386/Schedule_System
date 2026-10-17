@@ -7,6 +7,7 @@ import type { TabKey } from "./constants";
 import { ScheduleProvider, useSchedule } from "./ScheduleContext";
 import { ScheduleFormModal } from "./form/ScheduleFormModal";
 import { ShiftDetailDrawer } from "./shift-detail/ShiftDetailDrawer";
+import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { PeriodTab } from "./tabs/period/PeriodTab";
 import { CalendarTab } from "./tabs/calendar/CalendarTab";
 import { ShiftTab } from "./tabs/ShiftTab";
@@ -54,6 +55,7 @@ function LichPageContent() {
     <div className="page">
       <ScheduleFormModal />
       <ShiftDetailDrawer />
+      <DeleteConfirmModal />
 
       <PageHeader
         title="Quản lý lịch & ca làm việc"
