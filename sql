@@ -3,6 +3,8 @@ CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
 USE schedule_system;
+-- Kết nối dùng cùng collation với database để so sánh chuỗi/biến không bị lỗi 1267
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -46,6 +48,7 @@ DROP TABLE IF EXISTS `schedule_period`;
 DROP TABLE IF EXISTS `store_manager`;
 DROP TABLE IF EXISTS `employee_store`;
 DROP TABLE IF EXISTS `employee`;
+DROP TABLE IF EXISTS `store`;
 DROP TABLE IF EXISTS `attachment`;
 DROP TABLE IF EXISTS `role_permission`;
 DROP TABLE IF EXISTS `user_role`;
@@ -158,6 +161,7 @@ CREATE TABLE `employee` (
     user_id INT NOT NULL UNIQUE,
     employee_code VARCHAR(50) NOT NULL UNIQUE,
     full_name VARCHAR(255) NOT NULL,
+    avatar VARCHAR(500),
     date_of_birth DATE,
     gender VARCHAR(30),
     email VARCHAR(255),
@@ -249,22 +253,24 @@ CREATE TABLE `store_manager` (
 -- 11. SCHEDULE_PERIOD
 -- ============================================================
 
+-- Kỳ lịch dùng chung cho toàn chuỗi (không gắn cửa hàng; cửa hàng gắn ở đợt).
+-- Thứ tự mốc: Kỳ (đợt đăng ký -> các phiên; duyệt) -> Áp dụng.
 CREATE TABLE `schedule_period` (
     schedule_period_id INT AUTO_INCREMENT PRIMARY KEY,
-    store_id INT NOT NULL,
     period_name VARCHAR(255) NOT NULL,
-    period_type VARCHAR(30) NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
+    period_type VARCHAR(30) NOT NULL COMMENT 'WEEK / MONTH',
+    start_date DATE NOT NULL COMMENT 'Bắt đầu kỳ (đăng ký + duyệt)',
+    end_date DATE NOT NULL COMMENT 'Kết thúc kỳ (đăng ký + duyệt)',
+    effective_start_date DATE COMMENT 'Ngày bắt đầu áp dụng lịch',
+    effective_end_date DATE COMMENT 'Ngày kết thúc áp dụng lịch',
+    description TEXT,
     registration_open_at DATETIME,
     registration_close_at DATETIME,
-    status VARCHAR(30) NOT NULL,
+    status VARCHAR(30) NOT NULL COMMENT 'DRAFT / OPEN / CANCELLED / FINALIZED',
     created_by INT,
     created_at DATETIME,
     finalized_by INT,
     finalized_at DATETIME,
-    CONSTRAINT fk_schedule_period_store
-        FOREIGN KEY (store_id) REFERENCES `store`(store_id),
     CONSTRAINT fk_schedule_period_created_by
         FOREIGN KEY (created_by) REFERENCES `employee`(employee_id),
     CONSTRAINT fk_schedule_period_finalized_by
@@ -295,14 +301,20 @@ CREATE TABLE `shift_group` (
 -- 13. MODULE 03: SCHEDULE_ROUND
 -- ============================================================
 
+-- Đợt đăng ký: thuộc một kỳ và một cửa hàng. Đợt không có phiên = mọi nhóm ca đăng ký trong cả đợt.
 CREATE TABLE `schedule_round` (
     schedule_round_id INT AUTO_INCREMENT PRIMARY KEY,
     round_name VARCHAR(255) NOT NULL,
+    schedule_period_id INT,
+    store_id INT,
     registration_start_at DATETIME,
     registration_end_at DATETIME,
-    status VARCHAR(30) NOT NULL,
+    description TEXT,
+    status VARCHAR(30) NOT NULL COMMENT 'OPEN / CLOSED',
     created_by INT,
     created_at DATETIME,
+    CONSTRAINT fk_schedule_round_period FOREIGN KEY (schedule_period_id) REFERENCES `schedule_period`(schedule_period_id),
+    CONSTRAINT fk_schedule_round_store FOREIGN KEY (store_id) REFERENCES `store`(store_id),
     CONSTRAINT fk_schedule_round_created_by FOREIGN KEY (created_by) REFERENCES `employee`(employee_id)
 );
 
@@ -315,22 +327,26 @@ CREATE TABLE `schedule_session` (
     session_name VARCHAR(255) NOT NULL,
     session_open_at DATETIME,
     session_close_at DATETIME,
+    schedule_round_id INT,
     shift_group_id INT,
-    status VARCHAR(30) NOT NULL,
+    description TEXT,
+    status VARCHAR(30) NOT NULL COMMENT 'OPEN / PENDING / CLOSED',
     created_by INT,
     created_at DATETIME,
+    CONSTRAINT fk_schedule_session_round FOREIGN KEY (schedule_round_id) REFERENCES `schedule_round`(schedule_round_id),
     CONSTRAINT fk_schedule_session_shift_group FOREIGN KEY (shift_group_id) REFERENCES `shift_group`(shift_group_id),
     CONSTRAINT fk_schedule_session_created_by FOREIGN KEY (created_by) REFERENCES `employee`(employee_id)
 );
 
 
 -- ============================================================
--- 15. SHIFT
+-- 15b. SHIFT
 -- ============================================================
 
 CREATE TABLE `shift` (
     shift_id INT AUTO_INCREMENT PRIMARY KEY,
     store_id INT NOT NULL,
+    shift_group_id INT,
     shift_code VARCHAR(50) NOT NULL,
     shift_name VARCHAR(100) NOT NULL,
     start_time TIME NOT NULL,
@@ -343,21 +359,26 @@ CREATE TABLE `shift` (
     created_at DATETIME,
     updated_at DATETIME,
     UNIQUE KEY uk_shift_store_code (store_id, shift_code),
+    UNIQUE KEY uk_shift_group_code (shift_group_id, shift_code),
     CONSTRAINT fk_shift_store
         FOREIGN KEY (store_id) REFERENCES `store`(store_id),
+    CONSTRAINT fk_shift_group
+        FOREIGN KEY (shift_group_id) REFERENCES `shift_group`(shift_group_id),
     CONSTRAINT fk_shift_created_by
         FOREIGN KEY (created_by) REFERENCES `employee`(employee_id)
 );
 
 
 -- ============================================================
--- 13. SHIFT_BY_DATE
+-- 15c. SHIFT_BY_DATE
 -- ============================================================
 
 CREATE TABLE `shift_by_date` (
     shift_by_date_id INT AUTO_INCREMENT PRIMARY KEY,
     shift_id INT NOT NULL,
     schedule_period_id INT,
+    schedule_round_id INT,
+    schedule_session_id INT,
     work_date DATE NOT NULL,
     capacity INT,
     shift_name VARCHAR(100),
@@ -369,16 +390,20 @@ CREATE TABLE `shift_by_date` (
     manager_note TEXT,
     created_at DATETIME,
     updated_at DATETIME,
-    UNIQUE KEY uk_shift_date (shift_id, work_date),
+    UNIQUE KEY uk_shift_by_date (shift_id, work_date),
     CONSTRAINT fk_shift_date_shift
         FOREIGN KEY (shift_id) REFERENCES `shift`(shift_id),
     CONSTRAINT fk_shift_date_period
-        FOREIGN KEY (schedule_period_id) REFERENCES `schedule_period`(schedule_period_id)
+        FOREIGN KEY (schedule_period_id) REFERENCES `schedule_period`(schedule_period_id),
+    CONSTRAINT fk_shift_date_round
+        FOREIGN KEY (schedule_round_id) REFERENCES `schedule_round`(schedule_round_id),
+    CONSTRAINT fk_shift_date_session
+        FOREIGN KEY (schedule_session_id) REFERENCES `schedule_session`(schedule_session_id)
 );
 
 
 -- ============================================================
--- 14. SHIFT_ASSIGNMENT
+-- 15d. SHIFT_ASSIGNMENT
 -- ============================================================
 
 CREATE TABLE `shift_assignment` (
@@ -406,7 +431,7 @@ CREATE TABLE `shift_assignment` (
 
 
 -- ============================================================
--- 15. EMERGENCY_REQUEST
+-- 15e. EMERGENCY_REQUEST
 -- ============================================================
 
 CREATE TABLE `emergency_request` (
@@ -1015,6 +1040,8 @@ CREATE TABLE `notification` (
     is_read BOOLEAN DEFAULT FALSE,
     read_at DATETIME,
     created_at DATETIME,
+    -- Phục vụ chuông thông báo: lọc theo nhân viên + trạng thái đọc, sắp theo thời gian
+    KEY idx_notification_employee_read (employee_id, is_read, created_at),
     CONSTRAINT fk_notification_employee
         FOREIGN KEY (employee_id) REFERENCES `employee`(employee_id),
     CONSTRAINT fk_notification_template
@@ -1198,7 +1225,7 @@ VALUES
 (74, 'DELETE_FEEDBACK_ID', 'DELETE /api/v1/feedback/{id}', 'Controller route DELETE /api/v1/feedback/{id}', '/api/v1/feedback/{id}', 'DELETE'),
 (75, 'GET_FEEDBACK_ID', 'GET /api/v1/feedback/{id}', 'Controller route GET /api/v1/feedback/{id}', '/api/v1/feedback/{id}', 'GET'),
 (76, 'PUT_FEEDBACK_ID', 'PUT /api/v1/feedback/{id}', 'Controller route PUT /api/v1/feedback/{id}', '/api/v1/feedback/{id}', 'PUT'),
-(77, 'GET_HEALTH', 'GET /api/v1/health', 'Controller route GET /api/v1/health', '/api/v1/health', 'GET'),
+(77, 'GET_HEALTH', 'GET /health', 'Controller route GET /health', '/health', 'GET'),
 (78, 'GET_NOTIFICATION', 'GET /api/v1/notification', 'Controller route GET /api/v1/notification', '/api/v1/notification', 'GET'),
 (79, 'POST_NOTIFICATION', 'POST /api/v1/notification', 'Controller route POST /api/v1/notification', '/api/v1/notification', 'POST'),
 (80, 'DELETE_NOTIFICATION_ID', 'DELETE /api/v1/notification/{id}', 'Controller route DELETE /api/v1/notification/{id}', '/api/v1/notification/{id}', 'DELETE'),
@@ -1351,7 +1378,29 @@ VALUES
 (227, 'POST_AUTH_REGISTER', 'POST /api/v1/auth/register', 'Controller route POST /api/v1/auth/register', '/api/v1/auth/register', 'POST'),
 (228, 'POST_AUTH_CONFIRM', 'POST /api/v1/auth/confirm', 'Controller route POST /api/v1/auth/confirm', '/api/v1/auth/confirm', 'POST'),
 (229, 'POST_AUTH_FORGOT_PASSWORD', 'POST /api/v1/auth/forgot-password', 'Controller route POST /api/v1/auth/forgot-password', '/api/v1/auth/forgot-password', 'POST'),
-(230, 'POST_AUTH_RESET_PASSWORD', 'POST /api/v1/auth/reset-password', 'Controller route POST /api/v1/auth/reset-password', '/api/v1/auth/reset-password', 'POST');
+(230, 'POST_AUTH_RESET_PASSWORD', 'POST /api/v1/auth/reset-password', 'Controller route POST /api/v1/auth/reset-password', '/api/v1/auth/reset-password', 'POST'),
+(231, 'POST_ATTACHMENT_UPLOAD', 'POST /api/v1/attachment/upload', 'Controller route POST /api/v1/attachment/upload', '/api/v1/attachment/upload', 'POST'),
+(232, 'GET_ATTACHMENT_FILE_ID', 'GET /api/v1/attachment/file/{id}', 'Controller route GET /api/v1/attachment/file/{id}', '/api/v1/attachment/file/{id}', 'GET'),
+(233, 'GET_NOTIFICATION_ME', 'GET /api/v1/notification/me', 'Controller route GET /api/v1/notification/me', '/api/v1/notification/me', 'GET'),
+(234, 'GET_NOTIFICATION_ME_UNREAD_COUNT', 'GET /api/v1/notification/me/unread-count', 'Controller route GET /api/v1/notification/me/unread-count', '/api/v1/notification/me/unread-count', 'GET'),
+(235, 'PATCH_NOTIFICATION_ME_ID_READ', 'PATCH /api/v1/notification/me/{id}/read', 'Controller route PATCH /api/v1/notification/me/{id}/read', '/api/v1/notification/me/{id}/read', 'PATCH'),
+(236, 'PATCH_NOTIFICATION_ME_READ_ALL', 'PATCH /api/v1/notification/me/read-all', 'Controller route PATCH /api/v1/notification/me/read-all', '/api/v1/notification/me/read-all', 'PATCH'),
+(237, 'GET_SCHEDULE_ROUND', 'GET /api/v1/schedule_round', 'Controller route GET /api/v1/schedule_round', '/api/v1/schedule_round', 'GET'),
+(238, 'POST_SCHEDULE_ROUND', 'POST /api/v1/schedule_round', 'Controller route POST /api/v1/schedule_round', '/api/v1/schedule_round', 'POST'),
+(239, 'DELETE_SCHEDULE_ROUND_ID', 'DELETE /api/v1/schedule_round/{id}', 'Controller route DELETE /api/v1/schedule_round/{id}', '/api/v1/schedule_round/{id}', 'DELETE'),
+(240, 'GET_SCHEDULE_ROUND_ID', 'GET /api/v1/schedule_round/{id}', 'Controller route GET /api/v1/schedule_round/{id}', '/api/v1/schedule_round/{id}', 'GET'),
+(241, 'PUT_SCHEDULE_ROUND_ID', 'PUT /api/v1/schedule_round/{id}', 'Controller route PUT /api/v1/schedule_round/{id}', '/api/v1/schedule_round/{id}', 'PUT'),
+(242, 'GET_SCHEDULE_SESSION', 'GET /api/v1/schedule_session', 'Controller route GET /api/v1/schedule_session', '/api/v1/schedule_session', 'GET'),
+(243, 'POST_SCHEDULE_SESSION', 'POST /api/v1/schedule_session', 'Controller route POST /api/v1/schedule_session', '/api/v1/schedule_session', 'POST'),
+(244, 'DELETE_SCHEDULE_SESSION_ID', 'DELETE /api/v1/schedule_session/{id}', 'Controller route DELETE /api/v1/schedule_session/{id}', '/api/v1/schedule_session/{id}', 'DELETE'),
+(245, 'GET_SCHEDULE_SESSION_ID', 'GET /api/v1/schedule_session/{id}', 'Controller route GET /api/v1/schedule_session/{id}', '/api/v1/schedule_session/{id}', 'GET'),
+(246, 'PUT_SCHEDULE_SESSION_ID', 'PUT /api/v1/schedule_session/{id}', 'Controller route PUT /api/v1/schedule_session/{id}', '/api/v1/schedule_session/{id}', 'PUT'),
+(247, 'GET_SHIFT_GROUP', 'GET /api/v1/shift_group', 'Controller route GET /api/v1/shift_group', '/api/v1/shift_group', 'GET'),
+(248, 'POST_SHIFT_GROUP', 'POST /api/v1/shift_group', 'Controller route POST /api/v1/shift_group', '/api/v1/shift_group', 'POST'),
+(249, 'DELETE_SHIFT_GROUP_ID', 'DELETE /api/v1/shift_group/{id}', 'Controller route DELETE /api/v1/shift_group/{id}', '/api/v1/shift_group/{id}', 'DELETE'),
+(250, 'GET_SHIFT_GROUP_ID', 'GET /api/v1/shift_group/{id}', 'Controller route GET /api/v1/shift_group/{id}', '/api/v1/shift_group/{id}', 'GET'),
+(251, 'PUT_SHIFT_GROUP_ID', 'PUT /api/v1/shift_group/{id}', 'Controller route PUT /api/v1/shift_group/{id}', '/api/v1/shift_group/{id}', 'PUT'),
+(252, 'GET_SCHEDULE_PERIOD_ID_DELETE_PREVIEW', 'GET /api/v1/schedule_period/{id}/delete-preview', 'Controller route GET /api/v1/schedule_period/{id}/delete-preview', '/api/v1/schedule_period/{id}/delete-preview', 'GET');
 
 INSERT INTO `user`
 (user_id, username, password_hash, email, phone, status, created_at, updated_at)
@@ -1429,47 +1478,78 @@ VALUES
 (1, 1, 2, '2024-03-15', 'ACTIVE', 1, NOW());
 
 
+-- Kỳ tháng 10/2026: đăng ký + duyệt 20/09 – 30/09, áp dụng 01/10 – 31/10
 INSERT INTO `schedule_period`
-(schedule_period_id, store_id, period_name, period_type,
-start_date, end_date, registration_open_at,
-registration_close_at, status, created_by, created_at)
+(schedule_period_id, period_name, period_type,
+start_date, end_date, effective_start_date, effective_end_date, description,
+registration_open_at, registration_close_at, status, created_by, created_at)
 VALUES
-(1, 1, 'Lịch tháng 10/2026', 'MONTH',
-'2026-10-01', '2026-10-31',
-'2026-09-20 08:00:00',
-'2026-09-27 23:59:59',
+(1, 'Lịch tháng 10/2026', 'MONTH',
+'2026-09-20', '2026-09-30', '2026-10-01', '2026-10-31',
+'Kỳ lịch làm việc tháng 10/2026 cho toàn chuỗi',
+'2026-09-20 08:00:00', '2026-09-27 23:59:59',
 'OPEN', 2, NOW());
 
 
+-- Nhóm ca: cố định (ca dài) và linh hoạt (ca ngắn hơn)
+INSERT INTO `shift_group`
+(shift_group_id, store_id, shift_group_code, shift_group_name,
+description, pay_rate, status, created_by, created_at, updated_at)
+VALUES
+(1, 1, 'CO_DINH', 'Nhóm ca cố định', 'Ca dài, ưu tiên nhân viên chính thức', 30000, 'ACTIVE', 2, NOW(), NOW()),
+(2, 1, 'LINH_HOAT', 'Nhóm ca linh hoạt', 'Ca ngắn hơn, dành cho bán thời gian', 32000, 'ACTIVE', 2, NOW(), NOW());
+
+
+-- Đợt đăng ký của cửa hàng Quận 1 trong kỳ tháng 10/2026
+INSERT INTO `schedule_round`
+(schedule_round_id, round_name, schedule_period_id, store_id,
+registration_start_at, registration_end_at, description, status, created_by, created_at)
+VALUES
+(1, 'Đợt 1 tuần 1-4 của 10/2026', 1, 1,
+'2026-09-20 08:00:00', '2026-09-27 23:59:59',
+'Đăng ký ca cho cả tháng 10', 'CLOSED', 2, NOW());
+
+
+-- Phiên: mỗi nhóm ca đăng ký trong một khung giờ riêng của đợt
+INSERT INTO `schedule_session`
+(schedule_session_id, session_name, session_open_at, session_close_at,
+schedule_round_id, shift_group_id, description, status, created_by, created_at)
+VALUES
+(1, 'Phiên 1 - Nhóm ca cố định', '2026-09-20 08:00:00', '2026-09-23 23:59:59',
+1, 1, 'Ưu tiên nhóm ca cố định đăng ký trước', 'CLOSED', 2, NOW()),
+(2, 'Phiên 2 - Nhóm ca linh hoạt', '2026-09-24 08:00:00', '2026-09-27 23:59:59',
+1, 2, 'Nhóm ca linh hoạt đăng ký sau', 'CLOSED', 2, NOW());
+
+
 INSERT INTO `shift`
-(shift_id, store_id, shift_code, shift_name,
+(shift_id, store_id, shift_group_id, shift_code, shift_name,
 start_time, end_time, max_capacity,
 pay_rate, status, created_by, created_at, updated_at)
 VALUES
-(1, 1, 'CA_SANG', 'Ca sáng',
+(1, 1, 1, 'CA_SANG', 'Ca sáng',
 '07:00:00', '15:00:00', 5,
 30000, 'ACTIVE', 2, NOW(), NOW()),
 
-(2, 1, 'CA_CHIEU', 'Ca chiều',
+(2, 1, 2, 'CA_CHIEU', 'Ca chiều',
 '15:00:00', '23:00:00', 5,
 32000, 'ACTIVE', 2, NOW(), NOW());
 
 
 INSERT INTO `shift_by_date`
-(shift_by_date_id, shift_id, schedule_period_id,
+(shift_by_date_id, shift_id, schedule_period_id, schedule_round_id, schedule_session_id,
 work_date, capacity, shift_name,
 start_time, end_time, max_capacity,
 pay_rate, status, created_at, updated_at)
 VALUES
-(1, 1, 1, '2026-10-05', 5,
+(1, 1, 1, 1, 1, '2026-10-05', 5,
 'Ca sáng', '07:00:00', '15:00:00',
 5, 30000, 'OPEN', NOW(), NOW()),
 
-(2, 2, 1, '2026-10-05', 5,
+(2, 2, 1, 1, 2, '2026-10-05', 5,
 'Ca chiều', '15:00:00', '23:00:00',
 5, 32000, 'OPEN', NOW(), NOW()),
 
-(3, 1, 1, '2026-10-06', 5,
+(3, 1, 1, 1, 1, '2026-10-06', 5,
 'Ca sáng', '07:00:00', '15:00:00',
 5, 30000, 'OPEN', NOW(), NOW());
 

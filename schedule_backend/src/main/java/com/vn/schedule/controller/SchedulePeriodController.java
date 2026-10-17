@@ -11,6 +11,7 @@ import com.vn.schedule.service.SchedulePeriodService;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
@@ -50,6 +51,12 @@ public class SchedulePeriodController {
     @ApiMessage("Cập nhật dữ liệu")
     public ResponseEntity<SchedulePeriodResponse> update(@PathVariable Integer id, @RequestBody SchedulePeriodRequest body) {
         return ResponseEntity.ok(response(service.update(id, body)));
+    }
+
+    @GetMapping("/{id}/delete-preview")
+    @ApiMessage("Thống kê dữ liệu sẽ bị xóa cùng kỳ")
+    public ResponseEntity<Map<String, Long>> deletePreview(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.deletePreview(id));
     }
 
     @DeleteMapping("/{id}")

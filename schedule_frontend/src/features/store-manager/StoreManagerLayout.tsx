@@ -87,7 +87,6 @@ export default function StoreManagerLayout() {
       topbarExtra={
         <span className="hidden rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 sm:inline-block">BLOAN · Nguyễn Trãi</span>
       }
-      notificationMessage="Thông báo: Có 6 yêu cầu ca đang chờ bạn xử lý."
       helpMessage="Tổng đài hỗ trợ vận hành cửa hàng: 1900 8386"
       helpLabel="Trung tâm hỗ trợ"
       showCopyright

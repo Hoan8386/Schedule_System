@@ -96,7 +96,6 @@ export default function EmployeeLayout() {
         onSelect={handleNavClick}
         breadcrumbRoot="Nhân viên"
         topbarExtra={<span className="hidden text-xs text-slate-400 sm:inline-block">Thứ Hai, 05/10/2026</span>}
-        notificationMessage="Thông báo: Kỳ đăng ký tuần 12 - 18/10 đang mở!"
         helpMessage="Tổng đài hỗ trợ nhân sự: 1900 8386 (Nhánh 1)"
         helpLabel="Trung tâm hỗ trợ"
         showCopyright

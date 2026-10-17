@@ -6,6 +6,10 @@ import com.vn.schedule.util.ApiException;
 import com.vn.schedule.dto.request.NotificationRequest;
 import java.time.LocalDateTime;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +18,68 @@ import java.util.List;
 
 @Service
 public class NotificationService {
+    /** Số thông báo tối đa trả về mỗi lần để hạn chế tải dữ liệu. */
+    public static final int MAX_PAGE_SIZE = 20;
+
     private final NotificationRepository repository;
-    public NotificationService(NotificationRepository repository) {
+    private final StoreScopeService storeScopeService;
+
+    public NotificationService(NotificationRepository repository, StoreScopeService storeScopeService) {
         this.repository = repository;
+        this.storeScopeService = storeScopeService;
     }
+
+    // ---------- Thông báo của người dùng đang đăng nhập ----------
+
+    /** Nhân viên của tài khoản hiện tại; null nếu tài khoản chưa có hồ sơ nhân viên (vd. ADMIN). */
+    private Integer currentEmployeeIdOrNull() {
+        try {
+            return storeScopeService.currentEmployeeId();
+        } catch (ApiException ex) {
+            if (ex.status() == HttpStatus.FORBIDDEN) {
+                return null;
+            }
+            throw ex;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Slice<Notification> findMine(boolean read, int page, int size) {
+        Integer employeeId = currentEmployeeIdOrNull();
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE));
+        if (employeeId == null) {
+            return new SliceImpl<>(List.of(), pageable, false);
+        }
+        return repository.findByEmployeeAndReadState(employeeId, read, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public long countMyUnread() {
+        Integer employeeId = currentEmployeeIdOrNull();
+        return employeeId == null ? 0 : repository.countUnread(employeeId);
+    }
+
+    @Transactional
+    public Notification markMineAsRead(Integer id) {
+        Notification notification = findById(id);
+        Integer employeeId = currentEmployeeIdOrNull();
+        if (employeeId == null || !employeeId.equals(notification.getEmployeeId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được thao tác trên thông báo của mình");
+        }
+        if (!Boolean.TRUE.equals(notification.getIsRead())) {
+            notification.setIsRead(true);
+            notification.setReadAt(LocalDateTime.now());
+        }
+        return repository.save(notification);
+    }
+
+    @Transactional
+    public int markAllMineAsRead() {
+        Integer employeeId = currentEmployeeIdOrNull();
+        return employeeId == null ? 0 : repository.markAllRead(employeeId, LocalDateTime.now());
+    }
+
+    // ---------- CRUD quản trị ----------
 
     public List<Notification> findAll() {
         return repository.findAll();

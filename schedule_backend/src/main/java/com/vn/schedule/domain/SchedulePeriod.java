@@ -32,7 +32,9 @@ public class SchedulePeriod {
     private LocalDate effectiveEndDate;
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+    @Column(name = "registration_open_at")
     private LocalDateTime registrationOpenAt;
+    @Column(name = "registration_close_at")
     private LocalDateTime registrationCloseAt;
     @Column(name = "status", nullable = false)
     private String status;

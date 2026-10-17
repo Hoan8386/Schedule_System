@@ -123,13 +123,28 @@ export interface NotificationTemplateResponse {
 }
 
 export interface NotificationResponse {
+  notificationId?: number;
   id?: number;
-  userId?: number;
+  employeeId?: number;
+  notificationTemplateId?: number | null;
   title?: string;
   content?: string;
-  status?: string;
+  notificationType?: string;
+  sourceType?: string | null;
+  sourceId?: number | null;
+  isRead?: boolean | null;
+  readAt?: string | null;
   createdAt?: string;
   [key: string]: unknown;
+}
+
+/** Một trang thông báo của người dùng hiện tại (tối đa 20 bản ghi). */
+export interface NotificationPage {
+  items: NotificationResponse[];
+  page: number;
+  size: number;
+  hasMore: boolean;
+  unreadCount: number;
 }
 
 export interface SystemConfigResponse {

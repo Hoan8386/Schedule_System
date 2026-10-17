@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Bell, ChevronDown, LogOut, Search } from "lucide-react";
+import { ChevronDown, LogOut, Search } from "lucide-react";
+import { NotificationBell } from "./NotificationBell";
 import type { ShellUser, UserMenuAction } from "./types";
 
 interface TopbarProps {
@@ -7,13 +8,12 @@ interface TopbarProps {
   title: string;
   /** Nội dung thêm bên phải (ô tìm kiếm, chip cửa hàng, ngày...). */
   extra?: React.ReactNode;
-  notificationMessage: string;
   user: ShellUser;
   menuActions?: UserMenuAction[];
   onLogout: () => void;
 }
 
-export function Topbar({ breadcrumbRoot, title, extra, notificationMessage, user, menuActions = [], onLogout }: TopbarProps) {
+export function Topbar({ breadcrumbRoot, title, extra, user, menuActions = [], onLogout }: TopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -27,16 +27,7 @@ export function Topbar({ breadcrumbRoot, title, extra, notificationMessage, user
       <div className="flex items-center gap-3">
         {extra}
 
-        <button
-          type="button"
-          onClick={() => alert(notificationMessage)}
-          className="relative rounded-xl border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50"
-          title="Thông báo"
-          aria-label="Thông báo"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-brand-500" />
-        </button>
+        <NotificationBell />
 
         <div className="relative">
           <button

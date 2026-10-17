@@ -47,7 +47,6 @@ export default function AdminLayout() {
       navVariant="solid"
       breadcrumbRoot="Admin Portal"
       topbarExtra={<TopbarSearch placeholder="Tìm tài khoản, API, mã..." />}
-      notificationMessage="Hệ thống hoạt động bình thường, không có cảnh báo nghiêm trọng."
       helpMessage="Tổng đài hỗ trợ vận hành chuỗi: 1900 8386 (Phím 1)"
       user={{
         initials: initialsOf(user?.fullName, user?.username, "AD"),

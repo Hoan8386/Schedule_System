@@ -17,11 +17,20 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +43,9 @@ public class SchedulePeriodService {
     private final EmployeeRepository employeeRepository;
     private final EmployeeStoreRepository employeeStoreRepository;
     private final StoreManagerRepository storeManagerRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public SchedulePeriodService(SchedulePeriodRepository repository,
                                 UserRepository userRepository, UserRoleRepository userRoleRepository,
@@ -119,9 +131,99 @@ public class SchedulePeriodService {
         return repository.save(current);
     }
 
+    /** Số bản ghi sẽ bị xóa cùng kỳ, để frontend hiển thị cảnh báo trước khi xóa. */
+    @Transactional(readOnly = true)
+    public Map<String, Long> deletePreview(Integer id) {
+        findById(id);
+        Related related = collectRelated(id);
+        Map<String, Long> result = new LinkedHashMap<>();
+        result.put("rounds", (long) related.roundIds().size());
+        result.put("sessions", (long) related.sessionIds().size());
+        result.put("shiftByDates", (long) related.shiftByDateIds().size());
+        result.put("assignments", (long) related.assignmentIds().size());
+        result.put("attendances", (long) related.attendanceIds().size());
+        result.put("emergencyRequests", (long) emergencyRequestIds(related).size());
+        result.put("eventScopes", (long) eventScopeIds(id, related).size());
+        return result;
+    }
+
+    /**
+     * Xóa kỳ cùng toàn bộ dữ liệu lịch phụ thuộc: đợt, phiên, ca theo ngày, phân ca,
+     * chấm công, yêu cầu khẩn và phạm vi sự kiện. Vi phạm, chi tiết lương, đánh giá
+     * và phản hồi được giữ lại, chỉ bỏ liên kết tới ca/chấm công đã xóa.
+     */
     @Transactional
     public void delete(Integer id) {
-        repository.delete(findById(id));
+        findById(id);
+        Related related = collectRelated(id);
+        List<Integer> shiftByDateIds = related.shiftByDateIds();
+        List<Integer> attendanceIds = related.attendanceIds();
+
+        executeIn("UPDATE violation SET attendance_id = NULL WHERE attendance_id IN (:ids)", attendanceIds);
+        executeIn("UPDATE payroll_detail SET attendance_id = NULL WHERE attendance_id IN (:ids)", attendanceIds);
+        executeIn("UPDATE payroll_detail SET shift_by_date_id = NULL WHERE shift_by_date_id IN (:ids)", shiftByDateIds);
+        executeIn("UPDATE employee_evaluation SET shift_by_date_id = NULL WHERE shift_by_date_id IN (:ids)", shiftByDateIds);
+        executeIn("UPDATE feedback SET shift_by_date_id = NULL WHERE shift_by_date_id IN (:ids)", shiftByDateIds);
+
+        executeIn("DELETE FROM emergency_request WHERE emergency_request_id IN (:ids)", emergencyRequestIds(related));
+        executeIn("DELETE FROM event_scope WHERE event_scope_id IN (:ids)", eventScopeIds(id, related));
+        executeIn("DELETE FROM attendance WHERE attendance_id IN (:ids)", attendanceIds);
+        executeIn("DELETE FROM shift_assignment WHERE assignment_id IN (:ids)", related.assignmentIds());
+        executeIn("DELETE FROM shift_by_date WHERE shift_by_date_id IN (:ids)", shiftByDateIds);
+        executeIn("DELETE FROM schedule_session WHERE schedule_session_id IN (:ids)", related.sessionIds());
+        executeIn("DELETE FROM schedule_round WHERE schedule_round_id IN (:ids)", related.roundIds());
+        executeIn("DELETE FROM schedule_period WHERE schedule_period_id IN (:ids)", List.of(id));
+        entityManager.clear();
+    }
+
+    private record Related(List<Integer> roundIds, List<Integer> sessionIds, List<Integer> shiftByDateIds,
+                           List<Integer> assignmentIds, List<Integer> attendanceIds) {
+    }
+
+    private Related collectRelated(Integer periodId) {
+        List<Integer> periodIds = List.of(periodId);
+        List<Integer> roundIds = selectIn(
+                "SELECT schedule_round_id FROM schedule_round WHERE schedule_period_id IN (:ids)", periodIds);
+        List<Integer> sessionIds = selectIn(
+                "SELECT schedule_session_id FROM schedule_session WHERE schedule_round_id IN (:ids)", roundIds);
+
+        Set<Integer> shiftByDateIds = new LinkedHashSet<>();
+        shiftByDateIds.addAll(selectIn("SELECT shift_by_date_id FROM shift_by_date WHERE schedule_period_id IN (:ids)", periodIds));
+        shiftByDateIds.addAll(selectIn("SELECT shift_by_date_id FROM shift_by_date WHERE schedule_round_id IN (:ids)", roundIds));
+        shiftByDateIds.addAll(selectIn("SELECT shift_by_date_id FROM shift_by_date WHERE schedule_session_id IN (:ids)", sessionIds));
+        List<Integer> shiftByDates = List.copyOf(shiftByDateIds);
+
+        return new Related(roundIds, sessionIds, shiftByDates,
+                selectIn("SELECT assignment_id FROM shift_assignment WHERE shift_by_date_id IN (:ids)", shiftByDates),
+                selectIn("SELECT attendance_id FROM attendance WHERE shift_by_date_id IN (:ids)", shiftByDates));
+    }
+
+    private List<Integer> emergencyRequestIds(Related related) {
+        Set<Integer> ids = new HashSet<>(selectIn(
+                "SELECT emergency_request_id FROM emergency_request WHERE assignment_id IN (:ids)", related.assignmentIds()));
+        ids.addAll(selectIn("SELECT emergency_request_id FROM emergency_request "
+                + "WHERE from_shift_assignment_id IN (:ids) OR to_assignment_id IN (:ids)", related.shiftByDateIds()));
+        return List.copyOf(ids);
+    }
+
+    private List<Integer> eventScopeIds(Integer periodId, Related related) {
+        Set<Integer> ids = new HashSet<>(selectIn(
+                "SELECT event_scope_id FROM event_scope WHERE schedule_period_id IN (:ids)", List.of(periodId)));
+        ids.addAll(selectIn("SELECT event_scope_id FROM event_scope WHERE shift_by_date_id IN (:ids)", related.shiftByDateIds()));
+        return List.copyOf(ids);
+    }
+
+    private List<Integer> selectIn(String sql, Collection<Integer> values) {
+        if (values.isEmpty()) return List.of();
+        Query query = entityManager.createNativeQuery(sql).setParameter("ids", values);
+        return ((List<?>) query.getResultList()).stream()
+                .map(value -> ((Number) value).intValue())
+                .toList();
+    }
+
+    private void executeIn(String sql, Collection<Integer> values) {
+        if (values.isEmpty()) return;
+        entityManager.createNativeQuery(sql).setParameter("ids", values).executeUpdate();
     }
 
     @Transactional

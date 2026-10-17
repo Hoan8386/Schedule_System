@@ -15,7 +15,6 @@ export interface AppShellProps {
   navVariant?: "soft" | "solid";
   breadcrumbRoot: string;
   topbarExtra?: React.ReactNode;
-  notificationMessage: string;
   helpMessage: string;
   helpLabel?: string;
   showCopyright?: boolean;
@@ -35,7 +34,6 @@ export function AppShell({
   navVariant,
   breadcrumbRoot,
   topbarExtra,
-  notificationMessage,
   helpMessage,
   helpLabel,
   showCopyright,
@@ -65,7 +63,6 @@ export function AppShell({
           breadcrumbRoot={breadcrumbRoot}
           title={title}
           extra={topbarExtra}
-          notificationMessage={notificationMessage}
           user={user}
           menuActions={userMenuActions}
           onLogout={onLogout}

@@ -80,7 +80,6 @@ export default function ManagementLayout() {
       onSelect={setActiveTab}
       breadcrumbRoot="Quản trị toàn hệ thống"
       topbarExtra={<TopbarSearch placeholder="Tìm nhân sự, cửa hàng, mã..." />}
-      notificationMessage="Không có thông báo mới nào chưa đọc."
       helpMessage="Tổng đài hỗ trợ vận hành chuỗi: 1900 8386 (Phím 1)"
       user={{
         initials: initialsOf(user?.fullName, user?.username, "QL"),

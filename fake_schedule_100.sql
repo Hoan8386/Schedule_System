@@ -3,6 +3,8 @@
 -- This script does not delete existing data.
 
 USE schedule_system;
+-- Kết nối dùng cùng collation với database để so sánh chuỗi/biến không bị lỗi 1267
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 SET @fake_store_1_code = 'FAKE_STORE_001';
 SET @fake_store_2_code = 'FAKE_STORE_002';
@@ -27,10 +29,10 @@ CREATE TEMPORARY TABLE tmp_fake_store (
     store_id INT NOT NULL
 );
 
-INSERT INTO tmp_fake_store (slot, store_id)
-SELECT 1, store_id FROM store WHERE store_code = @fake_store_1_code
-UNION ALL
-SELECT 2, store_id FROM store WHERE store_code = @fake_store_2_code;
+SET @fake_store_1_id = (SELECT store_id FROM store WHERE store_code = @fake_store_1_code);
+SET @fake_store_2_id = (SELECT store_id FROM store WHERE store_code = @fake_store_2_code);
+
+INSERT INTO tmp_fake_store (slot, store_id) VALUES (1, @fake_store_1_id), (2, @fake_store_2_id);
 
 -- Attach existing active employees to the fake stores so the schedule
 -- also has employee-store and store-manager relationships.
@@ -40,11 +42,11 @@ SELECT employee_id, store_id, '2026-01-01', FALSE, 'ACTIVE', NOW()
 FROM (
     SELECT
         (SELECT MIN(employee_id) FROM employee WHERE status = 'ACTIVE') AS employee_id,
-        (SELECT store_id FROM tmp_fake_store WHERE slot = 1) AS store_id
+        @fake_store_1_id AS store_id
     UNION ALL
     SELECT
         (SELECT MAX(employee_id) FROM employee WHERE status = 'ACTIVE') AS employee_id,
-        (SELECT store_id FROM tmp_fake_store WHERE slot = 2) AS store_id
+        @fake_store_2_id AS store_id
 ) assignments
 WHERE employee_id IS NOT NULL
   AND store_id IS NOT NULL
@@ -62,11 +64,11 @@ SELECT assignments.store_id, assignments.employee_id, '2026-01-01',
 FROM (
     SELECT
         (SELECT MIN(employee_id) FROM employee WHERE status = 'ACTIVE') AS employee_id,
-        (SELECT store_id FROM tmp_fake_store WHERE slot = 1) AS store_id
+        @fake_store_1_id AS store_id
     UNION ALL
     SELECT
         (SELECT MAX(employee_id) FROM employee WHERE status = 'ACTIVE') AS employee_id,
-        (SELECT store_id FROM tmp_fake_store WHERE slot = 2) AS store_id
+        @fake_store_2_id AS store_id
 ) assignments
 WHERE employee_id IS NOT NULL
   AND store_id IS NOT NULL
@@ -78,42 +80,89 @@ WHERE employee_id IS NOT NULL
         AND existing.status = 'ACTIVE'
   );
 
+-- Kỳ dùng chung (không gắn cửa hàng): đăng ký + duyệt 20/09 – 30/09, áp dụng tháng 10.
+SET @fake_period_name = 'Dữ liệu giả - Tháng 10/2026';
+
 INSERT INTO schedule_period
-    (store_id, period_name, period_type, start_date, end_date,
+    (period_name, period_type, start_date, end_date,
+     effective_start_date, effective_end_date, description,
      registration_open_at, registration_close_at, status, created_at)
-SELECT store_id, CONCAT('Dữ liệu giả - Tháng 10/2026 - Cửa hàng ', slot),
-       'MONTH', '2026-10-01', '2026-10-31',
-       '2026-09-20 08:00:00', '2026-09-29 23:59:59',
-       'OPEN', NOW()
+SELECT @fake_period_name, 'MONTH', '2026-09-20', '2026-09-30',
+       '2026-10-01', '2026-10-31', 'Kỳ giả phục vụ kiểm thử lịch',
+       '2026-09-20 08:00:00', '2026-09-29 23:59:59', 'OPEN', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM schedule_period WHERE period_name = @fake_period_name);
+
+SET @fake_period_id = (SELECT MIN(schedule_period_id) FROM schedule_period WHERE period_name = @fake_period_name);
+
+-- Mỗi cửa hàng giả: một nhóm ca, một đợt đăng ký trong kỳ và một phiên cho nhóm ca đó.
+INSERT INTO shift_group
+    (store_id, shift_group_code, shift_group_name, description, pay_rate, status, created_at, updated_at)
+SELECT store_id, 'FAKE_GROUP', CONCAT('Nhóm ca giả - Cửa hàng ', slot),
+       'Dữ liệu giả phục vụ kiểm thử lịch', 30000, 'ACTIVE', NOW(), NOW()
 FROM tmp_fake_store stores
 WHERE NOT EXISTS (
-    SELECT 1
-    FROM schedule_period period
-    WHERE period.store_id = stores.store_id
-      AND period.period_name = CONCAT('Dữ liệu giả - Tháng 10/2026 - Cửa hàng ', stores.slot)
+    SELECT 1 FROM shift_group grp
+    WHERE grp.store_id = stores.store_id AND grp.shift_group_code = 'FAKE_GROUP'
 );
 
-DROP TEMPORARY TABLE IF EXISTS tmp_fake_period;
-CREATE TEMPORARY TABLE tmp_fake_period (
-    slot TINYINT PRIMARY KEY,
-    period_id INT NOT NULL,
-    store_id INT NOT NULL
-);
-
-INSERT INTO tmp_fake_period (slot, period_id, store_id)
-SELECT stores.slot, period.schedule_period_id, stores.store_id
+INSERT INTO schedule_round
+    (round_name, schedule_period_id, store_id, registration_start_at, registration_end_at,
+     description, status, created_at)
+SELECT CONCAT('Dữ liệu giả - Đợt tháng 10/2026 - Cửa hàng ', slot), @fake_period_id, store_id,
+       '2026-09-20 08:00:00', '2026-09-29 23:59:59',
+       'Đợt giả phục vụ kiểm thử lịch', 'OPEN', NOW()
 FROM tmp_fake_store stores
-JOIN schedule_period period
-  ON period.store_id = stores.store_id
- AND period.period_name = CONCAT('Dữ liệu giả - Tháng 10/2026 - Cửa hàng ', stores.slot);
+WHERE NOT EXISTS (
+    SELECT 1 FROM schedule_round round_item
+    WHERE round_item.store_id = stores.store_id
+      AND round_item.round_name = CONCAT('Dữ liệu giả - Đợt tháng 10/2026 - Cửa hàng ', stores.slot)
+);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_fake_round;
+CREATE TEMPORARY TABLE tmp_fake_round (
+    slot TINYINT PRIMARY KEY,
+    store_id INT NOT NULL,
+    period_id INT NOT NULL,
+    round_id INT NOT NULL,
+    group_id INT NOT NULL,
+    session_id INT NULL
+);
+
+INSERT INTO tmp_fake_round (slot, store_id, period_id, round_id, group_id)
+SELECT stores.slot, stores.store_id, @fake_period_id, round_item.schedule_round_id, grp.shift_group_id
+FROM tmp_fake_store stores
+JOIN schedule_round round_item
+  ON round_item.store_id = stores.store_id
+ AND round_item.round_name = CONCAT('Dữ liệu giả - Đợt tháng 10/2026 - Cửa hàng ', stores.slot)
+JOIN shift_group grp
+  ON grp.store_id = stores.store_id
+ AND grp.shift_group_code = 'FAKE_GROUP';
+
+INSERT INTO schedule_session
+    (session_name, session_open_at, session_close_at, schedule_round_id, shift_group_id,
+     description, status, created_at)
+SELECT CONCAT('Phiên giả - Cửa hàng ', slot), '2026-09-20 08:00:00', '2026-09-29 23:59:59',
+       round_id, group_id, 'Phiên giả phục vụ kiểm thử lịch', 'OPEN', NOW()
+FROM tmp_fake_round fake_round
+WHERE NOT EXISTS (
+    SELECT 1 FROM schedule_session session_item
+    WHERE session_item.schedule_round_id = fake_round.round_id
+      AND session_item.shift_group_id = fake_round.group_id
+);
+
+UPDATE tmp_fake_round fake_round
+JOIN schedule_session session_item
+  ON session_item.schedule_round_id = fake_round.round_id
+ AND session_item.shift_group_id = fake_round.group_id
+SET fake_round.session_id = session_item.schedule_session_id;
 
 INSERT INTO shift
-    (store_id, shift_code, shift_name, start_time, end_time,
+    (store_id, shift_group_id, shift_code, shift_name, start_time, end_time,
      max_capacity, pay_rate, status, note, created_at, updated_at)
-SELECT stores.store_id, CONCAT('FAKE_', stores.slot, '_MORNING'),
+SELECT stores.store_id, stores.group_id, CONCAT('FAKE_', stores.slot, '_MORNING'),
        'Ca sáng - Dữ liệu giả', '07:00:00', '15:00:00',
        8, 30000, 'ACTIVE', 'Dữ liệu giả phục vụ kiểm thử lịch', NOW(), NOW()
-FROM tmp_fake_store stores
+FROM tmp_fake_round stores
 WHERE NOT EXISTS (
     SELECT 1 FROM shift item
     WHERE item.store_id = stores.store_id
@@ -121,12 +170,12 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO shift
-    (store_id, shift_code, shift_name, start_time, end_time,
+    (store_id, shift_group_id, shift_code, shift_name, start_time, end_time,
      max_capacity, pay_rate, status, note, created_at, updated_at)
-SELECT stores.store_id, CONCAT('FAKE_', stores.slot, '_AFTERNOON'),
+SELECT stores.store_id, stores.group_id, CONCAT('FAKE_', stores.slot, '_AFTERNOON'),
        'Ca chiều - Dữ liệu giả', '14:00:00', '22:00:00',
        8, 32000, 'ACTIVE', 'Dữ liệu giả phục vụ kiểm thử lịch', NOW(), NOW()
-FROM tmp_fake_store stores
+FROM tmp_fake_round stores
 WHERE NOT EXISTS (
     SELECT 1 FROM shift item
     WHERE item.store_id = stores.store_id
@@ -142,17 +191,13 @@ CREATE TEMPORARY TABLE tmp_fake_shift (
 );
 
 INSERT INTO tmp_fake_shift (slot, shift_kind, shift_id)
-SELECT stores.slot, 0, item.shift_id
+SELECT stores.slot,
+       CASE WHEN item.shift_code LIKE '%\_MORNING' THEN 0 ELSE 1 END,
+       item.shift_id
 FROM tmp_fake_store stores
 JOIN shift item
   ON item.store_id = stores.store_id
- AND item.shift_code = CONCAT('FAKE_', stores.slot, '_MORNING')
-UNION ALL
-SELECT stores.slot, 1, item.shift_id
-FROM tmp_fake_store stores
-JOIN shift item
-  ON item.store_id = stores.store_id
- AND item.shift_code = CONCAT('FAKE_', stores.slot, '_AFTERNOON');
+ AND item.shift_code IN (CONCAT('FAKE_', stores.slot, '_MORNING'), CONCAT('FAKE_', stores.slot, '_AFTERNOON'));
 
 DROP TEMPORARY TABLE IF EXISTS tmp_fake_numbers;
 CREATE TEMPORARY TABLE tmp_fake_numbers (n INT PRIMARY KEY);
@@ -167,11 +212,13 @@ SELECT n FROM sequence_numbers;
 
 -- Four shifts per day for 25 days = exactly 100 shift-by-date records.
 INSERT INTO shift_by_date
-    (shift_id, schedule_period_id, work_date, capacity, shift_name,
+    (shift_id, schedule_period_id, schedule_round_id, schedule_session_id, work_date, capacity, shift_name,
      start_time, end_time, max_capacity, pay_rate, status,
      manager_note, created_at, updated_at)
 SELECT item.shift_id,
        period.period_id,
+       period.round_id,
+       period.session_id,
        DATE_ADD('2026-10-01', INTERVAL FLOOR(numbers.n / 4) DAY),
        8,
        CASE WHEN MOD(numbers.n, 2) = 0
@@ -182,13 +229,13 @@ SELECT item.shift_id,
        CASE WHEN MOD(numbers.n, 2) = 0 THEN '15:00:00' ELSE '22:00:00' END,
        8,
        CASE WHEN MOD(numbers.n, 2) = 0 THEN 30000 ELSE 32000 END,
-       CASE WHEN MOD(numbers.n, 5) = 0 THEN 'PENDING' ELSE 'OPEN' END,
+       CASE WHEN MOD(numbers.n, 5) = 0 THEN 'FULL' ELSE 'OPEN' END,
        'Ca giả được tạo tự động để kiểm thử thời khóa biểu',
        NOW(), NOW()
 FROM tmp_fake_numbers numbers
 JOIN tmp_fake_store stores
   ON stores.slot = CASE WHEN MOD(numbers.n, 4) < 2 THEN 1 ELSE 2 END
-JOIN tmp_fake_period period ON period.slot = stores.slot
+JOIN tmp_fake_round period ON period.slot = stores.slot
 JOIN tmp_fake_shift fake_shift
   ON fake_shift.slot = stores.slot
  AND fake_shift.shift_kind = MOD(numbers.n, 2)
@@ -232,7 +279,7 @@ WHERE item.shift_code LIKE 'FAKE\\_%' ESCAPE '\\'
   );
 
 DROP TEMPORARY TABLE IF EXISTS tmp_fake_shift;
-DROP TEMPORARY TABLE IF EXISTS tmp_fake_period;
+DROP TEMPORARY TABLE IF EXISTS tmp_fake_round;
 DROP TEMPORARY TABLE IF EXISTS tmp_fake_store;
 DROP TEMPORARY TABLE IF EXISTS tmp_fake_numbers;
 

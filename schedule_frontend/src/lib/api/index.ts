@@ -18,6 +18,8 @@ export { adminUserApi, adminBrandApi, adminApiIntegration, adminCodeGenApi, admi
 export { managerApi, hrApi, scheduleApi, operationsApi, testApi } from "./manager";
 export { employeeApi } from "./employee";
 export { storeManagerApi } from "./storeManager";
+export { notificationApi, NOTIFICATION_PAGE_SIZE } from "./notification";
+export type { NotificationStatus } from "./notification";
 
 export type * from "./types/admin.types";
 export type * from "./types/hr.types";

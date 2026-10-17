@@ -11,6 +11,8 @@ import com.vn.schedule.dto.response.*;
 import com.vn.schedule.service.NotificationService;
 
 import java.util.List;
+import java.util.Map;
+import org.springframework.data.domain.Slice;
 import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
@@ -27,6 +29,40 @@ public class NotificationController {
     public ResponseEntity<List<NotificationResponse>> list() {
         return ResponseEntity.ok(responses(service.findAll()));
     }
+
+    // ---------- Thông báo của người dùng đang đăng nhập (chuông thông báo) ----------
+
+    /** status = unread | read; tối đa 20 thông báo mỗi trang (page bắt đầu từ 0). */
+    @GetMapping("/me")
+    @ApiMessage("Lấy thông báo của tôi")
+    public ResponseEntity<NotificationPageResponse> mine(
+            @RequestParam(defaultValue = "unread") String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + NotificationService.MAX_PAGE_SIZE) int size) {
+        Slice<Notification> slice = service.findMine("read".equalsIgnoreCase(status), page, size);
+        return ResponseEntity.ok(new NotificationPageResponse(
+                responses(slice.getContent()), slice.getNumber(), slice.getSize(), slice.hasNext(), service.countMyUnread()));
+    }
+
+    @GetMapping("/me/unread-count")
+    @ApiMessage("Đếm thông báo chưa đọc")
+    public ResponseEntity<Map<String, Long>> myUnreadCount() {
+        return ResponseEntity.ok(Map.of("unreadCount", service.countMyUnread()));
+    }
+
+    @PatchMapping("/me/{id}/read")
+    @ApiMessage("Đánh dấu đã đọc")
+    public ResponseEntity<NotificationResponse> markRead(@PathVariable Integer id) {
+        return ResponseEntity.ok(response(service.markMineAsRead(id)));
+    }
+
+    @PatchMapping("/me/read-all")
+    @ApiMessage("Đánh dấu tất cả đã đọc")
+    public ResponseEntity<Map<String, Integer>> markAllRead() {
+        return ResponseEntity.ok(Map.of("updated", service.markAllMineAsRead()));
+    }
+
+    // ---------- CRUD quản trị ----------
 
     @GetMapping("/{id}")
     @ApiMessage("Lấy thông tin chi tiết")

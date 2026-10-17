@@ -36,9 +36,13 @@ public class ShiftByDate {
     @Column(name = "work_date", nullable = false)
     private LocalDate workDate;
     private Integer capacity;
+    @Column(name = "shift_name")
     private String shiftName;
+    @Column(name = "start_time")
     private LocalTime startTime;
+    @Column(name = "end_time")
     private LocalTime endTime;
+    @Column(name = "max_capacity")
     private Integer maxCapacity;
     @Column(name = "pay_rate", precision = 15, scale = 2)
     private BigDecimal payRate;
