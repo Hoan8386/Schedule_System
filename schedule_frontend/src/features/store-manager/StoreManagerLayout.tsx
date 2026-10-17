@@ -3,6 +3,7 @@
 import React from "react";
 import {
   BookOpen,
+  Calendar,
   CalendarPlus,
   CheckSquare,
   FileCheck,
@@ -23,13 +24,16 @@ import StoreManagerTodoListPage from "@/features/store-manager/todo/StoreManager
 import StoreManagerTestManagementPage from "@/features/store-manager/bai-test/StoreManagerTestManagementPage";
 import StoreManagerFeedbackPage from "@/features/store-manager/StoreManagerFeedbackPage";
 import StoreManagerMyShiftPage from "@/features/store-manager/StoreManagerMyShiftPage";
+import StoreManagerSchedulePage from "@/features/store-manager/lich/StoreManagerSchedulePage";
+import StoreManagerRegisterShiftPage from "@/features/store-manager/dang-ky-ca/StoreManagerRegisterShiftPage";
 
 const SECTIONS: NavSection[] = [
   {
     items: [
       { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
       { id: "yeucau", label: "Xử lý yêu cầu ca", icon: Inbox, badge: "6 chờ duyệt" },
-      { id: "dangkyca", label: "Đăng ký ca của tôi", icon: CalendarPlus },
+      { id: "lichcuatoi", label: "Lịch làm việc", icon: Calendar },
+      { id: "dangkyca", label: "Đăng ký ca", icon: CalendarPlus },
       { id: "vipham", label: "Xử lý vi phạm", icon: ShieldAlert, badge: "2" },
       { id: "xuatca", label: "Xuất danh sách ca", icon: CalendarPlus },
       { id: "feedback_hethong", label: "Feedback hệ thống", icon: MessageSquare },
@@ -59,8 +63,10 @@ export default function StoreManagerLayout() {
         );
       case "yeucau":
         return <StoreManagerShiftRequestsPage />;
+      case "lichcuatoi":
+        return <StoreManagerSchedulePage onGoToRequests={() => setActiveTab("yeucau")} />;
       case "dangkyca":
-        return <StoreManagerMyShiftPage />;
+        return <StoreManagerRegisterShiftPage />;
       case "xuatca":
         return <StoreManagerMyShiftPage exportOnly />;
       case "vipham":

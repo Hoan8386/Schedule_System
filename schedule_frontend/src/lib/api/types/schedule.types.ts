@@ -132,6 +132,8 @@ export interface ShiftGroupResponse {
   createdBy?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  /** Nhân viên đã gán vào nhóm (có ở API danh sách) */
+  employeeIds?: number[];
   [key: string]: unknown;
 }
 
@@ -162,4 +164,88 @@ export interface EmergencyRequestResponse {
   createdAt?: string | null;
   processedAt?: string | null;
   [key: string]: unknown;
+}
+
+// ------------------------------------------------------------------ Nhóm ca của nhân viên đang đăng nhập
+
+export interface MyGroupShift {
+  shiftId: number;
+  shiftCode: string | null;
+  shiftName: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  payRate: number;
+  /** Sức chứa mặc định khi ngày đó chưa có ca theo ngày */
+  maxCapacity: number | null;
+}
+
+export interface MyShiftGroup {
+  shiftGroupId: number;
+  shiftGroupCode: string | null;
+  shiftGroupName: string | null;
+  description: string | null;
+  storeId: number;
+  storeName: string | null;
+  shifts: MyGroupShift[];
+}
+
+/** Ca theo ngày đang mở của nhóm; myAssignmentStatus = trạng thái đăng ký của chính nhân viên (null nếu chưa) */
+export interface MyOpenShift {
+  shiftByDateId: number;
+  shiftId: number;
+  shiftGroupId: number;
+  shiftGroupName: string | null;
+  workDate: string;
+  shiftName: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  storeName: string | null;
+  registeredCount: number;
+  maxCapacity: number | null;
+  payRate: number;
+  myAssignmentStatus: string | null;
+  /** Trạng thái ca theo ngày; chỉ OPEN mới đăng ký được */
+  status: string | null;
+}
+
+export interface RegistrationSession {
+  sessionId: number;
+  sessionName: string;
+  shiftGroupId: number | null;
+  shiftGroupName: string | null;
+  openAt: string | null;
+  closeAt: string | null;
+  status: string | null;
+}
+
+/** Đợt đăng ký; không có phiên = mọi nhóm ca đăng ký trong cả đợt */
+export interface RegistrationRound {
+  roundId: number;
+  roundName: string;
+  storeName: string | null;
+  registrationStartAt: string | null;
+  registrationEndAt: string | null;
+  status: string | null;
+  sessions: RegistrationSession[];
+}
+
+/** Kỳ lịch đang mở kèm đợt / phiên đăng ký liên quan tới nhân viên */
+export interface RegistrationPeriod {
+  periodId: number;
+  periodName: string;
+  periodType: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  effectiveStartDate: string | null;
+  effectiveEndDate: string | null;
+  status: string | null;
+  rounds: RegistrationRound[];
+}
+
+export interface MyShiftGroups {
+  from: string;
+  to: string;
+  groups: MyShiftGroup[];
+  openShifts: MyOpenShift[];
+  periods: RegistrationPeriod[];
 }

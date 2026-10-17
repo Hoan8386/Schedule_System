@@ -1,86 +1,252 @@
 "use client";
 
-import { notify } from "@/lib/toast";
-import React, { useEffect, useState } from "react";
-import { Copy, Info } from "lucide-react";
-import { employeeApi } from "@/lib/api";
-import { toShiftItem, type ShiftItem } from "./model";
-import { ShiftRegisterTable } from "./ShiftRegisterTable";
+import React, { useCallback, useMemo, useState } from "react";
+import { CalendarRange, ChevronLeft, ChevronRight, Info, RefreshCw } from "lucide-react";
+import { Alert, Button, Card, EmptyState, FullPageLoader, PageHeader, Spinner } from "@/components/ui";
+import { employeeApi, type MyOpenShift, type RegistrationPeriod } from "@/lib/api";
+import { formatDate, localKey, pad } from "@/lib/format";
+import { cn } from "@/lib/cn";
+import { useKeyedLoad } from "@/features/statistics/useStatistics";
+import { formatHours, formatVnd } from "@/features/statistics/utils";
+import { RegistrationPeriods } from "../RegistrationPeriods";
+import { isRegistered, shiftHours } from "./model";
+import { RegisterPeriodGrid, RegisterWeekGrid, cellFor, windowState, type TemplateRow } from "./RegisterTimetable";
 
-/** Nhân viên đăng ký ca trong kỳ đang mở. */
+type ViewMode = "period" | "week";
+
+const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+const startOfWeek = (date: Date) => addDays(date, -((date.getDay() + 6) % 7));
+const parseDay = (key: string) => new Date(`${key}T00:00:00`);
+
+/** Khoảng ngày áp dụng của kỳ (ưu tiên ngày áp dụng lịch). */
+const periodRange = (period: RegistrationPeriod) => ({
+  from: period.effectiveStartDate ?? period.startDate ?? localKey(new Date()),
+  to: period.effectiveEndDate ?? period.endDate ?? period.effectiveStartDate ?? period.startDate ?? localKey(new Date()),
+});
+
+/** Đăng ký ca trên thời khóa biểu của kỳ: mỗi ô là ca mẫu của nhóm × ngày, bấm để đăng ký. */
 export default function EmployeeRegisterShiftPage() {
-  const [shifts, setShifts] = useState<ShiftItem[]>([]);
-  const [employeeId, setEmployeeId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
+  const [pickedPeriodId, setPickedPeriodId] = useState<number | null>(null);
+  const [view, setView] = useState<ViewMode>("period");
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [submittingKey, setSubmittingKey] = useState<string | null>(null);
+  /** Ca theo ngày vừa đăng ký (ghi đè dữ liệu tải về cho tới lần tải lại) */
+  const [updates, setUpdates] = useState<Record<string, MyOpenShift>>({});
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([employeeApi.getProfile(), employeeApi.getShiftsByDate({ status: "OPEN" }), employeeApi.getAssignments()])
-      .then(([profile, available, assignments]) => {
-        if (cancelled) return;
-        const employee = profile.data?.[0];
-        setEmployeeId(employee?.id ?? null);
-        const registered = new Set((assignments.data ?? []).filter((item) => item.employeeId === employee?.id).map((item) => item.shiftByDateId));
-        setShifts((available.data ?? []).map((item) => toShiftItem(item, registered)));
-      })
-      .catch((cause) => setError(cause instanceof Error ? cause.message : "Không thể tải danh sách ca"));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // 1) Nhóm ca + các kỳ đang mở
+  const base = useKeyedLoad(`base|${version}`, () => employeeApi.getMyShiftGroups(), "Không thể tải nhóm ca");
+  const periods = useMemo(() => base.data?.periods ?? [], [base.data]);
+  const groups = useMemo(() => base.data?.groups ?? [], [base.data]);
+  const period = periods.find((item) => item.periodId === pickedPeriodId) ?? periods[0] ?? null;
+  const range = period ? periodRange(period) : null;
 
-  const register = async (id: string) => {
-    if (!employeeId) return setError("Không xác định được hồ sơ nhân viên hiện tại");
+  // 2) Ca theo ngày (số người đã đăng ký) trong toàn bộ kỳ đang xem
+  const shiftsLoad = useKeyedLoad(
+    range ? `${range.from}|${range.to}|${version}` : null,
+    () => employeeApi.getMyShiftGroups({ from: range?.from, to: range?.to }),
+    "Không thể tải ca của kỳ"
+  );
+
+  const byKey = useMemo(() => {
+    const map = new Map<string, MyOpenShift>();
+    (shiftsLoad.data?.openShifts ?? []).forEach((item) => map.set(`${item.shiftId}|${item.workDate}`, item));
+    Object.entries(updates).forEach(([key, item]) => map.set(key, item));
+    return map;
+  }, [shiftsLoad.data, updates]);
+
+  const rows = useMemo<TemplateRow[]>(
+    () => groups.flatMap((group) => group.shifts.map((shift) => ({ shift, group }))).sort((a, b) => (a.shift.startTime ?? "").localeCompare(b.shift.startTime ?? "")),
+    [groups]
+  );
+  const windows = useMemo(() => new Map(groups.map((group) => [group.shiftGroupId, windowState(period, group)])), [groups, period]);
+
+  const todayKey = localKey(new Date());
+  const inPeriod = useCallback((dayKey: string) => Boolean(range && dayKey >= range.from && dayKey <= range.to), [range]);
+  const cellOf = useCallback(
+    (row: TemplateRow, dayKey: string) =>
+      cellFor(row, dayKey, todayKey, inPeriod(dayKey), windows.get(row.group.shiftGroupId) ?? { open: false, note: "" }, byKey),
+    [todayKey, inPeriod, windows, byKey]
+  );
+
+  // Các ngày hiển thị: cả kỳ (đủ các tuần chứa kỳ) hoặc một tuần trong kỳ
+  const periodStart = range ? parseDay(range.from) : new Date();
+  const periodEnd = range ? parseDay(range.to) : new Date();
+  const firstWeek = startOfWeek(periodStart);
+  const weekCount = Math.floor((startOfWeek(periodEnd).getTime() - firstWeek.getTime()) / (7 * 86_400_000)) + 1;
+  const safeOffset = Math.min(Math.max(weekOffset, 0), weekCount - 1);
+  const days =
+    view === "period"
+      ? Array.from({ length: weekCount * 7 }, (_, index) => addDays(firstWeek, index))
+      : Array.from({ length: 7 }, (_, index) => addDays(firstWeek, safeOffset * 7 + index));
+
+  const register = async (row: TemplateRow, dayKey: string) => {
+    const key = `${row.shift.shiftId}|${dayKey}`;
+    setSubmittingKey(key);
     try {
-      await employeeApi.createAssignment({
-        shiftByDate: { id: Number(id) },
-        employee: { id: employeeId },
-        status: "PENDING",
-        registeredAt: new Date().toISOString(),
-      });
-      setShifts((prev) => prev.map((item) => (item.id === id ? { ...item, registeredCount: item.registeredCount + 1, status: "REGISTERED" } : item)));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Không thể đăng ký ca");
+      const { data } = await employeeApi.registerMyShift(row.shift.shiftId, dayKey);
+      setUpdates((current) => ({ ...current, [key]: data }));
+    } catch {
+      // Lỗi (hết chỗ, ngoài giờ đăng ký...) đã được hiện bằng toast từ HTTP client
+    } finally {
+      setSubmittingKey(null);
     }
   };
 
-  const registeredCount = shifts.filter((item) => item.status === "REGISTERED").length;
+  const reload = () => {
+    setUpdates({});
+    setVersion((value) => value + 1);
+  };
+
+  if (!base.data && base.loading) return <FullPageLoader label="Đang tải kỳ đăng ký..." />;
+
+  // Tổng hợp các ca đã đăng ký trong kỳ
+  const mine = [...byKey.values()].filter((item) => isRegistered(item) && inPeriod(item.workDate));
+  const mineHours = mine.reduce((sum, item) => sum + shiftHours(item.startTime, item.endTime), 0);
+  const mineWage = mine.reduce((sum, item) => sum + shiftHours(item.startTime, item.endTime) * item.payRate, 0);
+  const weekTitle = `${pad(days[0].getDate())}/${pad(days[0].getMonth() + 1)} – ${pad(days[6].getDate())}/${pad(days[6].getMonth() + 1)}/${days[6].getFullYear()}`;
 
   return (
     <div className="page">
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">{error}</div>}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-800">Đăng ký ca</h1>
-          <p className="mt-1 text-xs text-slate-500">Chọn ca phù hợp cho tuần tới. Quản lý sẽ xác nhận lịch sau khi kỳ đăng ký kết thúc.</p>
-        </div>
-        <button onClick={() => notify.info("Đã tự động chọn các ca tương ứng theo kỳ trước!")} className="btn btn-secondary shadow-xs">
-          <Copy className="h-4 w-4 text-slate-500" />
-          <span>Thêm giống kỳ trước</span>
-        </button>
-      </div>
+      <PageHeader
+        title="Đăng ký ca"
+        subtitle="Chọn kỳ đăng ký, bấm vào ô ca còn chỗ để đăng ký. Quản lý sẽ duyệt lịch sau khi kỳ đăng ký kết thúc."
+        actions={
+          <Button variant="secondary" size="sm" onClick={reload} disabled={base.loading || shiftsLoad.loading}>
+            <RefreshCw className={base.loading || shiftsLoad.loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
+            Làm mới
+          </Button>
+        }
+      />
 
-      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/80 bg-surface p-5 shadow-xs md:flex-row md:items-center">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h2 className="text-base font-extrabold text-slate-800">Tuần 12 – 18/10/2026</h2>
-            <span className="rounded-full border border-brand-200 bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-800">Đang mở</span>
-          </div>
-          <p className="mt-1 text-xs text-slate-400">Đóng đăng ký: 18:00, Thứ Sáu 09/10/2026</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm font-extrabold text-slate-800">
-            Bạn đã đăng ký {registeredCount} ca · {registeredCount * 6} giờ
-          </p>
-          <p className="mt-0.5 text-xs text-slate-400">Dự kiến {(registeredCount * 180000).toLocaleString("vi-VN")} VND · Chờ xác nhận lịch</p>
-        </div>
-      </div>
+      {base.error && <Alert>{base.error}</Alert>}
 
-      <ShiftRegisterTable shifts={shifts} onRegister={(id) => void register(id)} />
+      {base.data && groups.length === 0 ? (
+        <Card className="p-6">
+          <EmptyState>Bạn chưa được gán vào nhóm ca nào. Vui lòng liên hệ trưởng cửa hàng hoặc quản lý.</EmptyState>
+        </Card>
+      ) : (
+        base.data && (
+          <>
+            <RegistrationPeriods
+              periods={periods}
+              selectedId={period?.periodId ?? null}
+              onSelect={(item) => {
+                setPickedPeriodId(item.periodId);
+                setWeekOffset(0);
+              }}
+            />
+
+            {period && range && (
+              <section className="card p-4 sm:p-5">
+                <div className="flex flex-col justify-between gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <CalendarRange className="h-5 w-5 text-brand-500" />
+                      <h2 className="text-xl font-black tracking-tight text-slate-900">Thời khóa biểu đăng ký · {period.periodName}</h2>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Các ngày trong kỳ {formatDate(range.from)} – {formatDate(range.to)}. Số trên ô = số người đã đăng ký / sức chứa.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 rounded-xl border border-slate-200 p-1">
+                    {(["period", "week"] as ViewMode[]).map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setView(option)}
+                        className={cn(
+                          "rounded-lg px-4 py-2 text-xs font-bold transition",
+                          view === option ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"
+                        )}
+                      >
+                        {option === "period" ? "Cả kỳ" : "Tuần"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col justify-between gap-3 border-b border-slate-100 py-4 sm:flex-row sm:items-center">
+                  <div className="flex items-center gap-2">
+                    {view === "week" && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setWeekOffset(safeOffset - 1)}
+                          disabled={safeOffset === 0}
+                          aria-label="Tuần trước"
+                          className="btn-icon border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWeekOffset(safeOffset + 1)}
+                          disabled={safeOffset >= weekCount - 1}
+                          aria-label="Tuần sau"
+                          className="btn-icon border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
+                    <h3 className="ml-1 text-base font-black text-slate-800">
+                      {view === "week" ? `Tuần ${safeOffset + 1}/${weekCount} · ${weekTitle}` : `${formatDate(range.from)} – ${formatDate(range.to)}`}
+                    </h3>
+                    {shiftsLoad.loading && <Spinner />}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700">Đã đăng ký {mine.length} ca</span>
+                    <span className="rounded-full bg-blue-50 px-2.5 py-1 font-bold text-blue-700">{formatHours(mineHours)}</span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">Dự kiến {formatVnd(Math.round(mineWage))}</span>
+                  </div>
+                </div>
+
+                {shiftsLoad.error && <Alert className="mt-4">{shiftsLoad.error}</Alert>}
+
+                {rows.length === 0 ? (
+                  <EmptyState className="mt-4">Nhóm ca của bạn chưa có ca mẫu nào.</EmptyState>
+                ) : view === "period" ? (
+                  <RegisterPeriodGrid
+                    days={days}
+                    rows={rows}
+                    todayKey={todayKey}
+                    inPeriod={inPeriod}
+                    cellOf={cellOf}
+                    submittingKey={submittingKey}
+                    onRegister={(row, dayKey) => void register(row, dayKey)}
+                  />
+                ) : (
+                  <RegisterWeekGrid
+                    days={days}
+                    rows={rows}
+                    todayKey={todayKey}
+                    inPeriod={inPeriod}
+                    cellOf={cellOf}
+                    submittingKey={submittingKey}
+                    onRegister={(row, dayKey) => void register(row, dayKey)}
+                  />
+                )}
+
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-500">
+                  <span className="rounded-md border border-brand-200 bg-white px-2 py-1 text-slate-700">Còn chỗ · bấm để đăng ký</span>
+                  <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-emerald-800">Bạn đã đăng ký</span>
+                  <span className="rounded-md border border-slate-200 bg-slate-100 px-2 py-1 text-slate-400">Hết chỗ / đã đóng</span>
+                  <span className="rounded-md border border-dashed border-slate-200 bg-white px-2 py-1 text-slate-400">Chưa tới / hết giờ đăng ký</span>
+                  <span className="ml-auto">Ô chưa có ca theo ngày hiển thị 0 / sức chứa mặc định của ca</span>
+                </div>
+              </section>
+            )}
+          </>
+        )
+      )}
 
       <div className="flex items-center gap-3 rounded-2xl border border-brand-200/80 bg-brand-50/60 p-4 text-xs text-brand-900">
         <Info className="h-4 w-4 shrink-0 text-brand-600" />
-        <p>Không thể đăng ký khi ca hết chỗ hoặc trùng giờ với ca đã chọn. Bạn có thể chỉnh sửa đăng ký trước khi kỳ đóng.</p>
+        <p>
+          Chỉ đăng ký được ca thuộc nhóm ca của bạn, trong thời gian mở của đợt / phiên đăng ký và khi ca còn chỗ. Đăng ký bị từ chối hoặc đã hủy
+          có thể đăng ký lại.
+        </p>
       </div>
     </div>
   );

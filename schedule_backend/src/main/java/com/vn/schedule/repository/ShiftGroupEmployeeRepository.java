@@ -11,11 +11,9 @@ import java.util.List;
 public interface ShiftGroupEmployeeRepository extends JpaRepository<ShiftGroupEmployee, Integer> {
     List<ShiftGroupEmployee> findByShiftGroupId(Integer shiftGroupId);
 
+    boolean existsByShiftGroupIdAndEmployeeId(Integer shiftGroupId, Integer employeeId);
+
     @Modifying
     @Query("DELETE FROM ShiftGroupEmployee m WHERE m.shiftGroupId = :shiftGroupId")
     void deleteByShiftGroupId(Integer shiftGroupId);
-
-    /** [shiftGroupId, số thành viên] cho mọi nhóm ca có thành viên. */
-    @Query("SELECT m.shiftGroupId, COUNT(m) FROM ShiftGroupEmployee m GROUP BY m.shiftGroupId")
-    List<Object[]> countByGroup();
 }

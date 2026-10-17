@@ -13,6 +13,9 @@ export const storeManagerApi = {
   createShiftAssignment: managerApi.createShiftAssignment,
   updateShiftAssignment: managerApi.updateShiftAssignment,
   getShiftsByDate: managerApi.getShiftsByDate,
+  /** Nhóm ca / kỳ đăng ký / ca theo ngày của chính trưởng cửa hàng */
+  getMyShiftGroups: managerApi.getMyShiftGroups,
+  registerMyShift: managerApi.registerMyShift,
   getShifts: managerApi.getShifts,
   getEmergencyRequests: managerApi.getEmergencyRequests,
   updateEmergencyRequest: managerApi.updateEmergencyRequest,

@@ -7,6 +7,8 @@ import type {
   ScheduleSessionResponse,
   ShiftAssignmentResponse,
   ShiftByDateResponse,
+  MyOpenShift,
+  MyShiftGroups,
   ShiftGroupResponse,
   ShiftResponse,
   SpecialEventResponse,
@@ -62,6 +64,15 @@ export const scheduleApi = {
   createShiftGroup: groups.create,
   updateShiftGroup: groups.update,
   deleteShiftGroup: groups.remove,
+  /** Nhóm ca của người đang đăng nhập, ca mẫu và ca theo ngày đang mở (mặc định 60 ngày tới) */
+  getMyShiftGroups: (filters?: { from?: string; to?: string }) =>
+    http.get<MyShiftGroups>(withQuery("/api/v1/shift_group/me", filters)),
+  /** Đăng ký ca trên thời khóa biểu (tự tạo ca theo ngày nếu chưa có) */
+  registerMyShift: (shiftId: number, workDate: string) =>
+    http.post<MyOpenShift>("/api/v1/shift_group/me/register", { shiftId: String(shiftId), workDate }),
+  /** Lưu danh sách nhân viên của nhóm ca (thay toàn bộ) */
+  saveShiftGroupEmployees: (id: number, employeeIds: number[]) =>
+    http.put<{ employeeIds: number[] }>(`/api/v1/shift_group/${id}/employees`, { employeeIds }),
 
   getSpecialEvents: events.list,
   createSpecialEvent: events.create,

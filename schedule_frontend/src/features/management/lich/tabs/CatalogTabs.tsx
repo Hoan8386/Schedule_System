@@ -1,15 +1,29 @@
-import React from "react";
-import { AlertCircle, AlertTriangle, Award } from "lucide-react";
+import React, { useState } from "react";
+import { AlertCircle, AlertTriangle, Award, Users } from "lucide-react";
 import { formatDate, text } from "@/lib/format";
 import { useSchedule } from "../ScheduleContext";
 import { AddButton, EntityActions } from "../components/EntityActions";
+import { GroupMembersModal } from "../components/GroupMembersModal";
 import { TabSection } from "../components/TabSection";
 
 /** Tab nhóm ca */
 export function GroupTab() {
-  const { shiftGroups } = useSchedule();
+  const { shiftGroups, reload } = useSchedule();
+  const [membersOf, setMembersOf] = useState<number | null>(null);
+  const selectedGroup = shiftGroups.find((group) => Number(group.id ?? group.shiftGroupId ?? 0) === membersOf);
   return (
     <TabSection title={`Nhóm ca (${shiftGroups.length})`} icon={Award} actions={<AddButton kind="group" className="" />}>
+      {membersOf && selectedGroup && (
+        <GroupMembersModal
+          groupId={membersOf}
+          groupName={text(selectedGroup.shiftGroupName, `Nhóm ca #${membersOf}`)}
+          storeId={Number(selectedGroup.storeId ?? 0)}
+          storeName={selectedGroup.storeName}
+          memberIds={selectedGroup.employeeIds ?? []}
+          onClose={() => setMembersOf(null)}
+          onSaved={() => void reload()}
+        />
+      )}
       {shiftGroups.map((item) => {
         const id = Number(item.id ?? item.shiftGroupId ?? 0);
         return (
@@ -29,6 +43,14 @@ export function GroupTab() {
               <span className="badge badge-success text-[11px]">{text(item.status)}</span>
               <span>{text(item.payRate, "0đ")}</span>
             </div>
+            <button
+              type="button"
+              onClick={() => setMembersOf(id)}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50/50 hover:text-brand-700"
+            >
+              <Users className="h-3.5 w-3.5" />
+              Nhân viên ({item.employeeIds?.length ?? 0}) · Gán nhân viên
+            </button>
           </div>
         );
       })}

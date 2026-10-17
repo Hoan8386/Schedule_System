@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { ArrowLeftRight, Calendar as CalendarIcon, CalendarX, ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react";
-import { Alert, Badge, Button, Card, EmptyState, Spinner } from "@/components/ui";
-import { statisticsApi, type StatShift } from "@/lib/api";
-import { localKey } from "@/lib/format";
+import { ArrowLeftRight, CalendarRange, Calendar as CalendarIcon, CalendarX, ChevronLeft, ChevronRight, Layers, Plus } from "lucide-react";
+import { Alert, Button, Card, CardHeader, EmptyState, Spinner } from "@/components/ui";
+import { employeeApi, statisticsApi, type MyOpenShift, type StatShift } from "@/lib/api";
+import { localKey, pad } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { MONTH_HEADER, WEEKDAY_SHORT } from "@/features/management/lich/constants";
 import { REQUEST_TYPE_LABEL } from "@/features/statistics/dashboard";
-import { useStatData } from "@/features/statistics/useStatistics";
+import { useKeyedLoad, useStatData } from "@/features/statistics/useStatistics";
 import { WORK_STATUS, formatHours, formatVnd } from "@/features/statistics/utils";
+import { isRegistered } from "./dang-ky-ca/model";
+import { RegistrationPeriods } from "./RegistrationPeriods";
 
 interface EmployeeSchedulePageProps {
   onOpenRegister: () => void;
@@ -17,7 +20,7 @@ interface EmployeeSchedulePageProps {
 }
 
 type ViewMode = "week" | "month";
-type StatusFilter = "all" | "confirmed" | "pending" | "changing" | "done" | "absent";
+type StatusFilter = "all" | "confirmed" | "pending" | "changing" | "done" | "absent" | "open";
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "Tất cả trạng thái" },
@@ -26,9 +29,8 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "changing", label: "Chờ đổi / hủy" },
   { value: "done", label: "Đã hoàn thành" },
   { value: "absent", label: "Vắng mặt" },
+  { value: "open", label: "Ca nhóm còn mở đăng ký" },
 ];
-
-const WEEKDAYS = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"];
 
 const controlClass =
   "rounded-xl border border-slate-200 bg-surface px-3 py-2 text-xs font-medium text-slate-700 outline-hidden hover:border-slate-300";
@@ -36,15 +38,14 @@ const controlClass =
 const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 const startOfWeek = (date: Date) => addDays(date, -((date.getDay() + 6) % 7));
 
-/** Ngày đầu / cuối của khung đang xem (tuần: T2–CN; tháng: đủ các tuần chứa tháng). */
+/** Ngày đầu / cuối của khung đang xem (tuần: T2–CN; tháng: 6 tuần chứa tháng như lịch của quản lý). */
 function visibleRange(anchor: Date, view: ViewMode) {
   if (view === "week") {
     const start = startOfWeek(anchor);
     return { start, end: addDays(start, 6) };
   }
   const start = startOfWeek(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-  const end = addDays(startOfWeek(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0)), 6);
-  return { start, end };
+  return { start, end: addDays(start, 41) };
 }
 
 function plannedHours(shift: StatShift) {
@@ -72,6 +73,8 @@ function matchesStatus(shift: StatShift, filter: StatusFilter) {
       return shift.workStatus === "COMPLETED";
     case "absent":
       return shift.workStatus === "ABSENT";
+    case "open":
+      return false;
     default:
       return shift.workStatus !== "CANCELLED";
   }
@@ -79,14 +82,10 @@ function matchesStatus(shift: StatShift, filter: StatusFilter) {
 
 function rangeTitle(start: Date, end: Date, view: ViewMode, anchor: Date) {
   if (view === "month") return `Tháng ${anchor.getMonth() + 1}, ${anchor.getFullYear()}`;
-  const sameMonth = start.getMonth() === end.getMonth();
-  const day = (date: Date) => String(date.getDate()).padStart(2, "0");
-  return sameMonth
-    ? `${day(start)} – ${day(end)} tháng ${end.getMonth() + 1}, ${end.getFullYear()}`
-    : `${day(start)}/${start.getMonth() + 1} – ${day(end)}/${end.getMonth() + 1}, ${end.getFullYear()}`;
+  return `${pad(start.getDate())}/${pad(start.getMonth() + 1)} – ${pad(end.getDate())}/${pad(end.getMonth() + 1)}/${end.getFullYear()}`;
 }
 
-/** Lịch làm việc của nhân viên theo tuần / tháng, lấy từ phân ca thật. */
+/** Lịch làm việc của nhân viên theo tuần / tháng (cùng kiểu thời khóa biểu của quản lý). */
 export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpenCancel }: EmployeeSchedulePageProps) {
   const [view, setView] = useState<ViewMode>("week");
   const [anchor, setAnchor] = useState(() => new Date());
@@ -94,7 +93,24 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const { start, end } = visibleRange(anchor, view);
-  const { data, loading, error } = useStatData(statisticsApi.getMine, { from: localKey(start), to: localKey(end), storeId });
+  const from = localKey(start);
+  const to = localKey(end);
+  const { data, loading, error } = useStatData(statisticsApi.getMine, { from, to, storeId });
+  // Nhóm ca của nhân viên + ca theo ngày của nhóm đang mở đăng ký trong khung đang xem
+  const groupResult = useKeyedLoad(`${from}|${to}`, () => employeeApi.getMyShiftGroups({ from, to }), "Không thể tải nhóm ca");
+  const myGroups = useMemo(() => groupResult.data?.groups ?? [], [groupResult.data]);
+
+  // Khung ca mẫu của nhóm: luôn là các hàng của thời khóa biểu tuần
+  const templates = useMemo<ShiftTemplate[]>(() => {
+    const map = new Map<string, ShiftTemplate>();
+    myGroups.forEach((group) =>
+      group.shifts.forEach((shift) => {
+        const key = slotKey(shift.startTime, shift.shiftName);
+        if (!map.has(key)) map.set(key, { key, name: shift.shiftName ?? "Ca", start: shift.startTime, end: shift.endTime });
+      })
+    );
+    return [...map.values()].sort((a, b) => a.key.localeCompare(b.key));
+  }, [myGroups]);
 
   const todayKey = localKey(new Date());
   const shifts = useMemo(() => (data?.shifts ?? []).filter((shift) => matchesStatus(shift, statusFilter)), [data, statusFilter]);
@@ -109,11 +125,27 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
     return map;
   }, [shifts]);
 
+  // Ca của nhóm còn mở mà nhân viên chưa đăng ký
+  const selectedStoreName = data?.stores.find((store) => store.storeId === storeId)?.storeName;
+  const openShifts = useMemo(
+    () =>
+      (statusFilter === "all" || statusFilter === "open" ? groupResult.data?.openShifts ?? [] : []).filter(
+        (item) => item.status === "OPEN" && !isRegistered(item) && (!storeId || item.storeName === selectedStoreName)
+      ),
+    [groupResult.data, statusFilter, storeId, selectedStoreName]
+  );
+  const openByDate = useMemo(() => {
+    const map = new Map<string, MyOpenShift[]>();
+    openShifts.forEach((item) => map.set(item.workDate, [...(map.get(item.workDate) ?? []), item]));
+    return map;
+  }, [openShifts]);
+
   // Tổng của khung đang xem (bỏ ca đã hủy)
   const totals = shifts.reduce(
     (sum, shift) => ({ count: sum.count + 1, hours: sum.hours + plannedHours(shift), wage: sum.wage + expectedWage(shift) }),
     { count: 0, hours: 0, wage: 0 }
   );
+  const pendingCount = shifts.filter((shift) => shift.workStatus === "PENDING" || shift.pendingRequestType).length;
 
   // Ca nổi bật ở cuối trang: ca hôm nay, nếu không có thì ca sắp tới gần nhất trong khung.
   const spotlight =
@@ -128,97 +160,181 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
     );
 
   const days = Array.from({ length: Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1 }, (_, index) => addDays(start, index));
+  const isEmpty = !loading && shifts.length === 0 && openShifts.length === 0;
 
   return (
     <div className="page">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="page-title">Lịch làm việc</h1>
-          <p className="page-subtitle">Theo dõi ca của bạn, chủ động sắp xếp thời gian.</p>
-        </div>
-        <Button icon={Plus} onClick={onOpenRegister}>
-          Đăng ký ca
-        </Button>
-      </div>
+      <RegistrationPeriods
+        periods={groupResult.data?.periods ?? []}
+        loading={groupResult.loading}
+        onRegister={onOpenRegister}
+        onViewPeriod={(date) => {
+          setAnchor(new Date(`${date}T00:00:00`));
+          setView("month");
+        }}
+      />
 
-      <div className="flex flex-col justify-between gap-3 text-xs md:flex-row md:items-center">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <select
-            aria-label="Cửa hàng"
-            value={storeId ?? ""}
-            onChange={(event) => setStoreId(event.target.value ? Number(event.target.value) : undefined)}
-            className={controlClass}
-          >
-            <option value="">Tất cả cửa hàng</option>
-            {(data?.stores ?? []).map((store) => (
-              <option key={store.storeId} value={store.storeId}>{store.storeName}</option>
-            ))}
-          </select>
-          <select aria-label="Trạng thái" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)} className={controlClass}>
-            {STATUS_FILTERS.map((item) => (
-              <option key={item.value} value={item.value}>{item.label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="text-xs font-semibold text-slate-500">
-          {totals.count} ca · {formatHours(totals.hours)} · <span className="text-brand-600">Dự kiến {formatVnd(totals.wage)}</span>
-        </div>
-      </div>
-
-      {error && <Alert>{error}</Alert>}
-
-      <Card className="p-5">
-        <div className="flex flex-col justify-between gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="flex overflow-hidden rounded-xl border border-slate-200">
-              <button aria-label="Trước" onClick={() => move(-1)} className="border-r border-slate-200 p-2 text-slate-600 hover:bg-slate-50">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button aria-label="Sau" onClick={() => move(1)} className="p-2 text-slate-600 hover:bg-slate-50">
-                <ChevronRight className="h-4 w-4" />
-              </button>
+      <section className="card p-4 sm:p-5">
+        <div className="flex flex-col gap-4 border-b border-slate-100 pb-4">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+            <div>
+              <div className="flex items-center gap-2">
+                <CalendarRange className="h-5 w-5 text-brand-500" />
+                <h1 className="text-xl font-black tracking-tight text-slate-900">Thời khóa biểu của tôi</h1>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">Ca đã được phân và ca của nhóm còn mở đăng ký. Bấm vào ca đang mở để đăng ký.</p>
             </div>
-            <span className="text-sm font-bold text-slate-800">{rangeTitle(start, end, view, anchor)}</span>
-            <button onClick={() => setAnchor(new Date())} className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+            <Button icon={Plus} onClick={onOpenRegister}>
+              Đăng ký ca
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+            <label className="flex flex-col gap-1 text-[11px] font-semibold text-slate-500">
+              Cửa hàng
+              <select
+                value={storeId ?? ""}
+                onChange={(event) => setStoreId(event.target.value ? Number(event.target.value) : undefined)}
+                className={cn(controlClass, "min-w-44")}
+              >
+                <option value="">Tất cả cửa hàng</option>
+                {(data?.stores ?? []).map((store) => (
+                  <option key={store.storeId} value={store.storeId}>{store.storeName}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-[11px] font-semibold text-slate-500">
+              Trạng thái ca
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)} className={cn(controlClass, "min-w-48")}>
+                {STATUS_FILTERS.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-center gap-1 rounded-xl border border-slate-200 p-1 lg:ml-auto">
+              {(["week", "month"] as ViewMode[]).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setView(option)}
+                  className={cn(
+                    "rounded-lg px-4 py-2 text-xs font-bold transition",
+                    view === option ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"
+                  )}
+                >
+                  {option === "week" ? "Tuần" : "Tháng"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between gap-3 border-b border-slate-100 py-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => move(-1)}
+              aria-label={view === "month" ? "Tháng trước" : "Tuần trước"}
+              className="btn-icon border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => move(1)}
+              aria-label={view === "month" ? "Tháng sau" : "Tuần sau"}
+              className="btn-icon border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <h2 className="ml-1 text-base font-black text-slate-800">{rangeTitle(start, end, view, anchor)}</h2>
+            <button type="button" onClick={() => setAnchor(new Date())} className="btn btn-secondary btn-sm">
               Hôm nay
             </button>
-            {loading && <Spinner />}
+            {(loading || groupResult.loading) && <Spinner />}
           </div>
-
-          <div className="flex items-center rounded-xl bg-slate-100 p-1">
-            {(["week", "month"] as ViewMode[]).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setView(mode)}
-                className={cn(
-                  "rounded-lg px-3 py-1 text-xs font-bold transition-all",
-                  view === mode ? "bg-surface text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800"
-                )}
-              >
-                {mode === "week" ? "Tuần" : "Tháng"}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">{totals.count} ca</span>
+            <span className="rounded-full bg-blue-50 px-2.5 py-1 font-bold text-blue-700">{formatHours(totals.hours)}</span>
+            <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700">Dự kiến {formatVnd(totals.wage)}</span>
+            {pendingCount > 0 && <span className="rounded-full bg-brand-50 px-2.5 py-1 font-bold text-brand-700">{pendingCount} chờ duyệt</span>}
+            {openShifts.length > 0 && (
+              <span className="rounded-full border border-dashed border-brand-300 px-2.5 py-1 font-bold text-brand-700">{openShifts.length} ca nhóm còn mở</span>
+            )}
           </div>
         </div>
 
+        {error && <Alert className="mt-4">{error}</Alert>}
+
         {view === "week" ? (
-          <WeekGrid days={days} shiftsByDate={shiftsByDate} todayKey={todayKey} />
+          <WeekView
+            days={days}
+            templates={templates}
+            shiftsByDate={shiftsByDate}
+            openByDate={openByDate}
+            todayKey={todayKey}
+            onOpenRegister={onOpenRegister}
+          />
         ) : (
-          <MonthGrid days={days} month={anchor.getMonth()} shiftsByDate={shiftsByDate} todayKey={todayKey} />
+          <MonthView
+            days={days}
+            month={anchor.getMonth()}
+            shiftsByDate={shiftsByDate}
+            openByDate={openByDate}
+            todayKey={todayKey}
+            onOpenRegister={onOpenRegister}
+          />
         )}
 
-        {!loading && shifts.length === 0 && (
-          <EmptyState className="mt-4">Không có ca nào trong khoảng thời gian này</EmptyState>
+        {isEmpty && (
+          <p className="mt-3 text-center text-xs text-slate-400">
+            Không có ca nào trong {view === "month" ? "tháng" : "tuần"} này{statusFilter !== "all" || storeId ? " với bộ lọc hiện tại" : ""}.
+          </p>
         )}
 
-        <div className="mt-4 flex flex-col justify-between gap-3 border-t border-slate-100 pt-4 text-xs sm:flex-row sm:items-center">
-          <div className="flex flex-wrap items-center gap-4">
-            <Legend className="bg-slate-300" label="Đã xác nhận" />
-            <Legend className="bg-brand-400" label="Chờ duyệt / chờ đổi" />
-            <Legend className="bg-emerald-400" label="Hoàn thành" />
-            <Legend className="bg-rose-400" label="Vắng mặt" />
-          </div>
-          <span className="text-[11px] text-slate-400">Ca vẫn có hiệu lực cho đến khi yêu cầu đổi / hủy được duyệt.</span>
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-500">
+          {(["UPCOMING", "PENDING", "COMPLETED", "ABSENT"] as const).map((status) => (
+            <span key={status} className={cn("rounded-md border px-2 py-1", CARD_TONE[status])}>
+              {WORK_STATUS[status].label}
+            </span>
+          ))}
+          <span className="rounded-md border border-dashed border-brand-300 px-2 py-1 text-brand-700">Ca nhóm còn mở đăng ký</span>
+          <span className="ml-auto">Ca vẫn có hiệu lực cho đến khi yêu cầu đổi / hủy được duyệt</span>
+        </div>
+      </section>
+
+      <Card>
+        <CardHeader
+          title="Ca của nhóm bạn"
+          icon={Layers}
+          actions={
+            <button onClick={onOpenRegister} className="text-[11px] font-bold text-brand-600 hover:underline">
+              Đăng ký ca của nhóm
+            </button>
+          }
+        />
+        <div className="grid grid-cols-1 gap-3 p-5 md:grid-cols-2">
+          {groupResult.error && <Alert className="md:col-span-2">{groupResult.error}</Alert>}
+          {!groupResult.loading && !groupResult.error && myGroups.length === 0 && (
+            <EmptyState className="md:col-span-2">Bạn chưa được gán vào nhóm ca nào. Liên hệ trưởng cửa hàng để được xếp nhóm.</EmptyState>
+          )}
+          {myGroups.map((group) => (
+            <div key={group.shiftGroupId} className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs">
+              <p className="font-bold text-slate-800">
+                {group.shiftGroupName ?? `Nhóm #${group.shiftGroupId}`}
+                <span className="font-normal text-slate-400"> · {group.storeName ?? "—"}</span>
+              </p>
+              {group.description && <p className="mt-0.5 text-[11px] text-slate-500">{group.description}</p>}
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {group.shifts.length === 0 && <span className="text-slate-400">Nhóm chưa có ca mẫu</span>}
+                {group.shifts.map((shift) => (
+                  <span key={shift.shiftId} className="rounded-lg border border-brand-200 bg-surface px-2 py-1 font-semibold text-brand-800">
+                    {shift.shiftName} · {shift.startTime} – {shift.endTime}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
 
@@ -234,8 +350,7 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
                 {spotlight.storeName ?? "—"}
               </h4>
               <p className="mt-0.5 text-[11px] text-slate-500">
-                {spotlight.startTime ?? "--:--"} – {spotlight.endTime ?? "--:--"} · {formatHours(plannedHours(spotlight))} ·{" "}
-                {formatVnd(expectedWage(spotlight))}
+                {timeLabel(spotlight.startTime, spotlight.endTime)} · {formatHours(plannedHours(spotlight))} · {formatVnd(expectedWage(spotlight))}
               </p>
             </div>
           ) : (
@@ -261,105 +376,188 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
 const spotlightDate = (workDate: string | null) =>
   workDate ? new Date(`${workDate}T00:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" }) : "";
 
-function Legend({ className, label }: { className: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5 font-medium text-slate-600">
-      <span className={cn("h-2.5 w-2.5 rounded-full", className)} />
-      {label}
-    </span>
-  );
+// ------------------------------------------------------------------ Dùng chung cho 2 chế độ xem
+
+/** Một khung ca trên thời khóa biểu (ca mẫu của nhóm hoặc ca xuất hiện trong khung đang xem). */
+interface ShiftTemplate {
+  key: string;
+  name: string;
+  start: string | null;
+  end: string | null;
 }
 
-// ------------------------------------------------------------------ Ô ca
+const slotKey = (start: string | null | undefined, name: string | null | undefined) => `${start ?? ""}|${name ?? ""}`;
 
-function shiftTone(shift: StatShift, isToday: boolean) {
-  if (shift.workStatus === "ABSENT") return "border-rose-200 bg-rose-50";
-  if (shift.workStatus === "COMPLETED") return "border-emerald-200 bg-emerald-50/70";
-  if (shift.workStatus === "PENDING" || shift.pendingRequestType) return "border-brand-200 bg-brand-50/60";
-  return isToday ? "border-brand-300 bg-brand-50/70 shadow-xs" : "border-slate-200/80 bg-slate-50";
-}
+const timeLabel = (start: string | null, end: string | null) => `${start ?? "--:--"} – ${end ?? "--:--"}`;
 
-function ShiftChip({ shift, isToday, compact = false }: { shift: StatShift; isToday: boolean; compact?: boolean }) {
+/** Màu thẻ ca theo trạng thái (cùng tông với thời khóa biểu của quản lý). */
+const CARD_TONE: Record<string, string> = {
+  UPCOMING: "border-slate-200 bg-white",
+  IN_PROGRESS: "border-blue-200 bg-blue-50/70",
+  PENDING: "border-brand-200 bg-brand-50/70",
+  COMPLETED: "border-emerald-200 bg-emerald-50/70",
+  ABSENT: "border-rose-200 bg-rose-50",
+  CANCELLED: "border-slate-200 bg-slate-100 line-through opacity-70",
+};
+
+const cardTone = (shift: StatShift) => (shift.pendingRequestType ? CARD_TONE.PENDING : CARD_TONE[shift.workStatus] ?? CARD_TONE.UPCOMING);
+
+const BADGE_TONE: Record<string, string> = {
+  success: "bg-emerald-100 text-emerald-700",
+  info: "bg-blue-100 text-blue-700",
+  danger: "bg-rose-100 text-rose-700",
+  neutral: "bg-slate-200 text-slate-600",
+  warning: "bg-brand-100 text-brand-700",
+};
+
+/** Thẻ ca đã được phân / đăng ký. */
+function ShiftCard({ shift, compact = false }: { shift: StatShift; compact?: boolean }) {
   const meta = WORK_STATUS[shift.workStatus] ?? WORK_STATUS.UPCOMING;
-  const pendingLabel = shift.pendingRequestType ? `Chờ ${(REQUEST_TYPE_LABEL[shift.pendingRequestType] ?? "thay đổi").toLowerCase()}` : null;
+  const label = shift.pendingRequestType ? `Chờ ${(REQUEST_TYPE_LABEL[shift.pendingRequestType] ?? "thay đổi").toLowerCase()}` : meta.label;
+  const badge = shift.pendingRequestType ? BADGE_TONE.warning : BADGE_TONE[meta.tone];
 
   if (compact) {
     return (
-      <div className={cn("truncate rounded-md border px-1.5 py-0.5 text-[10px] font-semibold text-slate-700", shiftTone(shift, isToday))}>
-        {shift.startTime ?? "--:--"} {shift.shiftName ?? "Ca"}
+      <div
+        title={`${shift.shiftName ?? "Ca"} · ${timeLabel(shift.startTime, shift.endTime)} · ${shift.storeName ?? ""} · ${label}`}
+        className={cn("rounded-md border px-1.5 py-1", cardTone(shift))}
+      >
+        <div className="flex items-center justify-between gap-1">
+          <span className="truncate text-[10px] font-bold text-slate-800">
+            {shift.startTime ?? "--:--"}–{shift.endTime ?? "--:--"}
+          </span>
+          <span className={cn("shrink-0 rounded px-1 text-[8px] font-bold", badge)}>{label}</span>
+        </div>
+        <p className="truncate text-[9px] text-slate-500">{shift.shiftName ?? "Ca làm"}</p>
       </div>
     );
   }
   return (
-    <div className={cn("flex flex-col justify-between gap-1 rounded-xl border p-2.5", shiftTone(shift, isToday))}>
-      <div>
-        <p className="text-xs font-bold text-slate-800">{shift.shiftName ?? "Ca làm"}</p>
-        <p className="mt-0.5 text-[10px] text-slate-500">
-          {shift.startTime ?? "--:--"} – {shift.endTime ?? "--:--"}
-        </p>
-        <p className="truncate text-[10px] text-slate-400">{shift.storeName ?? "—"}</p>
-      </div>
-      <div className="flex flex-wrap gap-1">
-        <Badge tone={meta.tone} className="px-1.5 py-0.5 text-[9px]">{meta.label}</Badge>
-        {pendingLabel && <Badge tone="warning" className="px-1.5 py-0.5 text-[9px]">{pendingLabel}</Badge>}
+    <div className={cn("rounded-lg border p-2 shadow-xs", cardTone(shift))}>
+      <p className="truncate text-[10px] font-black text-slate-800">{shift.shiftName ?? "Ca làm"}</p>
+      <p className="mt-0.5 text-[10px] font-bold text-slate-600">{timeLabel(shift.startTime, shift.endTime)}</p>
+      <p className="mt-0.5 truncate text-[9px] text-slate-500">{shift.storeName ?? "—"}</p>
+      <div className="mt-1.5 flex items-center justify-between gap-1">
+        <span className="text-[10px] font-bold text-slate-600">{formatHours(plannedHours(shift))}</span>
+        <span className={cn("rounded px-1 py-0.5 text-[8px] font-bold", badge)}>{label}</span>
       </div>
     </div>
   );
 }
 
-// ------------------------------------------------------------------ Lưới tuần
+/** Ca của nhóm còn mở đăng ký (nhân viên chưa đăng ký) – bấm để sang trang đăng ký ca. */
+function OpenCard({ shift, compact = false, onClick }: { shift: MyOpenShift; compact?: boolean; onClick: () => void }) {
+  const full = Boolean(shift.maxCapacity && shift.registeredCount >= shift.maxCapacity);
+  const count = `${shift.registeredCount}${shift.maxCapacity ? `/${shift.maxCapacity}` : ""}`;
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={`${shift.shiftName ?? "Ca"} · ${timeLabel(shift.startTime, shift.endTime)} · còn mở đăng ký`}
+        className="block w-full rounded-md border border-dashed border-brand-300 px-1.5 py-1 text-left transition hover:bg-brand-50"
+      >
+        <div className="flex items-center justify-between gap-1">
+          <span className="truncate text-[10px] font-bold text-brand-800">
+            {shift.startTime ?? "--:--"}–{shift.endTime ?? "--:--"}
+          </span>
+          <span className="shrink-0 text-[9px] font-bold text-brand-700">{count}</span>
+        </div>
+        <p className="truncate text-[9px] text-slate-500">{shift.shiftName ?? "Ca làm"} · còn mở</p>
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="block w-full rounded-lg border border-dashed border-brand-300 p-2 text-left transition hover:border-brand-400 hover:bg-brand-50"
+    >
+      <p className="truncate text-[10px] font-black text-brand-800">{shift.shiftName ?? "Ca làm"}</p>
+      <p className="mt-0.5 text-[10px] font-bold text-slate-600">{timeLabel(shift.startTime, shift.endTime)}</p>
+      <p className="mt-0.5 truncate text-[9px] text-slate-500">{shift.shiftGroupName ?? shift.storeName ?? ""}</p>
+      <div className="mt-1.5 flex items-center justify-between gap-1">
+        <span className="text-[10px] font-bold text-brand-700">{count} NV</span>
+        <span className={cn("rounded px-1 py-0.5 text-[8px] font-bold", full ? BADGE_TONE.neutral : BADGE_TONE.warning)}>
+          {full ? "Hết chỗ" : "Còn mở"}
+        </span>
+      </div>
+    </button>
+  );
+}
 
-function WeekGrid({ days, shiftsByDate, todayKey }: { days: Date[]; shiftsByDate: Map<string, StatShift[]>; todayKey: string }) {
-  // Mỗi hàng là một khung ca (tên + giờ bắt đầu) xuất hiện trong tuần
+// ------------------------------------------------------------------ Tuần
+
+const GRID = "grid grid-cols-[6.5rem_repeat(7,minmax(0,1fr))]";
+
+function WeekView({
+  days,
+  templates,
+  shiftsByDate,
+  openByDate,
+  todayKey,
+  onOpenRegister,
+}: {
+  days: Date[];
+  templates: ShiftTemplate[];
+  shiftsByDate: Map<string, StatShift[]>;
+  openByDate: Map<string, MyOpenShift[]>;
+  todayKey: string;
+  onOpenRegister: () => void;
+}) {
+  // Mỗi hàng là một khung ca: luôn có các ca mẫu của nhóm, cộng thêm ca thực tế khác xuất hiện trong tuần
   const slots = useMemo(() => {
-    const map = new Map<string, { name: string; start: string }>();
+    const map = new Map<string, ShiftTemplate>(templates.map((template) => [template.key, template]));
     days.forEach((day) =>
-      (shiftsByDate.get(localKey(day)) ?? []).forEach((shift) => {
-        const key = `${shift.startTime ?? ""}|${shift.shiftName ?? ""}`;
-        if (!map.has(key)) map.set(key, { name: shift.shiftName ?? "Ca", start: shift.startTime ?? "--:--" });
+      [...(shiftsByDate.get(localKey(day)) ?? []), ...(openByDate.get(localKey(day)) ?? [])].forEach((shift) => {
+        const key = slotKey(shift.startTime, shift.shiftName);
+        if (!map.has(key)) map.set(key, { key, name: shift.shiftName ?? "Ca", start: shift.startTime, end: shift.endTime });
       })
     );
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [days, shiftsByDate]);
+    return [...map.values()].sort((a, b) => a.key.localeCompare(b.key));
+  }, [days, templates, shiftsByDate, openByDate]);
 
   return (
-    <div className="mt-4 overflow-x-auto">
-      <div className="min-w-200">
-        <div className="grid grid-cols-8 gap-2 border-b border-slate-100 pb-3 text-center">
-          <div className="flex items-center justify-center text-slate-400">
-            <Clock className="h-4 w-4" />
-          </div>
+    <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+      <div className="min-w-220">
+        <div className={cn(GRID, "border-b border-slate-200 bg-slate-50")}>
+          <div className="border-r border-slate-200 p-3 text-center text-[10px] font-bold text-slate-500">Khung ca</div>
           {days.map((day, index) => {
             const isToday = localKey(day) === todayKey;
+            const weekend = day.getDay() === 0 || day.getDay() === 6;
             return (
-              <div key={index} className={cn("rounded-xl py-1", isToday && "bg-brand-50/80 font-bold")}>
-                <p className="text-[11px] text-slate-400">{WEEKDAYS[index]}</p>
-                <p className={cn("text-base font-extrabold", isToday ? "text-brand-600" : "text-slate-800")}>
-                  {String(day.getDate()).padStart(2, "0")}
+              <div key={localKey(day)} className={cn("p-2 text-center", index < 6 && "border-r border-slate-200", isToday && "bg-brand-50")}>
+                <p className={cn("text-[10px] font-semibold", weekend ? "text-rose-500" : "text-slate-500")}>{WEEKDAY_SHORT[day.getDay()]}</p>
+                <p className={cn("mt-0.5 text-lg font-black", isToday ? "text-brand-600" : "text-slate-800")}>
+                  {pad(day.getDate())}/{pad(day.getMonth() + 1)}
                 </p>
               </div>
             );
           })}
         </div>
 
-        {slots.map(([key, slot], rowIndex) => (
-          <div
-            key={key}
-            className={cn("grid min-h-22.5 grid-cols-8 items-stretch gap-2 py-3", rowIndex < slots.length - 1 && "border-b border-slate-100")}
-          >
-            <div className="pt-2 text-center text-[11px] font-medium text-slate-400">
-              <p>{slot.name}</p>
-              <p className="text-[10px] text-slate-300">{slot.start}</p>
+        {slots.length === 0 && (
+          <div className="p-6 text-center text-xs text-slate-400">Chưa có khung ca nào. Bạn sẽ thấy ca ở đây sau khi được gán nhóm ca.</div>
+        )}
+
+        {slots.map((slot, slotIndex) => (
+          <div key={slot.key} className={cn(GRID, "min-h-32", slotIndex < slots.length - 1 && "border-b border-slate-200")}>
+            <div className="border-r border-slate-200 bg-slate-50/60 p-3">
+              <p className="text-[11px] font-black text-slate-700">{slot.name}</p>
+              <p className="mt-1 text-[10px] font-semibold text-slate-500">{timeLabel(slot.start, slot.end)}</p>
             </div>
-            {days.map((day) => {
+            {days.map((day, index) => {
               const dayKey = localKey(day);
-              const items = (shiftsByDate.get(dayKey) ?? []).filter(
-                (shift) => `${shift.startTime ?? ""}|${shift.shiftName ?? ""}` === key
-              );
+              const inSlot = (shift: { startTime: string | null; shiftName: string | null }) => slotKey(shift.startTime, shift.shiftName) === slot.key;
+              const items = (shiftsByDate.get(dayKey) ?? []).filter(inSlot);
+              const open = (openByDate.get(dayKey) ?? []).filter(inSlot);
               return (
-                <div key={dayKey} className="space-y-2">
+                <div key={`${slot.key}-${dayKey}`} className={cn("space-y-2 p-1.5", index < 6 && "border-r border-slate-200", dayKey === todayKey && "bg-brand-50/30")}>
                   {items.map((shift) => (
-                    <ShiftChip key={shift.assignmentId} shift={shift} isToday={dayKey === todayKey} />
+                    <ShiftCard key={shift.assignmentId} shift={shift} />
+                  ))}
+                  {open.map((shift) => (
+                    <OpenCard key={`open-${shift.shiftByDateId}`} shift={shift} onClick={onOpenRegister} />
                   ))}
                 </div>
               );
@@ -371,46 +569,76 @@ function WeekGrid({ days, shiftsByDate, todayKey }: { days: Date[]; shiftsByDate
   );
 }
 
-// ------------------------------------------------------------------ Lưới tháng
+// ------------------------------------------------------------------ Tháng
 
-function MonthGrid({
+const MAX_VISIBLE = 3;
+
+function MonthView({
   days,
   month,
   shiftsByDate,
+  openByDate,
   todayKey,
+  onOpenRegister,
 }: {
   days: Date[];
   month: number;
   shiftsByDate: Map<string, StatShift[]>;
+  openByDate: Map<string, MyOpenShift[]>;
   todayKey: string;
+  onOpenRegister: () => void;
 }) {
   return (
-    <div className="mt-4 overflow-x-auto">
-      <div className="min-w-175">
-        <div className="grid grid-cols-7 gap-2 pb-2 text-center text-[11px] font-semibold text-slate-400">
-          {WEEKDAYS.map((day) => (
-            <div key={day}>{day}</div>
+    <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+      <div className="min-w-180">
+        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+          {MONTH_HEADER.map((label, index) => (
+            <div key={label} className={cn("px-2 py-2 text-center text-[11px] font-bold", index >= 5 ? "text-rose-500" : "text-slate-500")}>
+              {label}
+            </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((day) => {
+        <div className="grid grid-cols-7">
+          {days.map((day, index) => {
             const dayKey = localKey(day);
             const items = shiftsByDate.get(dayKey) ?? [];
+            const open = openByDate.get(dayKey) ?? [];
+            const total = items.length + open.length;
+            const inMonth = day.getMonth() === month;
             const isToday = dayKey === todayKey;
+            const visibleItems = items.slice(0, MAX_VISIBLE);
+            const visibleOpen = open.slice(0, Math.max(0, MAX_VISIBLE - visibleItems.length));
+            const hidden = total - visibleItems.length - visibleOpen.length;
             return (
               <div
                 key={dayKey}
                 className={cn(
-                  "min-h-23 space-y-1 rounded-xl border p-1.5",
-                  isToday ? "border-brand-300 bg-brand-50/40" : "border-slate-100",
-                  day.getMonth() !== month && "opacity-40"
+                  "flex min-h-36 flex-col border-b border-slate-200 p-2",
+                  index % 7 !== 6 && "border-r",
+                  index >= 35 && "border-b-0",
+                  inMonth ? "bg-white" : "bg-slate-50/70"
                 )}
               >
-                <p className={cn("text-right text-xs font-bold", isToday ? "text-brand-600" : "text-slate-600")}>{day.getDate()}</p>
-                {items.slice(0, 3).map((shift) => (
-                  <ShiftChip key={shift.assignmentId} shift={shift} isToday={isToday} compact />
-                ))}
-                {items.length > 3 && <p className="text-[10px] font-semibold text-slate-400">+{items.length - 3} ca</p>}
+                <div className="flex items-center justify-between gap-1">
+                  <span
+                    className={cn(
+                      "flex h-6 min-w-6 items-center justify-center rounded-full text-xs font-black",
+                      isToday ? "bg-brand-500 text-brand-contrast" : inMonth ? "text-slate-800" : "text-slate-300"
+                    )}
+                  >
+                    {day.getDate()}
+                  </span>
+                  {total > 0 && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-600">{total} ca</span>}
+                </div>
+                <div className={cn("mt-1.5 space-y-1", !inMonth && "opacity-60")}>
+                  {visibleItems.map((shift) => (
+                    <ShiftCard key={shift.assignmentId} shift={shift} compact />
+                  ))}
+                  {visibleOpen.map((shift) => (
+                    <OpenCard key={`open-${shift.shiftByDateId}`} shift={shift} compact onClick={onOpenRegister} />
+                  ))}
+                  {hidden > 0 && <p className="px-1.5 text-[10px] font-bold text-brand-700">+{hidden} ca khác</p>}
+                </div>
               </div>
             );
           })}

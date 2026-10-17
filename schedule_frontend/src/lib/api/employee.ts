@@ -4,6 +4,8 @@ import { managerApi } from "./manager";
 export const employeeApi = {
   getProfile: () => managerApi.getEmployees(),
   getShiftsByDate: managerApi.getShiftsByDate,
+  getMyShiftGroups: managerApi.getMyShiftGroups,
+  registerMyShift: managerApi.registerMyShift,
   getAssignments: managerApi.getShiftAssignments,
   createAssignment: managerApi.createShiftAssignment,
   getEmergencyRequests: managerApi.getEmergencyRequests,

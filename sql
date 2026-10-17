@@ -43,6 +43,7 @@ DROP TABLE IF EXISTS `shift_by_date`;
 DROP TABLE IF EXISTS `shift`;
 DROP TABLE IF EXISTS `schedule_session`;
 DROP TABLE IF EXISTS `schedule_round`;
+DROP TABLE IF EXISTS `shift_group_employee`;
 DROP TABLE IF EXISTS `shift_group`;
 DROP TABLE IF EXISTS `schedule_period`;
 DROP TABLE IF EXISTS `store_manager`;
@@ -295,6 +296,19 @@ CREATE TABLE `shift_group` (
     UNIQUE KEY uk_shift_group_store_code (store_id, shift_group_code),
     CONSTRAINT fk_shift_group_store FOREIGN KEY (store_id) REFERENCES `store`(store_id),
     CONSTRAINT fk_shift_group_created_by FOREIGN KEY (created_by) REFERENCES `employee`(employee_id)
+);
+
+-- Nhân viên thuộc nhóm ca (chỉ nhân viên làm việc tại cửa hàng của nhóm ca)
+CREATE TABLE `shift_group_employee` (
+    shift_group_employee_id INT AUTO_INCREMENT PRIMARY KEY,
+    shift_group_id INT NOT NULL,
+    employee_id INT NOT NULL,
+    assigned_by INT,
+    assigned_at DATETIME,
+    UNIQUE KEY uk_shift_group_employee (shift_group_id, employee_id),
+    CONSTRAINT fk_shift_group_employee_group FOREIGN KEY (shift_group_id) REFERENCES `shift_group`(shift_group_id),
+    CONSTRAINT fk_shift_group_employee_employee FOREIGN KEY (employee_id) REFERENCES `employee`(employee_id),
+    CONSTRAINT fk_shift_group_employee_assigned_by FOREIGN KEY (assigned_by) REFERENCES `employee`(employee_id)
 );
 
 -- ============================================================
@@ -1407,7 +1421,13 @@ VALUES
 (256, 'GET_STATISTICS_ME', 'GET /api/v1/statistics/me', 'Controller route GET /api/v1/statistics/me', '/api/v1/statistics/me', 'GET'),
 (257, 'GET_STATISTICS_MANAGER_DASHBOARD', 'GET /api/v1/statistics/manager/dashboard', 'Controller route GET /api/v1/statistics/manager/dashboard', '/api/v1/statistics/manager/dashboard', 'GET'),
 (258, 'GET_STATISTICS_STORE_MANAGER_DASHBOARD', 'GET /api/v1/statistics/store-manager/dashboard', 'Controller route GET /api/v1/statistics/store-manager/dashboard', '/api/v1/statistics/store-manager/dashboard', 'GET'),
-(259, 'GET_STATISTICS_ME_DASHBOARD', 'GET /api/v1/statistics/me/dashboard', 'Controller route GET /api/v1/statistics/me/dashboard', '/api/v1/statistics/me/dashboard', 'GET');
+(259, 'GET_STATISTICS_ME_DASHBOARD', 'GET /api/v1/statistics/me/dashboard', 'Controller route GET /api/v1/statistics/me/dashboard', '/api/v1/statistics/me/dashboard', 'GET'),
+(260, 'GET_SHIFT_GROUP_ME', 'GET /api/v1/shift_group/me', 'Controller route GET /api/v1/shift_group/me', '/api/v1/shift_group/me', 'GET'),
+(261, 'PUT_SHIFT_GROUP_ID_EMPLOYEES', 'PUT /api/v1/shift_group/{id}/employees', 'Controller route PUT /api/v1/shift_group/{id}/employees', '/api/v1/shift_group/{id}/employees', 'PUT'),
+(262, 'POST_SHIFT_GROUP_ME_REGISTER', 'POST /api/v1/shift_group/me/register', 'Controller route POST /api/v1/shift_group/me/register', '/api/v1/shift_group/me/register', 'POST'),
+(263, 'GET_NOTIFICATION_BROADCAST_AUDIENCES', 'GET /api/v1/notification/broadcast/audiences', 'Controller route GET /api/v1/notification/broadcast/audiences', '/api/v1/notification/broadcast/audiences', 'GET'),
+(264, 'POST_NOTIFICATION_BROADCAST', 'POST /api/v1/notification/broadcast', 'Controller route POST /api/v1/notification/broadcast', '/api/v1/notification/broadcast', 'POST'),
+(265, 'GET_NOTIFICATION_BROADCAST_HISTORY', 'GET /api/v1/notification/broadcast/history', 'Controller route GET /api/v1/notification/broadcast/history', '/api/v1/notification/broadcast/history', 'GET');
 
 INSERT INTO `user`
 (user_id, username, password_hash, email, phone, status, created_at, updated_at)
@@ -1436,9 +1456,9 @@ SELECT 1, permission_id FROM `permission`;
 -- Thống kê theo vai trò: MANAGER (toàn chuỗi), STORE_MANAGER (cửa hàng mình), EMPLOYEE (cá nhân)
 INSERT INTO `role_permission` (role_id, permission_id)
 VALUES
-(2, 253), (2, 255), (2, 257),
-(3, 254), (3, 255), (3, 256), (3, 258),
-(4, 256), (4, 259);
+(2, 253), (2, 255), (2, 257), (2, 260), (2, 261), (2, 262), (2, 263), (2, 264), (2, 265),
+(3, 254), (3, 255), (3, 256), (3, 258), (3, 260), (3, 261), (3, 262), (3, 263), (3, 264), (3, 265),
+(4, 256), (4, 259), (4, 260), (4, 262);
 
 
 -- Route permissions are assigned to ADMIN by PermissionRouteSeeder.

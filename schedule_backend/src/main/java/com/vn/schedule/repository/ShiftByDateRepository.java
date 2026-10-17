@@ -9,5 +9,7 @@ import java.util.List;
 
 public interface ShiftByDateRepository extends JpaRepository<ShiftByDate, Integer> {
     List<ShiftByDate> findByWorkDateBetweenOrderByWorkDateAscStartTimeAsc(LocalDate from, LocalDate to);
+
+    java.util.Optional<ShiftByDate> findByShift_IdAndWorkDate(Integer shiftId, LocalDate workDate);
 }
 

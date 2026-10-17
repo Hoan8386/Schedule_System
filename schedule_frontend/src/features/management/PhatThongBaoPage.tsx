@@ -1,285 +1,259 @@
 "use client";
 
+import React, { useCallback, useState } from "react";
+import { BellRing, Clock, FileText, Info, RefreshCw, Send, Users } from "lucide-react";
+import { Alert, Badge, Button, Card, CardHeader, EmptyState, PageHeader, Spinner } from "@/components/ui";
+import { broadcastApi, type BroadcastAudience, type BroadcastPriority } from "@/lib/api";
+import { formatDateTime } from "@/lib/format";
 import { notify } from "@/lib/toast";
-import React, { useState } from "react";
-import {
-  BellRing,
-  Send,
-  Clock,
-  CheckCircle2,
-  FileText,
-  Info,
-} from "lucide-react";
+import { cn } from "@/lib/cn";
+import { useKeyedLoad } from "@/features/statistics/useStatistics";
 
+const AUDIENCE_LABEL: Record<BroadcastAudience, string> = {
+  ALL: "Tất cả nhân viên",
+  SHIFT_TODAY: "Nhân viên có ca làm hôm nay",
+  STORE_MANAGERS: "Trưởng cửa hàng",
+};
+
+const PRIORITY: Record<BroadcastPriority, { label: string; hint: string; tone: "neutral" | "warning" | "danger" }> = {
+  NORMAL: { label: "Bình thường", hint: "Thông báo chung", tone: "neutral" },
+  HIGH: { label: "Quan trọng", hint: "Cần nhân viên chú ý", tone: "warning" },
+  URGENT: { label: "Khẩn cấp", hint: "Cần xử lý ngay", tone: "danger" },
+};
+
+/** Mẫu soạn nhanh (chỉ điền sẵn nội dung, có thể sửa trước khi gửi). */
+const QUICK_TEMPLATES: { title: string; message: string; priority: BroadcastPriority }[] = [
+  {
+    title: "[ĐỔI LỊCH CA] Thay đổi lịch phân ca tuần tới",
+    message: "Quản lý đã cập nhật lại bảng phân ca tuần mới. Các bạn vui lòng vào mục Lịch làm việc kiểm tra ca và xác nhận trước 20:00 tối nay.",
+    priority: "HIGH",
+  },
+  {
+    title: "[ĐĂNG KÝ CA] Kỳ đăng ký ca mới đã mở",
+    message: "Kỳ đăng ký ca mới đã mở. Các bạn vào mục Đăng ký ca để chọn ca phù hợp trước khi đợt đăng ký đóng.",
+    priority: "NORMAL",
+  },
+  {
+    title: "[HỌP GIAO BAN] Họp đột xuất đầu ca làm",
+    message: "Toàn bộ nhân sự ca chiều tập trung trước giờ làm 15 phút để họp giao ban và phổ biến quy trình mới.",
+    priority: "URGENT",
+  },
+  {
+    title: "[VỆ SINH CỬA HÀNG] Tổng vệ sinh định kỳ cuối tuần",
+    message: "Nhắc các bạn hoàn tất checklist vệ sinh máy móc và bàn ghế trước khi bàn giao ca tối.",
+    priority: "NORMAL",
+  },
+];
+
+const fieldClass = "w-full rounded-xl border border-slate-300 bg-surface px-3 py-2 font-medium text-slate-800 outline-hidden focus:border-brand-500";
+
+/** Phát thông báo trong ứng dụng tới nhân sự; người nhận thấy ở chuông thông báo. */
 export default function PhatThongBaoPage() {
-  const [targetScope, setTargetScope] = useState("STORE_CURRENT");
-  const [selectedChannel, setSelectedChannel] = useState({
-    app: true,
-    email: false,
-    zalo: false,
-  });
-  const [priority, setPriority] = useState<"NORMAL" | "HIGH" | "URGENT">("HIGH");
+  const [storeId, setStoreId] = useState<number | undefined>(undefined);
+  const [audience, setAudience] = useState<BroadcastAudience>("ALL");
+  const [priority, setPriority] = useState<BroadcastPriority>("NORMAL");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [sendSuccess, setSendSuccess] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [version, setVersion] = useState(0);
 
-  // Mẫu thông báo gợi ý nhanh cho quản lý
-  const quickTemplates = [
-    {
-      title: "[ĐỔI LỊCH CA] Thay đổi lịch phân ca tuần tới",
-      message: "Quản lý đã cập nhật lại bảng phân ca tuần mới. Các bạn nhân viên vui lòng vào app kiểm tra ca làm và xác nhận trước 20:00 tối nay.",
-      priority: "HIGH" as const,
-    },
-    {
-      title: "[HỌP GIAO BAN] Họp đột xuất đầu ca làm",
-      message: "Toàn bộ nhân sự ca chiều tập trung tại quầy pha chế trước giờ làm 15 phút để họp giao ban và phổ biến quy trình mới.",
-      priority: "URGENT" as const,
-    },
-    {
-      title: "[VỆ SINH CỬA HÀNG] Tổng vệ sinh định kỳ cuối tuần",
-      message: "Nhắc nhở các bạn nhân viên hoàn tất bảng kiểm checklist vệ sinh máy móc và bàn ghế trước khi bàn giao ca tối.",
-      priority: "NORMAL" as const,
-    },
-    {
-      title: "[KHẨN CẤP] Điều chỉnh giờ đóng/mở cửa",
-      message: "Cửa hàng sẽ mở cửa trễ hơn 30 phút vào sáng mai để bảo trì hệ thống điện. Các bạn nhân viên ca sáng lưu ý nắm thông tin.",
-      priority: "URGENT" as const,
-    },
-  ];
+  const audiences = useKeyedLoad(`${storeId ?? "all"}|${version}`, () => broadcastApi.getAudiences(storeId), "Không thể tải đối tượng nhận");
+  const history = useKeyedLoad(`history|${version}`, () => broadcastApi.getHistory(10), "Không thể tải lịch sử phát thông báo");
+  const reload = useCallback(() => setVersion((value) => value + 1), []);
 
-  const handleApplyTemplate = (tpl: typeof quickTemplates[0]) => {
-    setTitle(tpl.title);
-    setMessage(tpl.message);
-    setPriority(tpl.priority);
-  };
+  const counts = audiences.data?.counts;
+  const recipientCount = counts?.[audience] ?? 0;
+  const stores = audiences.data?.stores ?? [];
+  const scopeName = storeId
+    ? stores.find((store) => store.storeId === storeId)?.storeName ?? "Cửa hàng đã chọn"
+    : audiences.data?.global
+      ? "Toàn chuỗi"
+      : "Các cửa hàng bạn quản lý";
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!title.trim() || !message.trim()) {
-      notify.warning("Vui lòng điền đầy đủ Tiêu đề và Nội dung thông báo!");
+      notify.warning("Vui lòng điền đầy đủ tiêu đề và nội dung thông báo!");
       return;
     }
-
-    setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
-      setSendSuccess(true);
-      setTimeout(() => {
-        setSendSuccess(false);
-        setTitle("");
-        setMessage("");
-      }, 3000);
-    }, 800);
+    if (recipientCount === 0) {
+      notify.warning("Không có nhân viên nào thuộc đối tượng đã chọn");
+      return;
+    }
+    if (!window.confirm(`Phát thông báo tới ${recipientCount} người (${AUDIENCE_LABEL[audience]} · ${scopeName})?`)) return;
+    setSending(true);
+    try {
+      await broadcastApi.send({ audience, storeId, title: title.trim(), content: message.trim(), priority });
+      setTitle("");
+      setMessage("");
+      reload();
+    } catch {
+      // Lỗi đã được hiện bằng toast từ HTTP client
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-brand-800 bg-brand-100 border border-brand-300 px-2.5 py-0.5 rounded-lg">
-              QUẢN LÝ VẬN HÀNH
-            </span>
-            <span className="text-slate-400 text-xs">/</span>
-            <span className="text-slate-700 text-xs font-bold">Kênh giao tiếp nhân sự</span>
-          </div>
-          <div className="flex items-center gap-2.5 mt-1">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              Phát thông báo tới nhân sự
-            </h1>
-            <div className="relative group">
-              <button
-                type="button"
-                className="w-6 h-6 rounded-full bg-slate-200 hover:bg-brand-100 text-slate-700 hover:text-brand-800 flex items-center justify-center font-bold transition-all cursor-help border border-slate-300 shadow-2xs"
-                title="Thông tin chức năng"
-              >
-                <Info className="w-3.5 h-3.5 stroke-[2.5]" />
-              </button>
-              <div className="absolute left-0 top-8 z-40 hidden group-hover:block w-80 p-3.5 bg-slate-900 text-white rounded-xl shadow-2xl transition-all pointer-events-none border border-slate-700">
-                <p className="text-slate-200 text-xs leading-relaxed font-medium">
-                  Chức năng dành cho Quản lý chi nhánh & Trưởng chuỗi phát thông tin tức thời, điều chỉnh ca làm và gửi thông báo khẩn tới nhân viên.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="page">
+      <PageHeader
+        title="Phát thông báo tới nhân sự"
+        subtitle="Gửi thông báo trong ứng dụng: người nhận thấy ngay ở chuông thông báo khi đăng nhập."
+        actions={
+          <Button variant="secondary" size="sm" onClick={reload} disabled={audiences.loading || history.loading}>
+            <RefreshCw className={audiences.loading || history.loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
+            Làm mới
+          </Button>
+        }
+      />
 
-      {sendSuccess && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 flex items-center gap-3 text-emerald-900 text-xs font-bold animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>Thông báo đã được phát thành công tới các nhân viên theo phạm vi đã chọn!</span>
-        </div>
-      )}
+      {audiences.error && <Alert>{audiences.error}</Alert>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Form soạn thông báo (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-300 shadow-xs p-6 space-y-5">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200">
-            <div className="w-8 h-8 rounded-xl bg-brand-100 text-brand-800 flex items-center justify-center font-bold border border-brand-200">
-              <BellRing className="w-4 h-4 stroke-[2.2]" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm">Soạn nội dung thông báo</h3>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-            {/* Phạm vi gửi */}
-            <div>
-              <label className="font-bold text-slate-800 block mb-1">
-                Phạm vi đối tượng nhận thông báo *
-              </label>
-              <select
-                value={targetScope}
-                onChange={(e) => setTargetScope(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl outline-hidden focus:border-brand-500 font-bold text-slate-800 bg-white"
-              >
-                <option value="STORE_CURRENT">Chi nhánh hiện tại phụ trách (28 nhân sự)</option>
-                <option value="SHIFT_TODAY">Nhân viên đang trong ca làm việc hôm nay (12 người)</option>
-                <option value="STORE_MANAGERS">Tất cả Trưởng ca & Quản lý cơ sở</option>
-                <option value="ALL_STORES">Toàn bộ nhân sự toàn chuỗi BLOAN (1,248 nhân sự)</option>
-              </select>
-            </div>
-
-            {/* Mức độ ưu tiên */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="font-bold text-slate-800 block mb-1">Mức độ ưu tiên *</label>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <Card className="lg:col-span-7">
+          <CardHeader title="Soạn nội dung thông báo" icon={BellRing} />
+          <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4 p-5 text-xs">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block font-bold text-slate-800">Cửa hàng</span>
                 <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as typeof priority)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl outline-hidden focus:border-brand-500 font-bold text-slate-800 bg-white"
+                  value={storeId ?? ""}
+                  onChange={(event) => setStoreId(event.target.value ? Number(event.target.value) : undefined)}
+                  className={fieldClass}
                 >
-                  <option value="NORMAL">Bình thường (Thông báo chung)</option>
-                  <option value="HIGH">Quan trọng (Cần xác nhận)</option>
-                  <option value="URGENT">Khẩn cấp (Rung chuông & Popup)</option>
+                  <option value="">{audiences.data?.global ? "Toàn chuỗi (mọi cửa hàng)" : "Tất cả cửa hàng tôi quản lý"}</option>
+                  {stores.map((store) => (
+                    <option key={store.storeId} value={store.storeId}>{store.storeName}</option>
+                  ))}
                 </select>
-              </div>
+              </label>
+              <label className="block">
+                <span className="mb-1 block font-bold text-slate-800">Mức độ ưu tiên *</span>
+                <select value={priority} onChange={(event) => setPriority(event.target.value as BroadcastPriority)} className={fieldClass}>
+                  {(Object.keys(PRIORITY) as BroadcastPriority[]).map((key) => (
+                    <option key={key} value={key}>
+                      {PRIORITY[key].label} ({PRIORITY[key].hint})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
-              <div>
-                <label className="font-bold text-slate-800 block mb-1">Kênh phát tin</label>
-                <div className="flex items-center gap-3 pt-2">
-                  <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={selectedChannel.app}
-                      onChange={(e) => setSelectedChannel({ ...selectedChannel, app: e.target.checked })}
-                      className="rounded accent-brand-500"
-                    />
-                    <span>App</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={selectedChannel.email}
-                      onChange={(e) => setSelectedChannel({ ...selectedChannel, email: e.target.checked })}
-                      className="rounded accent-brand-500"
-                    />
-                    <span>Email</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={selectedChannel.zalo}
-                      onChange={(e) => setSelectedChannel({ ...selectedChannel, zalo: e.target.checked })}
-                      className="rounded accent-brand-500"
-                    />
-                    <span>Zalo</span>
-                  </label>
-                </div>
+            <div>
+              <span className="mb-1 block font-bold text-slate-800">Đối tượng nhận *</span>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {(Object.keys(AUDIENCE_LABEL) as BroadcastAudience[]).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setAudience(key)}
+                    className={cn(
+                      "rounded-xl border p-3 text-left transition",
+                      audience === key ? "border-brand-400 bg-brand-50 ring-2 ring-brand-200" : "border-slate-200 hover:border-brand-300"
+                    )}
+                  >
+                    <p className="font-bold text-slate-800">{AUDIENCE_LABEL[key]}</p>
+                    <p className="mt-1 text-lg font-black text-brand-700">
+                      {counts ? counts[key] : <Spinner className="justify-start" />}
+                      {counts && <span className="ml-1 text-[11px] font-semibold text-slate-400">người</span>}
+                    </p>
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Tiêu đề */}
-            <div>
-              <label className="font-bold text-slate-800 block mb-1">Tiêu đề thông báo *</label>
+            <label className="block">
+              <span className="mb-1 block font-bold text-slate-800">Tiêu đề thông báo *</span>
               <input
                 type="text"
-                required
+                maxLength={255}
                 placeholder="vd: [LƯU Ý] Điều chỉnh lịch ca làm chiều nay..."
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-300 rounded-xl outline-hidden focus:border-brand-500 font-bold text-slate-900"
+                onChange={(event) => setTitle(event.target.value)}
+                className={cn(fieldClass, "py-2.5 font-bold")}
               />
-            </div>
+            </label>
 
-            {/* Nội dung */}
-            <div>
-              <label className="font-bold text-slate-800 block mb-1">Nội dung chi tiết *</label>
+            <label className="block">
+              <span className="mb-1 block font-bold text-slate-800">Nội dung chi tiết *</span>
               <textarea
                 rows={5}
-                required
-                placeholder="Nhập nội dung thông báo gửi đến các bạn nhân viên..."
+                placeholder="Nhập nội dung thông báo gửi đến nhân viên..."
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="w-full p-3 border border-slate-300 rounded-xl outline-hidden focus:border-brand-500 font-medium text-slate-800 leading-relaxed"
+                onChange={(event) => setMessage(event.target.value)}
+                className={cn(fieldClass, "p-3 leading-relaxed")}
               />
-            </div>
+            </label>
 
-            <div className="pt-2 flex items-center justify-end">
-              <button
-                type="submit"
-                disabled={isSending}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-900 font-black text-xs transition-all shadow-sm shadow-brand-200 cursor-pointer disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-                <span>{isSending ? "Đang phát thông báo..." : "Phát thông báo ngay"}</span>
-              </button>
+            <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                <Users className="h-3.5 w-3.5" />
+                Sẽ gửi tới <strong className="text-slate-800">{recipientCount}</strong> người · {AUDIENCE_LABEL[audience]} · {scopeName}
+              </p>
+              <Button type="submit" icon={Send} disabled={sending || !counts}>
+                {sending ? "Đang phát thông báo..." : "Phát thông báo ngay"}
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
 
-        {/* Cột phải: Mẫu gợi ý nhanh & Lịch sử gần đây (5 cols) */}
-        <div className="lg:col-span-5 space-y-5">
-          {/* Mẫu soạn nhanh */}
-          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-5 space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-              <FileText className="w-4 h-4 text-brand-800 stroke-[2.2]" />
-              <h3 className="font-bold text-slate-900 text-sm">Mẫu thông báo thông dụng</h3>
-            </div>
-            <p className="text-[11px] font-medium text-slate-700">
-              Bấm vào mẫu để tự động điền tiêu đề và nội dung:
-            </p>
-            <div className="space-y-2">
-              {quickTemplates.map((tpl, i) => (
-                <div
-                  key={i}
-                  onClick={() => handleApplyTemplate(tpl)}
-                  className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-brand-50 hover:border-brand-300 transition-all cursor-pointer"
+        <div className="space-y-5 lg:col-span-5">
+          <Card>
+            <CardHeader title="Mẫu soạn nhanh" icon={FileText} />
+            <div className="space-y-2 p-5">
+              <p className="text-[11px] text-slate-500">Bấm vào mẫu để điền sẵn tiêu đề, nội dung và mức độ ưu tiên:</p>
+              {QUICK_TEMPLATES.map((template) => (
+                <button
+                  key={template.title}
+                  type="button"
+                  onClick={() => {
+                    setTitle(template.title);
+                    setMessage(template.message);
+                    setPriority(template.priority);
+                  }}
+                  className="block w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-brand-300 hover:bg-brand-50"
                 >
-                  <p className="font-bold text-slate-900 text-xs truncate">{tpl.title}</p>
-                  <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{tpl.message}</p>
-                </div>
+                  <p className="truncate text-xs font-bold text-slate-900">{template.title}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-600">{template.message}</p>
+                </button>
               ))}
             </div>
-          </div>
+          </Card>
 
-          {/* Lịch sử phát gần nhất */}
-          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-5 space-y-3 text-xs">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-              <Clock className="w-4 h-4 text-blue-700 stroke-[2.2]" />
-              <h3 className="font-bold text-slate-900 text-sm">Thông báo đã gửi gần đây</h3>
+          <Card>
+            <CardHeader title="Thông báo đã phát gần đây" icon={Clock} iconClassName="text-blue-700" />
+            <div className="space-y-2.5 p-5 text-xs">
+              {history.error && <Alert>{history.error}</Alert>}
+              {!history.data && history.loading && <Spinner label="Đang tải lịch sử..." />}
+              {history.data && history.data.length === 0 && <EmptyState>Chưa phát thông báo nào.</EmptyState>}
+              {history.data?.map((item) => {
+                const meta = PRIORITY[item.priority] ?? PRIORITY.NORMAL;
+                const readPercent = item.recipients ? Math.round((item.readCount * 100) / item.recipients) : 0;
+                return (
+                  <div key={item.batchId} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-bold text-slate-800">{item.title}</p>
+                      <span className="shrink-0 font-mono text-[10px] text-slate-500">{formatDateTime(item.sentAt)}</span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-[11px] text-slate-600">{item.content}</p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <Badge tone={meta.tone}>{meta.label}</Badge>
+                      <span className="text-[11px] text-slate-600">
+                        Đã đọc <strong>{item.readCount}</strong>/{item.recipients} người
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 rounded-full bg-slate-200">
+                      <div className="h-full rounded-full bg-emerald-500" style={{ width: `${readPercent}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="space-y-2.5">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="flex items-center justify-between font-bold text-slate-800">
-                  <span>Họp đầu ca chiều</span>
-                  <span className="text-[10px] text-slate-500 font-mono">14:10 · Hôm nay</span>
-                </div>
-                <p className="text-[11px] text-slate-600 mt-1">Đã nhận: 12/12 nhân viên tại cửa hàng</p>
-              </div>
+          </Card>
 
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="flex items-center justify-between font-bold text-slate-800">
-                  <span>Cập nhật bảng phân ca T10</span>
-                  <span className="text-[10px] text-slate-500 font-mono">09:30 · Hôm qua</span>
-                </div>
-                <p className="text-[11px] text-slate-600 mt-1">Đã nhận: 28/28 nhân sự</p>
-              </div>
-            </div>
+          <div className="flex items-start gap-3 rounded-2xl border border-brand-200/80 bg-brand-50/60 p-4 text-xs text-brand-900">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+            <p>Thông báo được gửi trong ứng dụng (chuông thông báo). Người gửi không nhận thông báo của chính mình.</p>
           </div>
         </div>
       </div>

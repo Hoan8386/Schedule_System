@@ -18,15 +18,18 @@ public class ScheduleModule03Service {
     private final ShiftGroupRepository groupRepository;
     private final StoreRepository storeRepository;
     private final SchedulePeriodRepository periodRepository;
+    private final ShiftGroupEmployeeRepository groupMemberRepository;
 
     public ScheduleModule03Service(ScheduleRoundRepository roundRepository,
             ScheduleSessionRepository sessionRepository, ShiftGroupRepository groupRepository,
-            StoreRepository storeRepository, SchedulePeriodRepository periodRepository) {
+            StoreRepository storeRepository, SchedulePeriodRepository periodRepository,
+            ShiftGroupEmployeeRepository groupMemberRepository) {
         this.roundRepository = roundRepository;
         this.sessionRepository = sessionRepository;
         this.groupRepository = groupRepository;
         this.storeRepository = storeRepository;
         this.periodRepository = periodRepository;
+        this.groupMemberRepository = groupMemberRepository;
     }
 
     public List<ScheduleRound> rounds() { return roundRepository.findAll(); }
@@ -85,7 +88,11 @@ public class ScheduleModule03Service {
     @Transactional public ShiftGroup updateGroup(Integer id, ShiftGroupRequest b) {
         ShiftGroup e = group(id); applyGroup(e, b); e.setUpdatedAt(LocalDateTime.now()); return groupRepository.save(e);
     }
-    @Transactional public void deleteGroup(Integer id) { groupRepository.delete(group(id)); }
+    @Transactional public void deleteGroup(Integer id) {
+        ShiftGroup e = group(id);
+        groupMemberRepository.deleteByShiftGroupId(id); // gỡ thành viên trước để không vướng khóa ngoại
+        groupRepository.delete(e);
+    }
     private void applyGroup(ShiftGroup e, ShiftGroupRequest b) {
         e.setStore(storeRepository.getReferenceById(requiredInteger(b.get("storeId"), "storeId")));
         e.setShiftGroupCode(requiredText(b.get("shiftGroupCode"), "shiftGroupCode"));

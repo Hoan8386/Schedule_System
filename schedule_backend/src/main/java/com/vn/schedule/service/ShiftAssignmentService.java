@@ -23,14 +23,17 @@ public class ShiftAssignmentService {
     private final EmployeeRepository employeeRepository;
     private final ShiftByDateRepository shiftByDateRepository;
     private final StoreScopeService storeScopeService;
+    private final ShiftGroupMemberService shiftGroupMemberService;
 
     public ShiftAssignmentService(ShiftAssignmentRepository repository, EmployeeRepository employeeRepository,
                                   ShiftByDateRepository shiftByDateRepository,
-                                  StoreScopeService storeScopeService) {
+                                  StoreScopeService storeScopeService,
+                                  ShiftGroupMemberService shiftGroupMemberService) {
         this.repository = repository;
         this.employeeRepository = employeeRepository;
         this.shiftByDateRepository = shiftByDateRepository;
         this.storeScopeService = storeScopeService;
+        this.shiftGroupMemberService = shiftGroupMemberService;
     }
 
     public List<ShiftAssignmentResponse> findAll() {
@@ -87,7 +90,24 @@ public class ShiftAssignmentService {
             throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được đăng ký ca cho mình");
         }
         requireAccess(entity);
+        requireGroupMembershipForSelfRegistration(entity);
         return repository.save(entity);
+    }
+
+    /**
+     * Tự đăng ký ca (nhân viên / trưởng cửa hàng đăng ký cho chính mình): ca thuộc nhóm ca nào
+     * thì phải là thành viên nhóm đó. Quản lý xếp ca cho người khác không bị giới hạn.
+     */
+    private void requireGroupMembershipForSelfRegistration(ShiftAssignment entity) {
+        if (entity.getEmployee() == null || entity.getShiftByDate() == null) return;
+        Integer me = currentEmployeeIdOrNull();
+        if (me == null || !me.equals(entity.getEmployee().getId())) return;
+        var shift = entity.getShiftByDate().getShift();
+        if (shift == null || shift.getShiftGroup() == null) return;
+        if (!shiftGroupMemberService.isMember(shift.getShiftGroup().getId(), me)) {
+            throw new ApiException(HttpStatus.FORBIDDEN,
+                    "Bạn không thuộc nhóm ca \"" + shift.getShiftGroup().getShiftGroupName() + "\" nên không thể đăng ký ca này");
+        }
     }
 
     @Transactional
