@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   BookOpen,
   CalendarPlus,
@@ -15,7 +15,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { AppShell, initialsOf, type NavSection } from "@/components/layout";
+import { AppShell, initialsOf, usePageNavigation, type NavSection } from "@/components/layout";
 import StoreManagerDashboard from "@/features/store-manager/StoreManagerDashboard";
 import StoreManagerShiftRequestsPage from "@/features/store-manager/yeu-cau/StoreManagerShiftRequestsPage";
 import StoreManagerViolationPage from "@/features/store-manager/vi-pham/StoreManagerViolationPage";
@@ -45,7 +45,7 @@ const SECTIONS: NavSection[] = [
 
 export default function StoreManagerLayout() {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const { activePage: activeTab, navigate: setActiveTab, navigating } = usePageNavigation("dashboard");
 
   const renderPage = () => {
     switch (activeTab) {
@@ -83,6 +83,7 @@ export default function StoreManagerLayout() {
       sections={SECTIONS}
       activeId={activeTab}
       onSelect={setActiveTab}
+      navigating={navigating}
       breadcrumbRoot="Trưởng cửa hàng"
       topbarExtra={
         <span className="hidden rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 sm:inline-block">BLOAN · Nguyễn Trãi</span>

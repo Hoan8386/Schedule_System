@@ -13,7 +13,7 @@ import {
   User,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { AppShell, initialsOf, type NavSection } from "@/components/layout";
+import { AppShell, initialsOf, usePageNavigation, type NavSection } from "@/components/layout";
 import EmployeeDashboard from "@/features/employee/EmployeeDashboard";
 import EmployeeSchedulePage from "@/features/employee/EmployeeSchedulePage";
 import EmployeeRegisterShiftPage from "@/features/employee/dang-ky-ca/EmployeeRegisterShiftPage";
@@ -42,7 +42,7 @@ const SECTIONS: NavSection[] = [
 
 export default function EmployeeLayout() {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const { activePage: activeTab, navigate: setActiveTab, navigating } = usePageNavigation("dashboard");
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
@@ -94,6 +94,7 @@ export default function EmployeeLayout() {
         sections={SECTIONS}
         activeId={activeTab}
         onSelect={handleNavClick}
+        navigating={navigating}
         breadcrumbRoot="Nhân viên"
         topbarExtra={<span className="hidden text-xs text-slate-400 sm:inline-block">Thứ Hai, 05/10/2026</span>}
         helpMessage="Tổng đài hỗ trợ nhân sự: 1900 8386 (Nhánh 1)"

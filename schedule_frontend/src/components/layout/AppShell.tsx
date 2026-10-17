@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { PageTransitionOverlay } from "./PageTransitionOverlay";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import type { NavSection, ShellUser, UserMenuAction, WorkspaceScope } from "./types";
@@ -12,6 +13,8 @@ export interface AppShellProps {
   sections: NavSection[];
   activeId: string;
   onSelect: (id: string) => void;
+  /** Đang chuyển trang → hiện overlay trên vùng nội dung */
+  navigating?: boolean;
   navVariant?: "soft" | "solid";
   breadcrumbRoot: string;
   topbarExtra?: React.ReactNode;
@@ -31,6 +34,7 @@ export function AppShell({
   sections,
   activeId,
   onSelect,
+  navigating = false,
   navVariant,
   breadcrumbRoot,
   topbarExtra,
@@ -43,6 +47,12 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const title = sections.flatMap((section) => section.items).find((item) => item.id === activeId)?.label ?? "Tổng quan";
+  const mainRef = useRef<HTMLElement>(null);
+
+  // Trang mới luôn bắt đầu từ đầu thay vì giữ vị trí cuộn của trang cũ.
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [activeId]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-app font-sans text-slate-800">
@@ -67,7 +77,10 @@ export function AppShell({
           menuActions={userMenuActions}
           onLogout={onLogout}
         />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <div className="relative min-h-0 flex-1">
+          <main ref={mainRef} className="h-full overflow-y-auto">{children}</main>
+          <PageTransitionOverlay visible={navigating} />
+        </div>
       </div>
     </div>
   );

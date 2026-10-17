@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   BellRing,
   Calendar,
@@ -15,7 +15,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { AppShell, initialsOf, TopbarSearch, type NavSection } from "@/components/layout";
+import { AppShell, initialsOf, usePageNavigation, TopbarSearch, type NavSection } from "@/components/layout";
 import DashboardPage from "@/features/management/tong-quan/DashboardPage";
 import NhanSuPage from "@/features/management/nhan-su/NhanSuPage";
 import ChamCongPage from "@/features/management/ChamCongPage";
@@ -28,7 +28,8 @@ import CuaHangPage from "@/features/management/CuaHangPage";
 import PhatThongBaoPage from "@/features/management/PhatThongBaoPage";
 import QuanLyTestPage from "@/features/management/bai-test/QuanLyTestPage";
 
-const PAGES: Record<string, React.ComponentType> = {
+/** Trang có thể nhận onNavigate để chuyển sang trang khác (vd. tổng quan → xử lý yêu cầu). */
+const PAGES: Record<string, React.ComponentType<{ onNavigate?: (page: string) => void }>> = {
   dashboard: DashboardPage,
   nhansu: NhanSuPage,
   cuahang: CuaHangPage,
@@ -63,7 +64,7 @@ const SECTIONS: NavSection[] = [
 
 export default function ManagementLayout() {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const { activePage: activeTab, navigate: setActiveTab, navigating } = usePageNavigation("dashboard");
   const Page = PAGES[activeTab] ?? DashboardPage;
   const isAdmin = user?.roleCode === "ADMIN" || user?.role === "ADMIN";
 
@@ -78,6 +79,7 @@ export default function ManagementLayout() {
       sections={SECTIONS}
       activeId={activeTab}
       onSelect={setActiveTab}
+      navigating={navigating}
       breadcrumbRoot="Quản trị toàn hệ thống"
       topbarExtra={<TopbarSearch placeholder="Tìm nhân sự, cửa hàng, mã..." />}
       helpMessage="Tổng đài hỗ trợ vận hành chuỗi: 1900 8386 (Phím 1)"
@@ -90,7 +92,7 @@ export default function ManagementLayout() {
       }}
       onLogout={logout}
     >
-      <Page />
+      <Page onNavigate={setActiveTab} />
     </AppShell>
   );
 }

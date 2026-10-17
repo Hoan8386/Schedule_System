@@ -1,300 +1,127 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Download,
-  Calendar,
-  Clock,
-  Wallet,
-  Search,
-} from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from "recharts";
-import { chartAxisTick, chartColors, chartTooltipStyle } from "@/lib/theme";
+import React from "react";
+import { AlertTriangle, CalendarCheck, Clock, Download, UserCheck, Wallet } from "lucide-react";
+import { Alert, Button, Card, CardHeader, FullPageLoader, PageHeader } from "@/components/ui";
+import { statisticsApi, type StatPersonal } from "@/lib/api";
+import { formatDate } from "@/lib/format";
+import { DailyHoursChart, ShiftHistoryTable, StatCard, StatFilterBar } from "@/features/statistics/components";
+import { useStatData, useStatFilters } from "@/features/statistics/useStatistics";
+import { WORK_STATUS, downloadCsv, formatHours, formatPercent, formatVnd, rangeLabel } from "@/features/statistics/utils";
 
-const dailyHours = [
-  { day: "01/10", hours: 6 },
-  { day: "02/10", hours: 6 },
-  { day: "03/10", hours: 6 },
-  { day: "04/10", hours: 6 },
-  { day: "05/10", hours: 0 },
-];
+function exportShifts(data: StatPersonal) {
+  downloadCsv(
+    `ca-lam-cua-toi_${data.from}_${data.to}.csv`,
+    ["Ngày", "Ca", "Bắt đầu", "Kết thúc", "Cửa hàng", "Check-in", "Check-out", "Giờ làm", "Đơn giá/giờ", "Tiền công", "Trạng thái"],
+    data.shifts.map((item) => [
+      formatDate(item.workDate),
+      item.shiftName,
+      item.startTime,
+      item.endTime,
+      item.storeName,
+      item.checkInAt?.replace("T", " "),
+      item.checkOutAt?.replace("T", " "),
+      item.hours,
+      item.payRate,
+      item.wage,
+      WORK_STATUS[item.workStatus]?.label ?? item.workStatus,
+    ])
+  );
+}
 
-const completedShifts = [
-  {
-    date: "01/10/2026",
-    shift: "Ca sáng · 08:00 – 14:00",
-    store: "Nguyễn Trãi",
-    hours: "6 giờ",
-    rate: "30.000 VND",
-    total: "180.000 VND",
-    status: "Hoàn thành",
-  },
-  {
-    date: "02/10/2026",
-    shift: "Ca sáng · 08:00 – 14:00",
-    store: "Nguyễn Trãi",
-    hours: "6 giờ",
-    rate: "30.000 VND",
-    total: "180.000 VND",
-    status: "Hoàn thành",
-  },
-  {
-    date: "03/10/2026",
-    shift: "Ca sáng · 08:00 – 14:00",
-    store: "Nguyễn Trãi",
-    hours: "6 giờ",
-    rate: "30.000 VND",
-    total: "180.000 VND",
-    status: "Hoàn thành",
-  },
-  {
-    date: "04/10/2026",
-    shift: "Ca sáng · 08:00 – 14:00",
-    store: "Nguyễn Trãi",
-    hours: "6 giờ",
-    rate: "30.000 VND",
-    total: "180.000 VND",
-    status: "Hoàn thành",
-  },
-];
-
+/** Thống kê cá nhân: số ca, giờ làm, tiền công, chuyên cần và lịch sử ca. */
 export default function EmployeeStatsPage() {
-  const [search, setSearch] = useState("");
+  const { preset, setPreset, range, setCustomRange, storeId, setStoreId, filters } = useStatFilters();
+  const { data, loading, error, reload } = useStatData(statisticsApi.getMine, filters);
 
-  const handleExport = () => {
-    alert("Đang chuẩn bị file PDF sao kê giờ làm và tiền công của bạn...");
-  };
+  if (!data && loading) return <FullPageLoader label="Đang tải thống kê của bạn..." />;
+
+  const summary = data?.summary;
+  const payroll = data?.payroll;
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">
-            Thống kê ca làm & tiền
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Giờ làm và tiền công thực tế từ các ca đã hoàn thành.
-          </p>
-        </div>
-        <button
-          onClick={handleExport}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
-        >
-          <Download className="w-4 h-4 text-slate-500" />
-          <span>Xuất báo cáo</span>
-        </button>
-      </div>
+    <div className="page">
+      <PageHeader
+        title="Thống kê ca làm & tiền công"
+        subtitle={`Giờ làm và tiền công từ các ca đã hoàn thành · ${rangeLabel(data?.from, data?.to)}`}
+        actions={
+          <Button variant="secondary" icon={Download} onClick={() => data && exportShifts(data)} disabled={!data?.shifts.length}>
+            Xuất CSV
+          </Button>
+        }
+      />
 
-      {/* Date & Store Filter Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5">
-          <select className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300">
-            <option>01/10/2026 – 05/10/2026</option>
-            <option>Tháng 09/2026</option>
-          </select>
-          <select className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 outline-hidden hover:border-slate-300">
-            <option>Tất cả cửa hàng</option>
-            <option>BLOAN · Nguyễn Trãi</option>
-            <option>BLOAN · Cách Mạng Tháng 8</option>
-          </select>
-        </div>
-        <span className="text-slate-400 text-[11px]">
-          Cập nhật: 05/10/2026 · 09:00
-        </span>
-      </div>
+      <StatFilterBar
+        preset={preset}
+        onPresetChange={setPreset}
+        range={range}
+        onRangeChange={setCustomRange}
+        stores={data?.stores}
+        storeId={storeId}
+        onStoreChange={setStoreId}
+        loading={loading}
+        onReload={reload}
+      />
 
-      {/* 3 Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold text-slate-500">
-              Số ca hoàn thành
-            </span>
-            <Calendar className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="mt-3">
-            <div className="text-3xl font-black text-slate-800 tracking-tight">
-              4 ca
-            </div>
-            <div className="text-[11px] text-slate-400 mt-1 font-medium">
-              Không gồm ca sắp tới hoặc đã hủy
-            </div>
-          </div>
-        </div>
+      {error && <Alert>{error}</Alert>}
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold text-slate-500">
-              Tổng giờ làm
-            </span>
-            <Clock className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="mt-3">
-            <div className="text-3xl font-black text-slate-800 tracking-tight">
-              24 giờ
-            </div>
-            <div className="text-[11px] text-slate-400 mt-1 font-medium">
-              4 ca × 6 giờ
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold text-slate-500">
-              Tổng tiền công
-            </span>
-            <Wallet className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="mt-3">
-            <div className="text-3xl font-black text-slate-800 tracking-tight">
-              720.000 VND
-            </div>
-            <div className="text-[11px] text-slate-400 mt-1 font-medium">
-              24 giờ × 30.000 VND · Trước khấu trừ
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Middle Row: Bar Chart & Payroll breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-800">Giờ làm theo ngày</h3>
-            <span className="text-xs text-slate-400">Đơn vị: giờ</span>
-          </div>
-
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyHours} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
-                <XAxis dataKey="day" tick={chartAxisTick} tickLine={false} />
-                <YAxis
-                  domain={[0, 8]}
-                  ticks={[0, 3, 6]}
-                  tick={chartAxisTick}
-                  tickLine={false}
-                  unit=" giờ"
-                />
-                <Tooltip
-                  formatter={(val: unknown) => [`${val} giờ`, "Giờ làm"]}
-                  contentStyle={chartTooltipStyle}
-                />
-                <Bar dataKey="hours" fill={chartColors.brand} radius={[6, 6, 0, 0]} maxBarSize={48} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-800 mb-4">
-              Thông tin tiền công
-            </h3>
-
-            <div className="space-y-3.5 text-xs">
-              <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-500 font-medium">Đã ghi nhận</span>
-                <span className="font-bold text-slate-800">720.000 VND</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-500 font-medium">Đã thanh toán</span>
-                <span className="font-bold text-slate-800">0 VND</span>
-              </div>
-              <div className="flex items-center justify-between py-3">
-                <span className="text-slate-700 font-bold">Chưa thanh toán</span>
-                <span className="text-lg font-black text-brand-600">
-                  720.000 VND
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-[11px] text-slate-400 mt-4 leading-relaxed pt-3 border-t border-slate-100">
-            Tiền công tháng 10 được đối soát cuối tháng. Chưa bao gồm thưởng hoặc khấu trừ.
-          </p>
-        </div>
-      </div>
-
-      {/* Completed shifts history table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-            Lịch sử ca đã hoàn thành
-          </h3>
-
-          <div className="relative max-w-xs w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Tìm ngày hoặc ca"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-hidden hover:border-slate-300 focus:border-brand-400"
+      {summary && payroll && data && (
+        <>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatCard
+              label="Ca hoàn thành"
+              value={`${summary.completedShifts} ca`}
+              hint={`${summary.upcomingShifts} ca sắp tới · ${summary.pendingShifts} chờ duyệt`}
+              icon={CalendarCheck}
+            />
+            <StatCard label="Tổng giờ làm" value={formatHours(summary.totalHours)} hint="Theo chấm công" icon={Clock} tone="blue" />
+            <StatCard label="Tiền công tạm tính" value={formatVnd(summary.totalWage)} hint="Trước thưởng / khấu trừ" icon={Wallet} tone="emerald" />
+            <StatCard
+              label="Chuyên cần"
+              value={formatPercent(summary.attendanceRate)}
+              hint={`${summary.lateCount} lần trễ · ${summary.absentCount} vắng · ${summary.violationCount} vi phạm`}
+              icon={summary.violationCount || summary.absentCount ? AlertTriangle : UserCheck}
+              tone={summary.violationCount || summary.absentCount ? "rose" : "emerald"}
             />
           </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-semibold text-slate-400">
-                <th className="py-3 px-4">Ngày</th>
-                <th className="py-3 px-4">Ca & giờ</th>
-                <th className="py-3 px-4">Cửa hàng</th>
-                <th className="py-3 px-4">Giờ làm</th>
-                <th className="py-3 px-4">Đơn giá / giờ</th>
-                <th className="py-3 px-4">Tiền công</th>
-                <th className="py-3 px-4 text-right">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {completedShifts.map((row, i) => (
-                <tr key={i} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3 px-4 font-bold text-slate-800">
-                    {row.date}
-                  </td>
-                  <td className="py-3 px-4 font-medium">{row.shift}</td>
-                  <td className="py-3 px-4 text-slate-600">{row.store}</td>
-                  <td className="py-3 px-4">{row.hours}</td>
-                  <td className="py-3 px-4">{row.rate}</td>
-                  <td className="py-3 px-4 font-bold text-slate-800">{row.total}</td>
-                  <td className="py-3 px-4 text-right">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                      {row.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>Hiển thị 1–4 trong 4 ca · Tổng 24 giờ · 720.000 VND</span>
-          <div className="flex items-center gap-1.5">
-            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-400">
-              Trước
-            </button>
-            <button className="w-8 h-8 rounded-lg bg-brand-500 text-slate-900 font-bold flex items-center justify-center">
-              1
-            </button>
-            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-400">
-              Sau
-            </button>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <DailyHoursChart data={data.daily} />
+            </div>
+            <Card>
+              <CardHeader title="Thông tin tiền công" icon={Wallet} />
+              <div className="space-y-1 p-5 text-xs">
+                <Row label="Tạm tính từ chấm công" value={formatVnd(payroll.recordedWage)} />
+                <Row label="Thưởng (bảng lương)" value={`+${formatVnd(payroll.bonusAmount)}`} valueClass="text-emerald-600" />
+                <Row label="Khấu trừ (bảng lương)" value={`-${formatVnd(payroll.penaltyAmount)}`} valueClass="text-rose-600" />
+                <Row label="Bảng lương đã duyệt" value={formatVnd(payroll.approvedPayroll)} />
+                <Row label="Đã thanh toán" value={formatVnd(payroll.paidPayroll)} />
+                <div className="flex items-center justify-between pt-3">
+                  <span className="font-bold text-slate-700">Chưa thanh toán</span>
+                  <span className="text-lg font-black text-brand-600">
+                    {formatVnd(Math.max(0, payroll.approvedPayroll - payroll.paidPayroll))}
+                  </span>
+                </div>
+              </div>
+              <p className="border-t border-slate-100 px-5 py-3 text-[11px] leading-relaxed text-slate-400">
+                Bảng lương do quản lý lập theo tháng; tiền công tạm tính có thể khác số đã duyệt.
+              </p>
+            </Card>
           </div>
-        </div>
-      </div>
+
+          <ShiftHistoryTable shifts={data.shifts} title="Lịch sử ca của tôi" />
+        </>
+      )}
+    </div>
+  );
+}
+
+function Row({ label, value, valueClass = "text-slate-800" }: { label: string; value: string; valueClass?: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-slate-100 py-2">
+      <span className="font-medium text-slate-500">{label}</span>
+      <span className={`font-bold ${valueClass}`}>{value}</span>
     </div>
   );
 }

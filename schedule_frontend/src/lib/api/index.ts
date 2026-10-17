@@ -20,9 +20,11 @@ export { employeeApi } from "./employee";
 export { storeManagerApi } from "./storeManager";
 export { notificationApi, NOTIFICATION_PAGE_SIZE } from "./notification";
 export type { NotificationStatus } from "./notification";
+export { statisticsApi } from "./statistics";
 
 export type * from "./types/admin.types";
 export type * from "./types/hr.types";
 export type * from "./types/schedule.types";
 export type * from "./types/operations.types";
 export type * from "./types/test.types";
+export type * from "./types/statistics.types";

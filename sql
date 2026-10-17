@@ -1400,7 +1400,14 @@ VALUES
 (249, 'DELETE_SHIFT_GROUP_ID', 'DELETE /api/v1/shift_group/{id}', 'Controller route DELETE /api/v1/shift_group/{id}', '/api/v1/shift_group/{id}', 'DELETE'),
 (250, 'GET_SHIFT_GROUP_ID', 'GET /api/v1/shift_group/{id}', 'Controller route GET /api/v1/shift_group/{id}', '/api/v1/shift_group/{id}', 'GET'),
 (251, 'PUT_SHIFT_GROUP_ID', 'PUT /api/v1/shift_group/{id}', 'Controller route PUT /api/v1/shift_group/{id}', '/api/v1/shift_group/{id}', 'PUT'),
-(252, 'GET_SCHEDULE_PERIOD_ID_DELETE_PREVIEW', 'GET /api/v1/schedule_period/{id}/delete-preview', 'Controller route GET /api/v1/schedule_period/{id}/delete-preview', '/api/v1/schedule_period/{id}/delete-preview', 'GET');
+(252, 'GET_SCHEDULE_PERIOD_ID_DELETE_PREVIEW', 'GET /api/v1/schedule_period/{id}/delete-preview', 'Controller route GET /api/v1/schedule_period/{id}/delete-preview', '/api/v1/schedule_period/{id}/delete-preview', 'GET'),
+(253, 'GET_STATISTICS_MANAGER', 'GET /api/v1/statistics/manager', 'Controller route GET /api/v1/statistics/manager', '/api/v1/statistics/manager', 'GET'),
+(254, 'GET_STATISTICS_STORE_MANAGER', 'GET /api/v1/statistics/store-manager', 'Controller route GET /api/v1/statistics/store-manager', '/api/v1/statistics/store-manager', 'GET'),
+(255, 'GET_STATISTICS_STORE_MANAGER_EMPLOYEE_ID_SHIFTS', 'GET /api/v1/statistics/store-manager/employee/{employeeId}/shifts', 'Controller route GET /api/v1/statistics/store-manager/employee/{employeeId}/shifts', '/api/v1/statistics/store-manager/employee/{employeeId}/shifts', 'GET'),
+(256, 'GET_STATISTICS_ME', 'GET /api/v1/statistics/me', 'Controller route GET /api/v1/statistics/me', '/api/v1/statistics/me', 'GET'),
+(257, 'GET_STATISTICS_MANAGER_DASHBOARD', 'GET /api/v1/statistics/manager/dashboard', 'Controller route GET /api/v1/statistics/manager/dashboard', '/api/v1/statistics/manager/dashboard', 'GET'),
+(258, 'GET_STATISTICS_STORE_MANAGER_DASHBOARD', 'GET /api/v1/statistics/store-manager/dashboard', 'Controller route GET /api/v1/statistics/store-manager/dashboard', '/api/v1/statistics/store-manager/dashboard', 'GET'),
+(259, 'GET_STATISTICS_ME_DASHBOARD', 'GET /api/v1/statistics/me/dashboard', 'Controller route GET /api/v1/statistics/me/dashboard', '/api/v1/statistics/me/dashboard', 'GET');
 
 INSERT INTO `user`
 (user_id, username, password_hash, email, phone, status, created_at, updated_at)
@@ -1425,6 +1432,13 @@ VALUES
 INSERT INTO `role_permission`
 (role_id, permission_id)
 SELECT 1, permission_id FROM `permission`;
+
+-- Thống kê theo vai trò: MANAGER (toàn chuỗi), STORE_MANAGER (cửa hàng mình), EMPLOYEE (cá nhân)
+INSERT INTO `role_permission` (role_id, permission_id)
+VALUES
+(2, 253), (2, 255), (2, 257),
+(3, 254), (3, 255), (3, 256), (3, 258),
+(4, 256), (4, 259);
 
 
 -- Route permissions are assigned to ADMIN by PermissionRouteSeeder.

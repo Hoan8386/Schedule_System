@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Code, FileDigit, Mail, Palette, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { AppShell, initialsOf, TopbarSearch, type NavSection } from "@/components/layout";
+import { AppShell, initialsOf, usePageNavigation, TopbarSearch, type NavSection } from "@/components/layout";
 import QuanLyTaiKhoanPage from "@/features/admin/tai-khoan/QuanLyTaiKhoanPage";
 import ThongTinThuongHieuPage from "@/features/admin/thuong-hieu/ThongTinThuongHieuPage";
 import QuanLyApiPage from "@/features/admin/api/QuanLyApiPage";
@@ -34,7 +34,7 @@ const SECTIONS: NavSection[] = [
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("taikhoan");
+  const { activePage: activeTab, navigate: setActiveTab, navigating } = usePageNavigation("taikhoan");
   const Page = PAGES[activeTab] ?? QuanLyTaiKhoanPage;
 
   return (
@@ -44,6 +44,7 @@ export default function AdminLayout() {
       sections={SECTIONS}
       activeId={activeTab}
       onSelect={setActiveTab}
+      navigating={navigating}
       navVariant="solid"
       breadcrumbRoot="Admin Portal"
       topbarExtra={<TopbarSearch placeholder="Tìm tài khoản, API, mã..." />}
