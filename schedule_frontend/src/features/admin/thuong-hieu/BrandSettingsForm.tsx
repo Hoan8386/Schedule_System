@@ -1,3 +1,4 @@
+import { notify } from "@/lib/toast";
 import React from "react";
 import Image from "next/image";
 import { Building, Image as ImageIcon, Palette, Upload } from "lucide-react";
@@ -73,7 +74,7 @@ export function BrandSettingsForm({ brand, onChange }: Props) {
             </div>
           </div>
           <button
-            onClick={() => alert("Mở cửa sổ tải ảnh logo tùy chỉnh từ máy tính...")}
+            onClick={() => notify.info("Mở cửa sổ tải ảnh logo tùy chỉnh từ máy tính...")}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 py-3 text-xs font-bold text-slate-600 transition-all hover:border-brand-400 hover:bg-brand-50/20"
           >
             <Upload className="h-4 w-4 text-slate-500" />

@@ -1,3 +1,4 @@
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import { Check, Info, Play, Server } from "lucide-react";
 
@@ -33,7 +34,7 @@ export function SmtpTab() {
     setTesting(true);
     setTimeout(() => {
       setTesting(false);
-      alert("Kết nối máy chủ SMTP thành công! Email kiểm tra đã được gửi đến: cskh@anvatbloan.vn");
+      notify.success("Kết nối máy chủ SMTP thành công! Email kiểm tra đã được gửi đến: cskh@anvatbloan.vn");
     }, 1000);
   };
 
@@ -99,7 +100,7 @@ export function SmtpTab() {
             <Play className="h-3.5 w-3.5 fill-brand-600 text-brand-600" />
             <span>{testing ? "Đang gửi thử..." : "Gửi Email kiểm tra (Test SMTP)"}</span>
           </button>
-          <button onClick={() => alert("Đã lưu thiết lập kết nối SMTP thành công!")} className="btn btn-primary px-5">
+          <button onClick={() => notify.success("Đã lưu thiết lập kết nối SMTP thành công!")} className="btn btn-primary px-5">
             <Check className="h-4 w-4 stroke-[3]" />
             <span>Lưu thông số SMTP</span>
           </button>

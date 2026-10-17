@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import { Activity, Code, ExternalLink, Info, Layers, ShieldCheck } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
@@ -60,7 +61,7 @@ export default function QuanLyApiPage() {
         {loading && (
           <div className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-xs font-bold text-slate-700">Đang tải quyền API, vai trò và liên kết phân quyền từ backend...</div>
         )}
-        <button onClick={() => alert(`Mở Swagger UI Backend: ${API_BASE_URL}/swagger-ui.html`)} className="btn btn-secondary">
+        <button onClick={() => notify.info(`Mở Swagger UI Backend: ${API_BASE_URL}/swagger-ui.html`)} className="btn btn-secondary">
           <ExternalLink className="h-4 w-4 text-slate-700" />
           <span>Tài liệu Swagger UI</span>
         </button>

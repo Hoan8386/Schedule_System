@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import {
   Monitor,
@@ -31,8 +32,8 @@ export default function EmployeeFeedbackPage() {
       });
       setIsSent(true);
       setTimeout(() => setIsSent(false), 1200);
-    } catch (cause) {
-      alert(cause instanceof Error ? cause.message : "Không thể gửi phản hồi");
+    } catch {
+      // Lỗi đã được hiện bằng toast từ HTTP client
     }
   };
 
@@ -186,7 +187,7 @@ export default function EmployeeFeedbackPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => alert("Chọn tệp từ thiết bị...")}
+                  onClick={() => notify.info("Chọn tệp từ thiết bị...")}
                   className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-bold text-slate-700"
                 >
                   Chọn tệp

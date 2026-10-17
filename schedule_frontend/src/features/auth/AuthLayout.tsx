@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React from "react";
 import Image from "next/image";
 import { Calendar, Users, ShieldCheck, Lock } from "lucide-react";
@@ -104,7 +105,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                 Cần hỗ trợ?{" "}
                 <button
                   type="button"
-                  onClick={() => alert("Vui lòng liên hệ bộ phận IT / Nhân sự: admin@bloan.vn hoặc hotline 1900-BLOAN")}
+                  onClick={() => notify.info("Vui lòng liên hệ bộ phận IT / Nhân sự: admin@bloan.vn hoặc hotline 1900-BLOAN")}
                   className="text-red-600 font-semibold hover:underline cursor-pointer"
                 >
                   Liên hệ quản trị viên

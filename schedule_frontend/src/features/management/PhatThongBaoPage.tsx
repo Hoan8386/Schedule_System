@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import {
   BellRing,
@@ -56,7 +57,7 @@ export default function PhatThongBaoPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !message.trim()) {
-      alert("Vui lòng điền đầy đủ Tiêu đề và Nội dung thông báo!");
+      notify.warning("Vui lòng điền đầy đủ Tiêu đề và Nội dung thông báo!");
       return;
     }
 

@@ -1,3 +1,4 @@
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import { CheckCircle2, Edit, KeyRound, Lock, MoreHorizontal, RotateCcw, Search, Trash2, Unlock, Users } from "lucide-react";
 import { roleBadgeClass, roleLabel, type AccountItem } from "./roles";
@@ -116,7 +117,7 @@ export function AccountTable({ accounts, totalCount, filters, onFiltersChange, o
                             <MenuItem
                               icon={<KeyRound className="h-3.5 w-3.5 text-blue-600" />}
                               label="Cấp lại mật khẩu"
-                              onClick={() => { setMenuFor(null); alert(`Mật khẩu tạm thời cho @${account.username} đã được cấp lại: Bloan@2026`); }}
+                              onClick={() => { setMenuFor(null); notify.success(`Mật khẩu tạm thời cho @${account.username} đã được cấp lại: Bloan@2026`); }}
                             />
                             <div className="my-1 border-t border-slate-100" />
                             <MenuItem danger icon={<Trash2 className="h-3.5 w-3.5 text-rose-600" />} label="Xóa tài khoản" onClick={() => { setMenuFor(null); onDelete(account); }} />

@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import { Check, Info, RotateCcw } from "lucide-react";
 import { DEFAULT_BRAND, type BrandSettings } from "./brandConfig";
@@ -43,7 +44,7 @@ export default function ThongTinThuongHieuPage() {
             <RotateCcw className="h-4 w-4 text-slate-700" />
             <span>Khôi phục mặc định</span>
           </button>
-          <button onClick={() => alert("Đã lưu cấu hình thương hiệu & giao diện chuỗi thành công!")} className="btn btn-primary px-5 shadow-sm shadow-brand-200">
+          <button onClick={() => notify.success("Đã lưu cấu hình thương hiệu & giao diện chuỗi thành công!")} className="btn btn-primary px-5 shadow-sm shadow-brand-200">
             <Check className="h-4 w-4 stroke-[3]" />
             <span>Lưu cài đặt thương hiệu</span>
           </button>

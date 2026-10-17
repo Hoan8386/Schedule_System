@@ -1,3 +1,4 @@
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import { Search } from "lucide-react";
 import { PLAN_STATUS, type TestPlan } from "./model";
@@ -69,11 +70,11 @@ export function TestPlanTable({ tests }: { tests: TestPlan[] }) {
                   </td>
                   <td className="px-4 py-3.5 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => alert(`Xem chi tiết bài test: ${test.title}`)} className="rounded-xl border border-slate-200 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50">
+                      <button onClick={() => notify.info(`Xem chi tiết bài test: ${test.title}`)} className="rounded-xl border border-slate-200 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50">
                         {test.status === "CLOSED" ? "Xem kết quả" : "Xem"}
                       </button>
                       {test.status !== "CLOSED" && (
-                        <button onClick={() => alert(`Đã phân phối bài test: ${test.title}`)} className="rounded-xl border border-slate-200 px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50">
+                        <button onClick={() => notify.success(`Đã phân phối bài test: ${test.title}`)} className="rounded-xl border border-slate-200 px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50">
                           Giao bài
                         </button>
                       )}

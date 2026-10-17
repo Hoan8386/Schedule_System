@@ -1,3 +1,4 @@
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import { Search } from "lucide-react";
 import { VIOLATION_STATUS, type ViolationItem } from "./model";
@@ -78,7 +79,7 @@ export function ViolationTable({ violations }: { violations: ViolationItem[] }) 
                   </td>
                   <td className="px-4 py-3.5 text-right">
                     <button
-                      onClick={() => alert(pending ? `Đang mở biên bản xác minh ${item.id}` : `Xem chi tiết hồ sơ ${item.id}`)}
+                      onClick={() => notify.info(pending ? `Đang mở biên bản xác minh ${item.id}` : `Xem chi tiết hồ sơ ${item.id}`)}
                       className={`rounded-xl border border-slate-200 py-1.5 hover:bg-slate-50 ${pending ? "px-3.5 font-bold text-slate-700" : "px-3 font-medium text-slate-600"}`}
                     >
                       {pending ? "Xử lý" : "Xem"}

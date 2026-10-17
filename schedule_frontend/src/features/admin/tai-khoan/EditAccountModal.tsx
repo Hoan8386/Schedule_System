@@ -41,10 +41,9 @@ export function EditAccountModal({ account, roles, stores, onClose, onSaved }: P
         }
         await adminUserApi.assignRole({ userId: account.id, roleId });
       }
-      alert(`Cập nhật thông tin và phân quyền cho @${account.username} thành công!`);
       onSaved();
-    } catch (cause) {
-      alert(`Cập nhật thất bại: ${cause instanceof Error ? cause.message : "Lỗi khi cập nhật tài khoản!"}`);
+    } catch {
+      // Lỗi đã được hiện bằng toast từ HTTP client
     } finally {
       setSubmitting(false);
     }

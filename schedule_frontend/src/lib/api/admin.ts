@@ -25,7 +25,8 @@ const roles = crud<RoleResponse, RoleRequest>("/api/v1/role");
 const permissions = crud<PermissionResponse, PermissionRequest>("/api/v1/permission");
 
 /** DELETE có body (bảng liên kết khóa kép). */
-const deleteWithBody = (path: string, body: unknown) => request<void>(path, { method: "DELETE", body: JSON.stringify(body) });
+const deleteWithBody = (path: string, body: unknown, notify?: boolean) =>
+  request<void>(path, { method: "DELETE", body: JSON.stringify(body), notify });
 
 /** Tài khoản, vai trò, quyền và liên kết giữa chúng. */
 export const adminUserApi = {
@@ -50,7 +51,8 @@ export const adminUserApi = {
   getUserRoles: () => http.get<UserRoleResponse[]>("/api/v1/user_role"),
   assignRole: (body: UserRoleRequest) => http.post<UserRoleResponse>("/api/v1/user_role", body),
   updateUserRole: (body: UserRoleRequest) => http.put<UserRoleResponse>("/api/v1/user_role", body),
-  removeRole: (body: { userId: number; roleId: number }) => deleteWithBody("/api/v1/user_role", body),
+  // Bước phụ khi đổi vai trò (có thể chưa từng có vai trò cũ) nên không hiện toast
+  removeRole: (body: { userId: number; roleId: number }) => deleteWithBody("/api/v1/user_role", body, false),
 
   getRolePermissions: () => http.get<RolePermissionResponse[]>("/api/v1/role_permission"),
   assignPermission: (body: RolePermissionRequest) => http.post<RolePermissionResponse>("/api/v1/role_permission", body),

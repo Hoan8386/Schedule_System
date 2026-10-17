@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, { useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2, Clock, FileText, Search } from "lucide-react";
 import { employeeApi } from "@/lib/api";
@@ -122,7 +123,7 @@ export default function EmployeeTestPage() {
                       )}
                       {test.status === "COMPLETED" && (
                         <button
-                          onClick={() => alert(`Kết quả kiểm tra: ${test.score}/100 điểm. Đạt tiêu chuẩn phục vụ.`)}
+                          onClick={() => notify.info(`Kết quả kiểm tra: ${test.score}/100 điểm. Đạt tiêu chuẩn phục vụ.`)}
                           className="rounded-xl border border-slate-200 px-3 py-1.5 font-semibold text-slate-600 transition-all hover:bg-slate-50"
                         >
                           Xem kết quả

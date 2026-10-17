@@ -1,3 +1,4 @@
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import { Send } from "lucide-react";
 import { DRAFT_OPTIONS, STORE_STAFF } from "./model";
@@ -75,10 +76,10 @@ export function TestEditor({ draft, onChange }: EditorProps) {
         </div>
 
         <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-          <button type="button" onClick={() => alert("Đã thêm câu hỏi thứ 3 vào bài test!")} className="btn btn-secondary btn-sm">
+          <button type="button" onClick={() => notify.success("Đã thêm câu hỏi thứ 3 vào bài test!")} className="btn btn-secondary btn-sm">
             + Thêm câu hỏi
           </button>
-          <button type="button" onClick={() => alert("Đã lưu bản nháp thành công!")} className="btn btn-primary btn-sm px-5">
+          <button type="button" onClick={() => notify.success("Đã lưu bản nháp thành công!")} className="btn btn-primary btn-sm px-5">
             Lưu bản nháp
           </button>
         </div>

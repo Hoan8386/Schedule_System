@@ -1,3 +1,4 @@
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import { Check } from "lucide-react";
 import { EMAIL_TEMPLATES, NOTIFICATION_TEMPLATES, type EmailTemplate, type NotificationTemplate } from "./mockData";
@@ -36,7 +37,7 @@ function TemplatePicker<T extends { id: string; name: string; code: string }>({ 
       </div>
       <div className="flex items-center gap-2">
         <span className={`rounded-lg border px-2.5 py-1 font-mono text-[11px] font-bold ${codeClass}`}>Mã: {selected.code}</span>
-        <button onClick={() => alert(`Đã lưu nội dung ${saveLabel} "${selected.name}" thành công!`)} className="btn btn-primary btn-sm">
+        <button onClick={() => notify.success(`Đã lưu nội dung ${saveLabel} "${selected.name}" thành công!`)} className="btn btn-primary btn-sm">
           <Check className="h-3.5 w-3.5 stroke-[3]" />
           <span>Lưu {saveLabel}</span>
         </button>

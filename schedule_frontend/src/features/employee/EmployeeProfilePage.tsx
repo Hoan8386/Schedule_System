@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, { useEffect, useState } from "react";
 import {
   Pencil,
@@ -36,7 +37,7 @@ export default function EmployeeProfilePage() {
           </p>
         </div>
         <button
-          onClick={() => alert("Chức năng cập nhật liên hệ đang mở cho nhân sự.")}
+          onClick={() => notify.info("Chức năng cập nhật liên hệ đang mở cho nhân sự.")}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
         >
           <Pencil className="w-4 h-4 text-slate-500" />
@@ -90,7 +91,7 @@ export default function EmployeeProfilePage() {
               <span>Email đã xác thực</span>
             </div>
             <button
-              onClick={() => alert("Vui lòng kiểm tra email để đặt lại mật khẩu.")}
+              onClick={() => notify.info("Vui lòng kiểm tra email để đặt lại mật khẩu.")}
               className="w-full mt-2 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 font-bold text-slate-700 flex items-center justify-center gap-2 transition-all shadow-xs"
             >
               <Lock className="w-4 h-4 text-slate-500" />

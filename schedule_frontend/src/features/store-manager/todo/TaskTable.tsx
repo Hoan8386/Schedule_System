@@ -1,3 +1,4 @@
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import { Check, Search } from "lucide-react";
 import { STATUS_BADGE, type TaskItem, type TaskStatus } from "./model";
@@ -127,7 +128,7 @@ export function TaskTable({ tasks, onToggle }: Props) {
                     <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${badge.className}`}>{badge.label}</span>
                   </td>
                   <td className="px-4 py-3.5 text-right">
-                    <button onClick={() => alert(`Xem chi tiết công việc: ${task.title}`)} className="rounded-xl border border-slate-200 px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50">
+                    <button onClick={() => notify.info(`Xem chi tiết công việc: ${task.title}`)} className="rounded-xl border border-slate-200 px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50">
                       Chi tiết
                     </button>
                   </td>

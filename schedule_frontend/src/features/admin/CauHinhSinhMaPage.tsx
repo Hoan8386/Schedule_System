@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, { useState } from "react";
 import {
   Sparkles,
@@ -108,7 +109,7 @@ export default function CauHinhSinhMaPage() {
   };
 
   const handleSave = () => {
-    alert("Đã lưu quy tắc cấu hình sinh mã tự động toàn hệ thống!");
+    notify.success("Đã lưu quy tắc cấu hình sinh mã tự động toàn hệ thống!");
   };
 
   return (
@@ -145,7 +146,7 @@ export default function CauHinhSinhMaPage() {
         </div>
         <div className="flex items-center gap-2.5">
           <button
-            onClick={() => alert("Đã đặt lại quy tắc về chuẩn mặc định")}
+            onClick={() => notify.success("Đã đặt lại quy tắc về chuẩn mặc định")}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
           >
             <RotateCcw className="w-4 h-4 text-slate-700" />

@@ -247,7 +247,7 @@ public class SchedulePeriodService {
         entity.setDescription(asString(body.get("description"), "description"));
         entity.setRegistrationOpenAt(parseLocalDateTime(body.get("registrationOpenAt"), "registrationOpenAt"));
         entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
-        entity.setStatus(asString(body.get("status"), "status"));
+        entity.setStatus(asStatus(body.get("status")));
         entity.setCreatedBy(asInteger(body.get("createdBy"), "createdBy"));
         entity.setFinalizedBy(asInteger(body.get("finalizedBy"), "finalizedBy"));
         entity.setFinalizedAt(parseLocalDateTime(body.get("finalizedAt"), "finalizedAt"));
@@ -277,10 +277,25 @@ public class SchedulePeriodService {
         if (values.containsKey("registrationCloseAt")) {
             entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
         }
-        if (values.containsKey("status")) entity.setStatus(asString(body.get("status"), "status"));
+        if (values.containsKey("status")) entity.setStatus(asStatus(body.get("status")));
         if (values.containsKey("createdBy")) entity.setCreatedBy(asInteger(body.get("createdBy"), "createdBy"));
         if (values.containsKey("finalizedBy")) entity.setFinalizedBy(asInteger(body.get("finalizedBy"), "finalizedBy"));
         if (values.containsKey("finalizedAt")) entity.setFinalizedAt(parseLocalDateTime(body.get("finalizedAt"), "finalizedAt"));
+    }
+
+    /** Trạng thái kỳ lịch hợp lệ. */
+    private static final Set<String> PERIOD_STATUSES = Set.of("DRAFT", "OPEN", "CANCELLED", "FINALIZED");
+
+    private String asStatus(Object value) {
+        String status = asString(value, "status");
+        if (status == null || status.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Trạng thái kỳ không được để trống");
+        }
+        String normalized = status.trim().toUpperCase();
+        if (!PERIOD_STATUSES.contains(normalized)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Trạng thái kỳ chỉ nhận DRAFT / OPEN / CANCELLED / FINALIZED");
+        }
+        return normalized;
     }
 
     private String asString(Object value, String fieldName) {

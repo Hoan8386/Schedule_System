@@ -3,7 +3,10 @@
  * - Tự gắn access token, Content-Type JSON (trừ FormData).
  * - Chuẩn hóa response { statusCode, error, message, data } của backend.
  * - Lỗi luôn được ném dưới dạng ApiError (kế thừa Error).
+ * - Thao tác thay đổi dữ liệu (POST/PUT/PATCH/DELETE) tự hiện toast thành công / thất bại theo response.
  */
+
+import { notify, successMessage } from "@/lib/toast";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 export const ACCESS_TOKEN_KEY = "bloan_access_token";
@@ -58,10 +61,43 @@ function errorMessageOf(json: RawBody | null, text: string) {
   return text || "Đã xảy ra lỗi, vui lòng thử lại sau.";
 }
 
-export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+export interface RequestOptions extends RequestInit {
+  /**
+   * Hiện toast kết quả. Mặc định: bật cho POST/PUT/PATCH/DELETE (thành công lẫn thất bại), tắt cho GET.
+   * Các API /auth tự hiển thị thông báo riêng nên mặc định tắt.
+   */
+  notify?: boolean;
+}
+
+const shouldNotify = (endpoint: string, method: string, notifyOption?: boolean) =>
+  notifyOption ?? (method !== "GET" && !endpoint.startsWith("/api/v1/auth/"));
+
+export async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+  const { notify: notifyOption, ...init } = options;
+  const method = (init.method ?? "GET").toUpperCase();
+  const withToast = typeof window !== "undefined" && shouldNotify(endpoint, method, notifyOption);
+
+  try {
+    const response = await send<T>(endpoint, init);
+    if (withToast) {
+      const message = successMessage(method, response.message);
+      notify.success(message, { id: `ok:${message}` });
+    }
+    return response;
+  } catch (cause) {
+    if (withToast) {
+      const error = cause instanceof ApiError ? cause : null;
+      const message = error?.serverMessage ?? "Thao tác thất bại, vui lòng thử lại";
+      notify.error(message, { id: `err:${message}`, description: error ? `HTTP ${error.statusCode}` : undefined });
+    }
+    throw cause;
+  }
+}
+
+async function send<T>(endpoint: string, init: RequestInit): Promise<ApiResponse<T>> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers: buildHeaders(options) });
+    res = await fetch(`${API_BASE_URL}${endpoint}`, { ...init, headers: buildHeaders(init) });
   } catch {
     throw new ApiError(
       `Không thể kết nối đến máy chủ backend (${API_BASE_URL}). Vui lòng kiểm tra backend đang chạy.`,
@@ -102,12 +138,16 @@ export function withQuery(path: string, params?: Record<string, QueryValue>) {
   return query ? `${path}?${query}` : path;
 }
 
+type CallOptions = Pick<RequestOptions, "notify">;
+
+const jsonBody = (body?: unknown) => (body === undefined ? undefined : JSON.stringify(body));
+
 export const http = {
-  get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) }),
-  put: <T>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body: body === undefined ? undefined : JSON.stringify(body) }),
-  patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body: body === undefined ? undefined : JSON.stringify(body) }),
-  delete: <T = void>(path: string) => request<T>(path, { method: "DELETE" }),
+  get: <T>(path: string, opts?: CallOptions) => request<T>(path, opts),
+  post: <T>(path: string, body?: unknown, opts?: CallOptions) => request<T>(path, { method: "POST", body: jsonBody(body), ...opts }),
+  put: <T>(path: string, body?: unknown, opts?: CallOptions) => request<T>(path, { method: "PUT", body: jsonBody(body), ...opts }),
+  patch: <T>(path: string, body?: unknown, opts?: CallOptions) => request<T>(path, { method: "PATCH", body: jsonBody(body), ...opts }),
+  delete: <T = void>(path: string, opts?: CallOptions) => request<T>(path, { method: "DELETE", ...opts }),
 };
 
 /** Upload một tệp dạng multipart/form-data. */

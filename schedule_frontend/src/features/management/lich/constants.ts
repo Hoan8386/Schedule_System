@@ -18,7 +18,7 @@ export const KIND_LABEL: Record<Kind, string> = {
 };
 
 export const STATUS_OPTIONS = {
-  period: ["DRAFT", "OPEN", "CLOSED", "PENDING", "FINALIZED"],
+  period: ["DRAFT", "OPEN", "CANCELLED", "FINALIZED"],
   round: ["OPEN", "CLOSED"],
   session: ["OPEN", "PENDING", "CLOSED"],
   shift: ["ACTIVE", "INACTIVE"],

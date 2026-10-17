@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, { useEffect, useState } from "react";
 import { AlertCircle, Plus } from "lucide-react";
 import { storeManagerApi } from "@/lib/api";
@@ -86,7 +87,7 @@ export default function StoreManagerTestManagementPage({ mode = "quanlytest" }: 
         <button
           onClick={() => {
             setDraft({ ...draft, testName: "Bài kiểm tra mới" });
-            alert("Đã mở mẫu soạn bài kiểm tra mới!");
+            notify.info("Đã mở mẫu soạn bài kiểm tra mới!");
           }}
           className="btn btn-primary px-5 shadow-sm shadow-brand-200"
         >

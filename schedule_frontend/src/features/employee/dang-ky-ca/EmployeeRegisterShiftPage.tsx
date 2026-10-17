@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, { useEffect, useState } from "react";
 import { Copy, Info } from "lucide-react";
 import { employeeApi } from "@/lib/api";
@@ -53,7 +54,7 @@ export default function EmployeeRegisterShiftPage() {
           <h1 className="text-2xl font-black tracking-tight text-slate-800">Đăng ký ca</h1>
           <p className="mt-1 text-xs text-slate-500">Chọn ca phù hợp cho tuần tới. Quản lý sẽ xác nhận lịch sau khi kỳ đăng ký kết thúc.</p>
         </div>
-        <button onClick={() => alert("Đã tự động chọn các ca tương ứng theo kỳ trước!")} className="btn btn-secondary shadow-xs">
+        <button onClick={() => notify.info("Đã tự động chọn các ca tương ứng theo kỳ trước!")} className="btn btn-secondary shadow-xs">
           <Copy className="h-4 w-4 text-slate-500" />
           <span>Thêm giống kỳ trước</span>
         </button>
