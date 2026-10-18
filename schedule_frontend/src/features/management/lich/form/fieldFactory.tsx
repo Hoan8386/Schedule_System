@@ -18,14 +18,22 @@ export function defaultValueOf(item: Entity | undefined, key: string) {
   return String(current);
 }
 
+/** Trạng thái mặc định khi tạo mới: OPEN hoặc ACTIVE nếu có, không thì lựa chọn đầu tiên. */
+const defaultStatus = (options: readonly string[]) => options.find((option) => option === "OPEN" || option === "ACTIVE") ?? options[0] ?? "";
+
 /** Bộ tạo field uncontrolled cho form lưu bằng FormData. */
 export function fieldFactory(item: Entity | undefined) {
   const value = (name: string) => defaultValueOf(item, name);
+  /** Ô date chỉ nhận yyyy-MM-dd (giá trị đang lưu có thể kèm giờ) */
+  const inputValue = (name: string, type: string) => {
+    const current = value(name);
+    return type === "date" && current.includes("T") ? current.slice(0, 10) : current;
+  };
 
   return {
     input: (name: string, label: string, type = "text", required = false) => (
       <Field label={label}>
-        <Input name={name} type={type} required={required} defaultValue={value(name)} />
+        <Input name={name} type={type} required={required} defaultValue={inputValue(name, type)} />
       </Field>
     ),
     textarea: (name: string, label: string) => (
@@ -43,7 +51,7 @@ export function fieldFactory(item: Entity | undefined) {
         <Select
           name={name}
           required={required}
-          defaultValue={value(name)}
+          defaultValue={value(name) || (name === "status" ? defaultStatus(options) : "")}
           options={options.map((option) => ({ value: option, label: option }))}
           placeholder="Chọn..."
         />

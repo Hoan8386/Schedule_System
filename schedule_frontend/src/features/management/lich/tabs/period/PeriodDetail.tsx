@@ -16,7 +16,7 @@ interface Props {
 
 /** Bảng bên phải tab Kỳ: thông tin, mốc thời gian và các ca của kỳ. */
 export function PeriodDetail({ period, periodId, entries, totalEmployees }: Props) {
-  const { lookups, openShiftDetail } = useSchedule();
+  const { lookups, openShiftDetail, roundsOfPeriod } = useSchedule();
 
   if (!period) {
     return (
@@ -46,7 +46,7 @@ export function PeriodDetail({ period, periodId, entries, totalEmployees }: Prop
           periodId={periodId}
           periodRange={`${formatDate(period.startDate)} – ${formatDate(period.endDate)}`}
           effectiveRange={effectiveRange}
-          rounds={lookups.roundsByPeriod.get(periodId) ?? []}
+          rounds={roundsOfPeriod(periodId)}
         />
 
         <div className="space-y-3">

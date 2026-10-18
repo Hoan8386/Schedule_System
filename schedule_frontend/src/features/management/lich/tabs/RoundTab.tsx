@@ -7,6 +7,7 @@ import { useSchedule } from "../ScheduleContext";
 import { EntityActions } from "../components/EntityActions";
 import { FilterSelect } from "../components/FilterSelect";
 import { TabSection } from "../components/TabSection";
+import { StoreFilter } from "../components/StoreFilter";
 import { roundIdOfRound, sessionIdOfSession } from "../useScheduleLookups";
 
 export function RoundTab() {
@@ -20,6 +21,7 @@ export function RoundTab() {
       icon={CalendarRange}
       actions={
         <>
+          <StoreFilter />
           <FilterSelect label="Kỳ lập lịch" allLabel="Tất cả kỳ" className="min-w-52" value={periodId} onChange={setPeriodId} options={lookups.options.periods} />
           <Button size="sm" icon={Plus} onClick={() => openModal("round", periodId ? { schedulePeriodId: Number(periodId) } : undefined, true)}>
             Thêm
@@ -70,7 +72,24 @@ export function RoundTab() {
                 <span className="badge badge-brand text-[11px]">{text(item.status)}</span>
                 <span className={`badge text-[11px] ${phase.badge}`}>{phase.label}</span>
               </div>
-              <button type="button" onClick={() => openModal("session", { scheduleRoundId: id, status: "PENDING" }, true)} className="font-bold text-violet-700 hover:underline">
+              <button
+                type="button"
+                onClick={() =>
+                  openModal(
+                    "session",
+                    {
+                      scheduleRoundId: id,
+                      sessionName: `Phiên ${sessions.length + 1}`,
+                      status: "OPEN",
+                      // Ô ngày tự lấy phần ngày từ giá trị ngày giờ của đợt
+                      sessionOpenAt: item.registrationStartAt,
+                      sessionCloseAt: item.registrationEndAt,
+                    },
+                    true
+                  )
+                }
+                className="font-bold text-violet-700 hover:underline"
+              >
                 + Phiên
               </button>
             </div>

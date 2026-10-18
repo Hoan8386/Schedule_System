@@ -7,13 +7,16 @@ import { useSchedule } from "../../ScheduleContext";
 import { roundIdOfRound, shiftDateId } from "../../useScheduleLookups";
 import { AddButton } from "../../components/EntityActions";
 import { FilterSelect } from "../../components/FilterSelect";
+import { StoreFilter } from "../../components/StoreFilter";
 import { EMPTY_CALENDAR_FILTERS, useCalendar } from "./useCalendar";
 import { MonthView } from "./MonthView";
 import { WeekView } from "./WeekView";
 
 export function CalendarTab() {
-  const { shiftDates, stores, rounds, loading, lookups, openShiftDetail } = useSchedule();
-  const calendar = useCalendar();
+  const { shiftDates, rounds, loading, lookups, openShiftDetail, storeFilter } = useSchedule();
+  // Thời khóa biểu luôn xem theo một cửa hàng: chưa chọn thì mặc định cửa hàng đầu tiên
+  const storeId = storeFilter || String(lookups.options.stores[0]?.value ?? "");
+  const calendar = useCalendar(storeId);
   const { filters, setFilters, view, stats } = calendar;
 
   const openDetail = (day: Date, items: typeof shiftDates) => openShiftDetail(localKey(day), items.map(shiftDateId));
@@ -27,6 +30,7 @@ export function CalendarTab() {
   };
 
   const roundOptions = rounds
+    .filter((round) => !storeId || relId(round, "store") === Number(storeId))
     .filter((round) => !filters.periodId || relId(round, "schedulePeriod") === Number(filters.periodId))
     .map((round) => ({ value: roundIdOfRound(round), label: text(round.roundName, `Đợt #${roundIdOfRound(round)}`) }));
 
@@ -45,13 +49,7 @@ export function CalendarTab() {
         </div>
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-          <FilterSelect
-            label="Cửa hàng"
-            allLabel="Tất cả cửa hàng"
-            value={filters.storeId}
-            onChange={(storeId) => setFilters((current) => ({ ...current, storeId }))}
-            options={stores.map((store) => ({ value: Number(store.id), label: text(store.storeName, `Cửa hàng #${store.id}`) }))}
-          />
+          <StoreFilter className="min-w-48" allowAll={false} value={storeId} />
           <FilterSelect label="Kỳ lập lịch" allLabel="Tất cả kỳ" value={filters.periodId} onChange={selectPeriod} options={lookups.options.periods} />
           <FilterSelect
             label="Đợt đăng ký"

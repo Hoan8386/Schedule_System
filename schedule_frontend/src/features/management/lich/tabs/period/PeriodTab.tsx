@@ -2,15 +2,16 @@ import React, { useMemo, useState } from "react";
 import { CalendarRange } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui";
 import { dayKey, formatDate, hhmm, relId, text, upper } from "@/lib/format";
-import { isActiveAssignment, periodTypeLabel, STATUS_OPTIONS } from "../../constants";
+import { isActiveAssignment, STATUS_OPTIONS } from "../../constants";
 import { useSchedule } from "../../ScheduleContext";
 import { AddButton, EntityActions } from "../../components/EntityActions";
 import { PeriodDetail } from "./PeriodDetail";
+import { StoreFilter } from "../../components/StoreFilter";
 
 const EMPTY_FILTERS = { q: "", from: "", to: "", status: "" };
 
 export function PeriodTab() {
-  const { periods, shiftDates, lookups } = useSchedule();
+  const { periods, shiftDates, lookups, roundsOfPeriod } = useSchedule();
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [pickedId, setPickedId] = useState<number | null>(null);
   const setFilter = (key: keyof typeof EMPTY_FILTERS, value: string) => setFilters((current) => ({ ...current, [key]: value }));
@@ -70,6 +71,7 @@ export function PeriodTab() {
             ))}
           </select>
         </label>
+        <StoreFilter className="field-label min-w-48" />
         <button type="button" onClick={() => setFilters(EMPTY_FILTERS)} className="btn btn-secondary btn-sm">
           Đặt lại
         </button>
@@ -95,15 +97,12 @@ export function PeriodTab() {
                   <div>
                     <p className="text-sm font-black text-slate-800">
                       {text(item.periodName)}
-                      {item.periodType && (
-                        <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{periodTypeLabel(item.periodType)}</span>
-                      )}
                     </p>
                     <p className="mt-1 text-[11px] text-slate-500">
                       Áp dụng: {item.effectiveStartDate ? `${formatDate(item.effectiveStartDate)} – ${formatDate(item.effectiveEndDate)}` : "chưa thiết lập"}
                     </p>
                     <p className="text-[10px] text-slate-400">
-                      Kỳ: {formatDate(item.startDate)} – {formatDate(item.endDate)} · {(lookups.roundsByPeriod.get(id) ?? []).length} đợt
+                      Kỳ: {formatDate(item.startDate)} – {formatDate(item.endDate)} · {roundsOfPeriod(id).length} đợt
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

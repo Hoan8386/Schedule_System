@@ -1,8 +1,9 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { managerApi } from "@/lib/api";
+import { managerApi, type ScheduleRoundResponse } from "@/lib/api";
 import type { SchedulePeriodDeletePreview } from "@/lib/api/types/schedule.types";
+import { relId } from "@/lib/format";
 import type { Entity, Kind } from "./constants";
 import { useScheduleData, type ScheduleData } from "./useScheduleData";
 import { useScheduleLookups, type ScheduleLookups } from "./useScheduleLookups";
@@ -31,6 +32,11 @@ export interface PendingDeleteState {
 }
 
 interface ScheduleContextValue extends ScheduleData {
+  /** Cửa hàng đang lọc ("" = tất cả). Ca, ca theo ngày, đợt, phiên, nhóm ca, phân bổ, yêu cầu khẩn đã được lọc sẵn. */
+  storeFilter: string;
+  setStoreFilter: (storeId: string) => void;
+  /** Đợt của một kỳ (đã lọc theo cửa hàng) */
+  roundsOfPeriod: (periodId: number) => ScheduleRoundResponse[];
   loading: boolean;
   error: string;
   setError: (message: string) => void;
@@ -104,9 +110,50 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     setPendingDelete((current) => (current?.deleting ? current : null));
   }, []);
 
+  const [storeFilter, setStoreFilter] = useState("");
+
+  // Dữ liệu theo cửa hàng đang lọc; lookups vẫn dùng dữ liệu đầy đủ để tra tên
+  const scoped = useMemo<ScheduleData>(() => {
+    if (!storeFilter) return data;
+    const storeId = Number(storeFilter);
+    const shiftDateById = new Map(data.shiftDates.map((item) => [Number(item.id ?? item.shiftByDateId ?? 0), item]));
+    const assignmentById = new Map(data.assignments.map((item) => [Number(item.id ?? item.shiftAssignmentId ?? 0), item]));
+    const inStore = (id: number | null | undefined) => Number(id ?? 0) === storeId;
+    const shiftDateInStore = (id: unknown) => {
+      const item = shiftDateById.get(Number(id ?? 0));
+      return item ? inStore(lookups.storeIdOf(item)) : false;
+    };
+    const rounds = data.rounds.filter((round) => inStore(relId(round, "store")));
+    const roundIds = new Set(rounds.map((round) => Number(round.id ?? round.scheduleRoundId ?? 0)));
+    return {
+      ...data,
+      shifts: data.shifts.filter((item) => inStore(item.storeId)),
+      shiftDates: data.shiftDates.filter((item) => inStore(lookups.storeIdOf(item))),
+      assignments: data.assignments.filter((item) => shiftDateInStore(item.shiftByDateId)),
+      rounds,
+      sessions: data.sessions.filter((item) => roundIds.has(relId(item, "scheduleRound"))),
+      shiftGroups: data.shiftGroups.filter((item) => inStore(item.storeId)),
+      emergencyRequests: data.emergencyRequests.filter((item) => {
+        const assignment = assignmentById.get(Number(item.assignmentId ?? 0));
+        return shiftDateInStore(assignment?.shiftByDateId ?? item.fromShiftAssignmentId ?? item.toAssignmentId);
+      }),
+    };
+  }, [data, storeFilter, lookups]);
+
+  const roundsOfPeriod = useCallback(
+    (periodId: number) => {
+      const all = lookups.roundsByPeriod.get(periodId) ?? [];
+      return storeFilter ? all.filter((round) => relId(round, "store") === Number(storeFilter)) : all;
+    },
+    [lookups, storeFilter]
+  );
+
   const value = useMemo<ScheduleContextValue>(
     () => ({
-      ...data,
+      ...scoped,
+      storeFilter,
+      setStoreFilter,
+      roundsOfPeriod,
       loading,
       error,
       setError,
@@ -123,7 +170,7 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
       confirmDelete,
       cancelDelete,
     }),
-    [data, loading, error, setError, reload, lookups, modal, shiftDetail, remove, pendingDelete, confirmDelete, cancelDelete]
+    [scoped, storeFilter, roundsOfPeriod, loading, error, setError, reload, lookups, modal, shiftDetail, remove, pendingDelete, confirmDelete, cancelDelete]
   );
 
   return <ScheduleContext.Provider value={value}>{children}</ScheduleContext.Provider>;

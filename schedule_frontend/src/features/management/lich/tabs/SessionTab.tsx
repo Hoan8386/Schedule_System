@@ -5,13 +5,20 @@ import { phaseOf } from "../constants";
 import { useSchedule } from "../ScheduleContext";
 import { AddButton, EntityActions } from "../components/EntityActions";
 import { TabSection } from "../components/TabSection";
+import { StoreFilter } from "../components/StoreFilter";
 import { sessionIdOfSession } from "../useScheduleLookups";
 
 export function SessionTab() {
   const { sessions, lookups } = useSchedule();
 
   return (
-    <TabSection title={`Phiên đăng ký (${sessions.length})`} icon={Users} iconClassName="text-blue-600" actions={<AddButton kind="session" className="" />}>
+    <TabSection title={`Phiên đăng ký (${sessions.length})`} icon={Users} iconClassName="text-blue-600" actions={
+        <>
+          <StoreFilter />
+          <AddButton kind="session" className="" />
+        </>
+      }
+    >
       {sessions.map((item) => {
         const id = sessionIdOfSession(item);
         const phase = phaseOf(item.sessionOpenAt, item.sessionCloseAt);

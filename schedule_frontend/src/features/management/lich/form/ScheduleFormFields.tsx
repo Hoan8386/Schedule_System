@@ -1,31 +1,38 @@
-import React from "react";
-import { FormSection } from "@/components/ui";
-import { STATUS_OPTIONS, TYPE_OPTIONS, type Kind } from "../constants";
+import React, { useState } from "react";
+import { Field, FormSection, Select } from "@/components/ui";
+import { relId, text } from "@/lib/format";
+import { STATUS_OPTIONS, TYPE_OPTIONS, type Entity, type Kind } from "../constants";
+import { useSchedule } from "../ScheduleContext";
 import type { ScheduleLookups } from "../useScheduleLookups";
-import type { FieldFactory } from "./fieldFactory";
+import { defaultValueOf, type FieldFactory } from "./fieldFactory";
 
 interface Props {
   kind: Kind;
   f: FieldFactory;
   options: ScheduleLookups["options"];
+  /** Bản ghi đang sửa / dữ liệu điền sẵn */
+  item?: Entity;
 }
 
 /** Các trường nhập theo từng loại bản ghi. */
-export function ScheduleFormFields({ kind, f, options }: Props) {
+export function ScheduleFormFields({ kind, f, options, item }: Props) {
   switch (kind) {
     case "period":
       return (
         <>
           {f.input("periodName", "Tên kỳ", "text", true)}
-          {f.enumSelect("periodType", "Loại kỳ", TYPE_OPTIONS.period)}
           <FormSection title="1. Thời gian áp dụng" hint="Thiết lập trước tiên – khoảng ngày lịch có hiệu lực (tối thiểu 1 tuần)" />
           {f.input("effectiveStartDate", "Áp dụng từ", "date", true)}
           {f.input("effectiveEndDate", "Áp dụng đến", "date", true)}
           <FormSection title="2. Khung thời gian của kỳ" hint="Bao gồm các đợt đăng ký và thời gian duyệt" />
           {f.input("startDate", "Kỳ bắt đầu", "date", true)}
           {f.input("endDate", "Kỳ kết thúc", "date", true)}
-          {f.input("registrationOpenAt", "Mở đăng ký", "datetime-local")}
-          {f.input("registrationCloseAt", "Đóng đăng ký", "datetime-local")}
+          <FormSection
+            title="3. Đợt đăng ký cho toàn bộ cửa hàng"
+            hint="Khi lưu, hệ thống tự tạo (hoặc cập nhật) một đợt đăng ký cho mỗi cửa hàng đang hoạt động theo thời gian dưới đây. Bỏ trống nếu muốn tự tạo đợt riêng."
+          />
+          {f.input("registrationOpenAt", "Mở đăng ký từ ngày", "date")}
+          {f.input("registrationCloseAt", "Đóng đăng ký hết ngày", "date")}
           {f.enumSelect("status", "Trạng thái", STATUS_OPTIONS.period)}
           {f.textarea("description", "Mô tả")}
         </>
@@ -81,8 +88,8 @@ export function ScheduleFormFields({ kind, f, options }: Props) {
           {f.select("schedulePeriodId", "Thuộc kỳ", options.periods)}
           {f.select("storeId", "Cửa hàng", options.stores)}
           {f.wide(f.input("roundName", "Tên đợt đăng ký", "text", true))}
-          {f.input("registrationStartAt", "Bắt đầu đăng ký", "datetime-local", true)}
-          {f.input("registrationEndAt", "Kết thúc đăng ký", "datetime-local", true)}
+          {f.input("registrationStartAt", "Bắt đầu đăng ký từ ngày", "date", true)}
+          {f.input("registrationEndAt", "Kết thúc đăng ký hết ngày", "date", true)}
           {f.enumSelect("status", "Trạng thái", STATUS_OPTIONS.round)}
           {f.textarea("description", "Mô tả")}
           <p className="text-[10px] text-slate-400 sm:col-span-2">Đợt không có phiên: tất cả nhóm ca đều được đăng ký trong suốt đợt.</p>
@@ -92,11 +99,10 @@ export function ScheduleFormFields({ kind, f, options }: Props) {
     case "session":
       return (
         <>
-          {f.select("scheduleRoundId", "Thuộc đợt", options.rounds)}
-          {f.select("shiftGroupId", "Nhóm ca được đăng ký", options.groups)}
+          <SessionRoundAndGroup item={item} roundOptions={options.rounds} />
           {f.wide(f.input("sessionName", "Tên phiên", "text", true))}
-          {f.input("sessionOpenAt", "Mở phiên", "datetime-local", true)}
-          {f.input("sessionCloseAt", "Đóng phiên", "datetime-local", true)}
+          {f.input("sessionOpenAt", "Mở phiên từ ngày", "date", true)}
+          {f.input("sessionCloseAt", "Đóng phiên hết ngày", "date", true)}
           {f.enumSelect("status", "Trạng thái", STATUS_OPTIONS.session)}
           {f.textarea("description", "Mô tả")}
         </>
@@ -138,4 +144,47 @@ export function ScheduleFormFields({ kind, f, options }: Props) {
         </>
       );
   }
+}
+
+/** Chọn đợt + nhóm ca của phiên: chỉ liệt kê nhóm ca thuộc cửa hàng của đợt đã chọn. */
+function SessionRoundAndGroup({ item, roundOptions }: { item?: Entity; roundOptions: ScheduleLookups["options"]["rounds"] }) {
+  const { shiftGroups, lookups } = useSchedule();
+  const [roundId, setRoundId] = useState(() => defaultValueOf(item, "scheduleRoundId") || defaultValueOf(item, "scheduleRound"));
+
+  const round = lookups.maps.round.get(Number(roundId));
+  const storeId = round ? relId(round, "store") : 0;
+  const storeName = round?.storeName ?? lookups.maps.store.get(storeId)?.storeName;
+  const groupOptions = shiftGroups
+    .filter((group) => !storeId || Number(group.storeId) === storeId)
+    .map((group) => {
+      const id = Number(group.id ?? group.shiftGroupId ?? 0);
+      return { value: id, label: text(group.shiftGroupName, `Nhóm ca #${id}`) };
+    });
+
+  return (
+    <>
+      <Field label="Thuộc đợt">
+        <Select
+          name="scheduleRoundId"
+          required
+          value={roundId}
+          onChange={(event) => setRoundId(event.target.value)}
+          options={roundOptions}
+          placeholder="Chọn..."
+        />
+      </Field>
+      <Field label={storeName ? `Nhóm ca được đăng ký · ${storeName}` : "Nhóm ca được đăng ký"}>
+        {/* key: đổi đợt thì làm mới lựa chọn nhóm ca */}
+        <Select
+          key={roundId}
+          name="shiftGroupId"
+          required
+          defaultValue={defaultValueOf(item, "shiftGroupId") || defaultValueOf(item, "shiftGroup")}
+          options={groupOptions}
+          placeholder={!roundId ? "Chọn đợt trước" : groupOptions.length ? "Chọn..." : "Cửa hàng chưa có nhóm ca"}
+          disabled={!roundId}
+        />
+      </Field>
+    </>
+  );
 }

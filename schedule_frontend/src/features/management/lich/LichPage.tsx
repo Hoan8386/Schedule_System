@@ -9,7 +9,7 @@ import { ScheduleFormModal } from "./form/ScheduleFormModal";
 import { ShiftDetailDrawer } from "./shift-detail/ShiftDetailDrawer";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { PeriodTab } from "./tabs/period/PeriodTab";
-import { CalendarTab } from "./tabs/calendar/CalendarTab";
+import { CalendarTab }  from "./tabs/calendar/CalendarTab";
 import { ShiftTab } from "./tabs/ShiftTab";
 import { RoundTab } from "./tabs/RoundTab";
 import { SessionTab } from "./tabs/SessionTab";

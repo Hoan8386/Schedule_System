@@ -30,7 +30,6 @@ export const STATUS_OPTIONS = {
 } as const;
 
 export const TYPE_OPTIONS = {
-  period: ["WEEK", "MONTH"],
   event: ["SALE", "PROMOTION", "HOLIDAY", "SPECIAL"],
   emergency: ["CHANGE", "ADD", "CANCEL"],
 } as const;
@@ -99,4 +98,3 @@ export const phaseOf = (start: unknown, end: unknown) => {
   return { label: "Đang diễn ra", badge: "bg-emerald-100 text-emerald-700" };
 };
 
-export const periodTypeLabel = (type: unknown) => (type === "WEEK" ? "Tuần" : type === "MONTH" ? "Tháng" : text(type));

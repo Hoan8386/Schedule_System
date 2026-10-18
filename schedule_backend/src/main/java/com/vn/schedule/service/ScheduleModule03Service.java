@@ -49,7 +49,7 @@ public class ScheduleModule03Service {
         e.setSchedulePeriod(periodRepository.getReferenceById(requiredInteger(b.get("schedulePeriodId"), "schedulePeriodId")));
         e.setStore(storeRepository.getReferenceById(requiredInteger(b.get("storeId"), "storeId")));
         e.setRegistrationStartAt(dateTime(b.get("registrationStartAt"), "registrationStartAt"));
-        e.setRegistrationEndAt(dateTime(b.get("registrationEndAt"), "registrationEndAt"));
+        e.setRegistrationEndAt(endDateTime(b.get("registrationEndAt"), "registrationEndAt"));
         e.setDescription(text(b.get("description")));
         e.setStatus(status(b.get("status"), "OPEN", "CLOSED"));
         e.setCreatedBy(integer(b.get("createdBy"), "createdBy"));
@@ -71,7 +71,7 @@ public class ScheduleModule03Service {
     private void applySession(ScheduleSession e, ScheduleSessionRequest b) {
         e.setSessionName(requiredText(b.get("sessionName"), "sessionName"));
         e.setSessionOpenAt(dateTime(b.get("sessionOpenAt"), "sessionOpenAt"));
-        e.setSessionCloseAt(dateTime(b.get("sessionCloseAt"), "sessionCloseAt"));
+        e.setSessionCloseAt(endDateTime(b.get("sessionCloseAt"), "sessionCloseAt"));
         e.setScheduleRound(resolveRound(b.get("scheduleRoundId")));
         e.setShiftGroup(resolveGroup(b.get("shiftGroupId")));
         e.setDescription(text(b.get("description")));
@@ -128,11 +128,20 @@ public class ScheduleModule03Service {
         try { return value instanceof Number n ? n.intValue() : Integer.valueOf(String.valueOf(value).trim()); }
         catch (RuntimeException ex) { throw bad(field + " phải là số nguyên"); }
     }
+    /** Nhận ngày giờ ISO hoặc chỉ ngày (yyyy-MM-dd = 00:00 của ngày đó). */
     private LocalDateTime dateTime(Object value, String field) {
         if (value == null || (value instanceof String s && s.isBlank())) return null;
         if (value instanceof LocalDateTime dateTime) return dateTime;
-        try { return LocalDateTime.parse(String.valueOf(value).trim()); }
-        catch (RuntimeException ex) { throw bad(field + " phải theo định dạng ISO-8601"); }
+        String text = String.valueOf(value).trim();
+        try {
+            return text.length() == 10 ? java.time.LocalDate.parse(text).atStartOfDay() : LocalDateTime.parse(text);
+        } catch (RuntimeException ex) { throw bad(field + " phải theo định dạng ngày yyyy-MM-dd"); }
+    }
+    /** Mốc kết thúc nhập theo ngày (yyyy-MM-dd) nghĩa là hết ngày đó (23:59:59). */
+    private LocalDateTime endDateTime(Object value, String field) {
+        LocalDateTime result = dateTime(value, field);
+        if (result != null && value instanceof String text && text.trim().length() == 10) return result.toLocalDate().atTime(23, 59, 59);
+        return result;
     }
     private BigDecimal decimal(Object value, String field) {
         if (value == null || (value instanceof String s && s.isBlank())) return null;

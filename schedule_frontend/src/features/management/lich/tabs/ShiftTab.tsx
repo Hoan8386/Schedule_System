@@ -1,15 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import { Clock3 } from "lucide-react";
 import { relId, text, timeRange } from "@/lib/format";
 import { useSchedule } from "../ScheduleContext";
 import { AddButton, EntityActions } from "../components/EntityActions";
-import { FilterSelect } from "../components/FilterSelect";
 import { TabSection } from "../components/TabSection";
+import { StoreFilter } from "../components/StoreFilter";
 
 export function ShiftTab() {
-  const { shifts, lookups } = useSchedule();
-  const [storeId, setStoreId] = useState("");
-  const filtered = shifts.filter((shift) => !storeId || Number(shift.storeId ?? 0) === Number(storeId));
+  // Đã lọc theo cửa hàng ở bộ lọc chung đầu trang
+  const { shifts: filtered, lookups } = useSchedule();
 
   return (
     <TabSection
@@ -18,7 +17,7 @@ export function ShiftTab() {
       iconClassName="text-blue-600"
       actions={
         <>
-          <FilterSelect label="Cửa hàng" allLabel="Tất cả cửa hàng" className="min-w-52" value={storeId} onChange={setStoreId} options={lookups.options.stores} />
+          <StoreFilter />
           <AddButton kind="shift" className="" />
         </>
       }

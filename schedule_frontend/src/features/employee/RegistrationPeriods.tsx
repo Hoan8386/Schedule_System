@@ -17,8 +17,6 @@ function windowState(openAt: string | null, closeAt: string | null): WindowState
   return { label: closeAt ? `Đang mở · đóng ${formatDateTime(closeAt)}` : "Đang mở", tone: "success" };
 }
 
-const periodTypeLabel = (type: string | null) => (type === "WEEK" ? "Tuần" : type === "MONTH" ? "Tháng" : type ?? "");
-
 /** Kỳ lịch đang mở → đợt đăng ký của cửa hàng → phiên đăng ký của nhóm ca nhân viên. */
 export function RegistrationPeriods({
   periods,
@@ -66,7 +64,6 @@ export function RegistrationPeriods({
               <div>
                 <p className="text-sm font-black text-slate-800">
                   {period.periodName}
-                  {period.periodType && <span className="ml-2 text-[11px] font-semibold text-slate-400">Kỳ {periodTypeLabel(period.periodType).toLowerCase()}</span>}
                 </p>
                 <p className="mt-0.5 text-[11px] text-slate-500">
                   Áp dụng lịch {formatDate(period.effectiveStartDate ?? period.startDate)} – {formatDate(period.effectiveEndDate ?? period.endDate)}

@@ -4,7 +4,7 @@ import { dayKey, hhmm, localKey, pad, upper } from "@/lib/format";
 import { isActiveAssignment, type CalendarView } from "../../constants";
 import { useSchedule } from "../../ScheduleContext";
 
-export const EMPTY_CALENDAR_FILTERS = { storeId: "", periodId: "", roundId: "", status: "" };
+export const EMPTY_CALENDAR_FILTERS = { periodId: "", roundId: "", status: "" };
 export type CalendarFilters = typeof EMPTY_CALENDAR_FILTERS;
 
 /** Thứ Hai của tuần chứa ngày. */
@@ -15,7 +15,8 @@ const startOfWeek = (day: Date) => {
 };
 
 /** Trạng thái và dữ liệu suy ra cho thời khóa biểu. */
-export function useCalendar() {
+/** storeId: cửa hàng đang xem (thời khóa biểu luôn xem theo một cửa hàng). */
+export function useCalendar(storeId: string) {
   const { shiftDates, specialEvents, lookups } = useSchedule();
   const [filters, setFilters] = useState<CalendarFilters>(EMPTY_CALENDAR_FILTERS);
   const [view, setView] = useState<CalendarView>("month");
@@ -24,13 +25,13 @@ export function useCalendar() {
   const filtered = useMemo(
     () =>
       shiftDates.filter((item) => {
-        if (filters.storeId && lookups.storeIdOf(item) !== Number(filters.storeId)) return false;
+        if (storeId && lookups.storeIdOf(item) !== Number(storeId)) return false;
         if (filters.periodId && lookups.periodIdOf(item) !== Number(filters.periodId)) return false;
         if (filters.roundId && lookups.roundIdOf(item) !== Number(filters.roundId)) return false;
         if (filters.status && upper(item.status) !== filters.status) return false;
         return true;
       }),
-    [shiftDates, filters, lookups]
+    [shiftDates, filters, lookups, storeId]
   );
 
   /** Ca theo ngày, sắp theo giờ bắt đầu */
@@ -109,7 +110,7 @@ export function useCalendar() {
       return next;
     });
 
-  const hasFilters = Boolean(filters.storeId || filters.periodId || filters.roundId || filters.status);
+  const hasFilters = Boolean(filters.periodId || filters.roundId || filters.status);
 
   return { filters, setFilters, hasFilters, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
 }

@@ -121,14 +121,90 @@ public class SchedulePeriodService {
 
     @Transactional
     public SchedulePeriod create(SchedulePeriodRequest body) {
-        return repository.save(toEntity(body));
+        SchedulePeriod entity = toEntity(body);
+        entity.setId(null);
+        if (entity.getPeriodType() == null || entity.getPeriodType().isBlank()) entity.setPeriodType(derivePeriodType(entity));
+        entity.setCreatedAt(LocalDateTime.now());
+        if (entity.getCreatedBy() == null) entity.setCreatedBy(currentEmployeeIdOrNull());
+        SchedulePeriod saved = repository.saveAndFlush(entity);
+        syncRegistrationRounds(saved);
+        return saved;
     }
 
     @Transactional
     public SchedulePeriod update(Integer id, SchedulePeriodRequest body) {
         SchedulePeriod current = findById(id);
         applyFields(current, body);
-        return repository.save(current);
+        if (!body.values().containsKey("periodType")) current.setPeriodType(derivePeriodType(current));
+        SchedulePeriod saved = repository.saveAndFlush(current);
+        syncRegistrationRounds(saved);
+        return saved;
+    }
+
+    /** Đánh dấu đợt đăng ký được tạo tự động từ thời gian Mở / Đóng đăng ký của kỳ. */
+    private static final String AUTO_ROUND_NOTE = "Tự động tạo từ thời gian Mở / Đóng đăng ký của kỳ";
+
+    /**
+     * Thời gian Mở / Đóng đăng ký của kỳ chính là đợt đăng ký cho toàn bộ cửa hàng:
+     * mỗi cửa hàng đang hoạt động có một đợt (tạo mới nếu chưa có), các đợt tự động đã có thì cập nhật theo kỳ.
+     * Đợt do quản lý tự tạo (không có ghi chú tự động) không bị thay đổi.
+     */
+    private void syncRegistrationRounds(SchedulePeriod period) {
+        LocalDateTime openAt = period.getRegistrationOpenAt();
+        LocalDateTime closeAt = period.getRegistrationCloseAt();
+        if (openAt == null && closeAt == null) return;
+        if (openAt == null || closeAt == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Cần nhập cả thời gian Mở đăng ký và Đóng đăng ký");
+        }
+        if (!closeAt.isAfter(openAt)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Thời gian Đóng đăng ký phải sau thời gian Mở đăng ký");
+        }
+
+        Map<Integer, Integer> autoRoundByStore = new LinkedHashMap<>();
+        for (Object row : entityManager.createNativeQuery("""
+                SELECT schedule_round_id, store_id FROM schedule_round
+                WHERE schedule_period_id = :periodId AND description = :note
+                """).setParameter("periodId", period.getId()).setParameter("note", AUTO_ROUND_NOTE).getResultList()) {
+            Object[] values = (Object[]) row;
+            autoRoundByStore.put(values[1] == null ? null : ((Number) values[1]).intValue(), ((Number) values[0]).intValue());
+        }
+
+        Integer createdBy = currentEmployeeIdOrNull();
+        for (Object row : entityManager.createNativeQuery(
+                "SELECT store_id, store_name FROM store WHERE status = 'ACTIVE' ORDER BY store_name").getResultList()) {
+            Object[] store = (Object[]) row;
+            Integer storeId = ((Number) store[0]).intValue();
+            String roundName = "ĐK " + period.getPeriodName() + " · " + store[1];
+            Integer roundId = autoRoundByStore.get(storeId);
+            if (roundId != null) {
+                entityManager.createNativeQuery("""
+                        UPDATE schedule_round
+                        SET round_name = :name, registration_start_at = :openAt, registration_end_at = :closeAt
+                        WHERE schedule_round_id = :id
+                        """)
+                        .setParameter("name", roundName).setParameter("openAt", openAt).setParameter("closeAt", closeAt)
+                        .setParameter("id", roundId).executeUpdate();
+            } else {
+                entityManager.createNativeQuery("""
+                        INSERT INTO schedule_round (round_name, schedule_period_id, store_id, registration_start_at,
+                                                    registration_end_at, description, status, created_by, created_at)
+                        VALUES (:name, :periodId, :storeId, :openAt, :closeAt, :note, 'OPEN', :createdBy, :now)
+                        """)
+                        .setParameter("name", roundName).setParameter("periodId", period.getId()).setParameter("storeId", storeId)
+                        .setParameter("openAt", openAt).setParameter("closeAt", closeAt).setParameter("note", AUTO_ROUND_NOTE)
+                        .setParameter("createdBy", createdBy).setParameter("now", LocalDateTime.now()).executeUpdate();
+            }
+        }
+    }
+
+    private Integer currentEmployeeIdOrNull() {
+        String login = SecurityUtil.getCurrentUserLogin().orElse(null);
+        if (login == null) return null;
+        return userRepository.findByUsername(login)
+                .or(() -> userRepository.findByEmail(login))
+                .flatMap(user -> employeeRepository.findByUser_Id(user.getId()))
+                .map(Employee::getId)
+                .orElse(null);
     }
 
     /** Số bản ghi sẽ bị xóa cùng kỳ, để frontend hiển thị cảnh báo trước khi xóa. */
@@ -246,7 +322,7 @@ public class SchedulePeriodService {
         entity.setEffectiveEndDate(parseLocalDate(body.get("effectiveEndDate"), "effectiveEndDate"));
         entity.setDescription(asString(body.get("description"), "description"));
         entity.setRegistrationOpenAt(parseLocalDateTime(body.get("registrationOpenAt"), "registrationOpenAt"));
-        entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
+        entity.setRegistrationCloseAt(parseCloseDateTime(body.get("registrationCloseAt")));
         entity.setStatus(asStatus(body.get("status")));
         entity.setCreatedBy(asInteger(body.get("createdBy"), "createdBy"));
         entity.setFinalizedBy(asInteger(body.get("finalizedBy"), "finalizedBy"));
@@ -275,7 +351,7 @@ public class SchedulePeriodService {
             entity.setRegistrationOpenAt(parseLocalDateTime(body.get("registrationOpenAt"), "registrationOpenAt"));
         }
         if (values.containsKey("registrationCloseAt")) {
-            entity.setRegistrationCloseAt(parseLocalDateTime(body.get("registrationCloseAt"), "registrationCloseAt"));
+            entity.setRegistrationCloseAt(parseCloseDateTime(body.get("registrationCloseAt")));
         }
         if (values.containsKey("status")) entity.setStatus(asStatus(body.get("status")));
         if (values.containsKey("createdBy")) entity.setCreatedBy(asInteger(body.get("createdBy"), "createdBy"));
@@ -344,6 +420,23 @@ public class SchedulePeriodService {
             }
         }
         throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " phải là kiểu ngày");
+    }
+
+    /** Đóng đăng ký nhập theo ngày (yyyy-MM-dd) nghĩa là hết ngày đó (23:59:59). */
+    private LocalDateTime parseCloseDateTime(Object value) {
+        LocalDateTime result = parseLocalDateTime(value, "registrationCloseAt");
+        if (result != null && value instanceof String text && text.trim().length() == 10) {
+            return result.toLocalDate().atTime(23, 59, 59);
+        }
+        return result;
+    }
+
+    /** Loại kỳ không còn nhập trên form: kỳ áp dụng tối đa 7 ngày là WEEK, dài hơn là MONTH. */
+    private static String derivePeriodType(SchedulePeriod entity) {
+        LocalDate start = entity.getEffectiveStartDate() != null ? entity.getEffectiveStartDate() : entity.getStartDate();
+        LocalDate end = entity.getEffectiveEndDate() != null ? entity.getEffectiveEndDate() : entity.getEndDate();
+        if (start == null || end == null) return "MONTH";
+        return java.time.temporal.ChronoUnit.DAYS.between(start, end) <= 6 ? "WEEK" : "MONTH";
     }
 
     private LocalDateTime parseLocalDateTime(Object value, String fieldName) {
