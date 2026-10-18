@@ -1,13 +1,14 @@
 import React from "react";
 import type { ShiftByDateResponse, SpecialEventResponse } from "@/lib/api";
 import { localKey, pad, relId, text, timeRange } from "@/lib/format";
-import { shiftDateStyle, SLOTS, WEEKDAY_SHORT } from "../../constants";
+import { shiftDateStyle, WEEKDAY_SHORT } from "../../constants";
 import { useSchedule } from "../../ScheduleContext";
 import { shiftDateId } from "../../useScheduleLookups";
-import { shiftSlot } from "./useCalendar";
+import type { CalendarRow } from "./useCalendar";
 
 interface Props {
   days: Date[];
+  rows: CalendarRow[];
   shiftsOn: (day: Date) => ShiftByDateResponse[];
   eventsOn: (day: Date) => SpecialEventResponse[];
   highlight: ((item: ShiftByDateResponse) => boolean) | null;
@@ -16,7 +17,7 @@ interface Props {
 
 const GRID = "grid grid-cols-[6.5rem_repeat(7,minmax(0,1fr))]";
 
-export function WeekView({ days, shiftsOn, eventsOn, highlight, onOpen }: Props) {
+export function WeekView({ days, rows, shiftsOn, eventsOn, highlight, onOpen }: Props) {
   const { lookups } = useSchedule();
   const todayKey = localKey(new Date());
 
@@ -42,16 +43,17 @@ export function WeekView({ days, shiftsOn, eventsOn, highlight, onOpen }: Props)
           })}
         </div>
 
-        {SLOTS.map((slot, slotIndex) => (
-          <div key={slot.label} className={`${GRID} min-h-32 ${slotIndex < SLOTS.length - 1 ? "border-b border-slate-200" : ""}`}>
+        {rows.length === 0 && <p className="p-6 text-center text-xs text-slate-400">Nhóm ca này chưa có ca mẫu nào.</p>}
+        {rows.map((slot, slotIndex) => (
+          <div key={slot.key} className={`${GRID} min-h-32 ${slotIndex < rows.length - 1 ? "border-b border-slate-200" : ""}`}>
             <div className="border-r border-slate-200 bg-slate-50/60 p-3">
               <p className="text-[11px] font-black text-slate-700">{slot.label}</p>
               <p className="mt-1 text-[9px] text-slate-400">{slot.hint}</p>
             </div>
             {days.map((day, index) => {
-              const items = shiftsOn(day).filter((item) => shiftSlot(item, lookups.templateOf(item)?.startTime) === slotIndex);
+              const items = shiftsOn(day).filter(slot.match);
               return (
-                <div key={`${slot.label}-${localKey(day)}`} className={`space-y-2 p-1.5 ${index < 6 ? "border-r border-slate-200" : ""}`}>
+                <div key={`${slot.key}-${localKey(day)}`} className={`space-y-2 p-1.5 ${index < 6 ? "border-r border-slate-200" : ""}`}>
                   {items.map((item) => {
                     const style = shiftDateStyle(item.status);
                     const cap = lookups.capacityOf(item);

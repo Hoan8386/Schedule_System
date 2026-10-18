@@ -44,13 +44,16 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public Slice<Notification> findMine(boolean read, int page, int size) {
+    /** read = null: lấy tất cả; true / false: chỉ đã đọc / chưa đọc. */
+    public Slice<Notification> findMine(Boolean read, int page, int size) {
         Integer employeeId = currentEmployeeIdOrNull();
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE));
         if (employeeId == null) {
             return new SliceImpl<>(List.of(), pageable, false);
         }
-        return repository.findByEmployeeAndReadState(employeeId, read, pageable);
+        return read == null
+                ? repository.findByEmployee(employeeId, pageable)
+                : repository.findByEmployeeAndReadState(employeeId, read, pageable);
     }
 
     @Transactional(readOnly = true)

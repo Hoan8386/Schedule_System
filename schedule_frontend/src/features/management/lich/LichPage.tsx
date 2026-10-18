@@ -17,7 +17,7 @@ import { EmergencyTab, EventTab, GroupTab } from "./tabs/CatalogTabs";
 
 const TABS: TabItem<TabKey>[] = [
   { key: "period", label: "Kỳ", icon: CalendarRange },
-  { key: "shift", label: "Shift", icon: Clock3 },
+  { key: "shift", label: "Ca", icon: Clock3 },
   { key: "calendar", label: "Thời khóa biểu", icon: Calendar },
   { key: "round", label: "Đợt đăng ký", icon: CalendarRange },
   { key: "session", label: "Phiên", icon: Users },

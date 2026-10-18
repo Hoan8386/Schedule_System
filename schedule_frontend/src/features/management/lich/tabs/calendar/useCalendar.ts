@@ -1,12 +1,20 @@
 import { useMemo, useState } from "react";
 import type { ShiftByDateResponse } from "@/lib/api";
-import { dayKey, hhmm, localKey, pad, relId, upper } from "@/lib/format";
-import { isActiveAssignment, type CalendarView } from "../../constants";
+import { dayKey, hhmm, localKey, pad, relId, text, timeRange, upper } from "@/lib/format";
+import { isActiveAssignment, SLOTS, type CalendarView } from "../../constants";
 import { useSchedule } from "../../ScheduleContext";
 
 /** employeeId không lọc bớt ca mà chỉ làm nổi bật các ca có nhân viên đó. */
-export const EMPTY_CALENDAR_FILTERS = { periodId: "", roundId: "", status: "", employeeId: "" };
+export const EMPTY_CALENDAR_FILTERS = { periodId: "", groupId: "", status: "", employeeId: "" };
 export type CalendarFilters = typeof EMPTY_CALENDAR_FILTERS;
+
+/** Một hàng "Khung ca" của chế độ tuần. */
+export interface CalendarRow {
+  key: string;
+  label: string;
+  hint: string;
+  match: (item: ShiftByDateResponse) => boolean;
+}
 
 /** Thứ Hai của tuần chứa ngày. */
 const startOfWeek = (day: Date) => {
@@ -18,21 +26,34 @@ const startOfWeek = (day: Date) => {
 /** Trạng thái và dữ liệu suy ra cho thời khóa biểu. */
 /** storeId: cửa hàng đang xem (thời khóa biểu luôn xem theo một cửa hàng). */
 export function useCalendar(storeId: string) {
-  const { shiftDates, specialEvents, lookups } = useSchedule();
+  const { shiftDates, specialEvents, shifts, shiftGroups, lookups } = useSchedule();
   const [filters, setFilters] = useState<CalendarFilters>(EMPTY_CALENDAR_FILTERS);
   const [view, setView] = useState<CalendarView>("month");
   const [cursor, setCursor] = useState(() => new Date());
+
+  const groupOptions = useMemo(
+    () =>
+      shiftGroups
+        .filter((group) => !storeId || Number(group.storeId ?? 0) === Number(storeId))
+        .map((group) => {
+          const id = Number(group.id ?? group.shiftGroupId ?? 0);
+          return { value: id, label: text(group.shiftGroupName, `Nhóm ca #${id}`) };
+        }),
+    [shiftGroups, storeId]
+  );
+  // Đổi cửa hàng thì nhóm ca đã chọn (của cửa hàng cũ) không còn hiệu lực
+  const groupId = groupOptions.some((option) => String(option.value) === filters.groupId) ? Number(filters.groupId) : 0;
 
   const filtered = useMemo(
     () =>
       shiftDates.filter((item) => {
         if (storeId && lookups.storeIdOf(item) !== Number(storeId)) return false;
+        if (groupId && Number(lookups.templateOf(item)?.shiftGroupId ?? 0) !== groupId) return false;
         if (filters.periodId && lookups.periodIdOf(item) !== Number(filters.periodId)) return false;
-        if (filters.roundId && lookups.roundIdOf(item) !== Number(filters.roundId)) return false;
         if (filters.status && upper(item.status) !== filters.status) return false;
         return true;
       }),
-    [shiftDates, filters, lookups, storeId]
+    [shiftDates, filters, lookups, storeId, groupId]
   );
 
   /** Ca theo ngày, sắp theo giờ bắt đầu */
@@ -87,6 +108,35 @@ export function useCalendar(storeId: string) {
     return { total: items.length, assigned, capacity, pending, missing };
   }, [byDay, days, cursor, view, lookups]);
 
+  /**
+   * Hàng "Khung ca" của chế độ tuần: chưa chọn nhóm thì chia sáng / chiều / tối;
+   * chọn nhóm thì mỗi ca mẫu của nhóm là một hàng với đúng giờ của ca đó.
+   */
+  const rows = useMemo<CalendarRow[]>(() => {
+    if (!groupId) {
+      return SLOTS.map((slot, index) => ({
+        key: slot.label,
+        label: slot.label,
+        hint: slot.hint,
+        match: (item) => shiftSlot(item, lookups.templateOf(item)?.startTime) === index,
+      }));
+    }
+    const used = new Set(filtered.map((item) => relId(item, "shift")));
+    const templates = shifts
+      .filter((shift) => Number(shift.shiftGroupId ?? 0) === groupId)
+      .filter((shift) => upper(shift.status) !== "INACTIVE" || used.has(Number(shift.id ?? shift.shiftId ?? 0)))
+      .sort((a, b) => hhmm(a.startTime).localeCompare(hhmm(b.startTime)));
+    const ids = new Set(templates.map((shift) => Number(shift.id ?? shift.shiftId ?? 0)));
+    const result: CalendarRow[] = templates.map((shift) => {
+      const id = Number(shift.id ?? shift.shiftId ?? 0);
+      return { key: `shift-${id}`, label: text(shift.shiftName, `Ca #${id}`), hint: timeRange(shift.startTime, shift.endTime), match: (item) => relId(item, "shift") === id };
+    });
+    if (filtered.some((item) => !ids.has(relId(item, "shift")))) {
+      result.push({ key: "other", label: "Ca khác", hint: "Không thuộc ca mẫu của nhóm", match: (item) => !ids.has(relId(item, "shift")) });
+    }
+    return result;
+  }, [groupId, shifts, filtered, lookups]);
+
   /** Nhân viên có ca (còn hiệu lực) tại cửa hàng đang xem */
   const employeeOptions = useMemo(() => {
     const ids = new Set<number>();
@@ -130,9 +180,9 @@ export function useCalendar(storeId: string) {
       return next;
     });
 
-  const hasFilters = Boolean(filters.periodId || filters.roundId || filters.status || filters.employeeId);
+  const hasFilters = Boolean(filters.periodId || groupId || filters.status || filters.employeeId);
 
-  return { filters, setFilters, hasFilters, employeeOptions, highlight, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
+  return { filters, setFilters, hasFilters, groupOptions, rows, employeeOptions, highlight, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
 }
 
 /** Khung ca theo giờ bắt đầu: 0 sáng, 1 chiều, 2 tối. */

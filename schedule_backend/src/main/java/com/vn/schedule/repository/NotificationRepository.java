@@ -24,6 +24,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
                                                    @Param("read") boolean read,
                                                    Pageable pageable);
 
+    /** Mọi thông báo của một nhân viên (cả đã đọc và chưa đọc), mới nhất trước. */
+    @Query("""
+            SELECT n FROM Notification n
+            WHERE n.employeeId = :employeeId
+            ORDER BY n.createdAt DESC, n.notificationId DESC
+            """)
+    Slice<Notification> findByEmployee(@Param("employeeId") Integer employeeId, Pageable pageable);
+
     @Query("SELECT COUNT(n) FROM Notification n WHERE n.employeeId = :employeeId AND COALESCE(n.isRead, false) = false")
     long countUnread(@Param("employeeId") Integer employeeId);
 

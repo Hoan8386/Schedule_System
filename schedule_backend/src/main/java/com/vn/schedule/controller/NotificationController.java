@@ -32,14 +32,15 @@ public class NotificationController {
 
     // ---------- Thông báo của người dùng đang đăng nhập (chuông thông báo) ----------
 
-    /** status = unread | read; tối đa 20 thông báo mỗi trang (page bắt đầu từ 0). */
+    /** status = all | unread | read; tối đa 20 thông báo mỗi trang (page bắt đầu từ 0). */
     @GetMapping("/me")
     @ApiMessage("Lấy thông báo của tôi")
     public ResponseEntity<NotificationPageResponse> mine(
             @RequestParam(defaultValue = "unread") String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "" + NotificationService.MAX_PAGE_SIZE) int size) {
-        Slice<Notification> slice = service.findMine("read".equalsIgnoreCase(status), page, size);
+        Boolean read = "all".equalsIgnoreCase(status) ? null : "read".equalsIgnoreCase(status);
+        Slice<Notification> slice = service.findMine(read, page, size);
         return ResponseEntity.ok(new NotificationPageResponse(
                 responses(slice.getContent()), slice.getNumber(), slice.getSize(), slice.hasNext(), service.countMyUnread()));
     }

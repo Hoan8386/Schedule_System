@@ -4,7 +4,7 @@ import type { NotificationPage, NotificationResponse } from "./types/admin.types
 /** Số thông báo tối đa mỗi lần tải (backend cũng giới hạn 20). */
 export const NOTIFICATION_PAGE_SIZE = 20;
 
-export type NotificationStatus = "unread" | "read";
+export type NotificationStatus = "all" | "unread" | "read";
 
 /** Thông báo của người dùng đang đăng nhập (chuông thông báo). */
 export const notificationApi = {
