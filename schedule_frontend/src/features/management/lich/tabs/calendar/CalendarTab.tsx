@@ -66,6 +66,13 @@ export function CalendarTab() {
             onChange={(status) => setFilters((current) => ({ ...current, status }))}
             options={STATUS_OPTIONS.shiftDate.map((status) => ({ value: status, label: shiftDateStyle(status).label }))}
           />
+          <FilterSelect
+            label="Nhân viên"
+            allLabel="Tất cả nhân viên"
+            value={filters.employeeId}
+            onChange={(employeeId) => setFilters((current) => ({ ...current, employeeId }))}
+            options={calendar.employeeOptions}
+          />
           {calendar.hasFilters && (
             <button type="button" onClick={() => setFilters(EMPTY_CALENDAR_FILTERS)} className="btn btn-secondary btn-sm">
               Bỏ lọc
@@ -112,9 +119,9 @@ export function CalendarTab() {
       {loading && shiftDates.length === 0 ? (
         <Spinner label="Đang tải lịch..." className="mt-4 h-64 rounded-xl border border-dashed border-slate-200" />
       ) : view === "month" ? (
-        <MonthView days={calendar.days} month={calendar.cursor.getMonth()} shiftsOn={calendar.shiftsOn} eventsOn={calendar.eventsOn} onOpen={openDetail} />
+        <MonthView days={calendar.days} month={calendar.cursor.getMonth()} shiftsOn={calendar.shiftsOn} eventsOn={calendar.eventsOn} highlight={calendar.highlight} onOpen={openDetail} />
       ) : (
-        <WeekView days={calendar.days} shiftsOn={calendar.shiftsOn} eventsOn={calendar.eventsOn} onOpen={openDetail} />
+        <WeekView days={calendar.days} shiftsOn={calendar.shiftsOn} eventsOn={calendar.eventsOn} highlight={calendar.highlight} onOpen={openDetail} />
       )}
 
       {!loading && stats.total === 0 && (
@@ -128,6 +135,7 @@ export function CalendarTab() {
           <span key={key} className={`rounded-md border px-2 py-1 ${style.card}`}>{style.label}</span>
         ))}
         <span className="rounded-md bg-rose-50 px-2 py-1 text-rose-600">★ Sự kiện đặc biệt</span>
+        {calendar.highlight && <span className="rounded-md px-2 py-1 ring-2 ring-accent">Ca có nhân viên đang chọn</span>}
         <span className="ml-auto">Số trên ca = nhân viên đã phân bổ / số người tối đa</span>
       </div>
     </section>

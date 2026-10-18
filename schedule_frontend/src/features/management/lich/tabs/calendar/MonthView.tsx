@@ -11,12 +11,13 @@ interface Props {
   month: number;
   shiftsOn: (day: Date) => ShiftByDateResponse[];
   eventsOn: (day: Date) => SpecialEventResponse[];
+  highlight: ((item: ShiftByDateResponse) => boolean) | null;
   onOpen: (day: Date, items: ShiftByDateResponse[]) => void;
 }
 
 const MAX_VISIBLE = 3;
 
-export function MonthView({ days, month, shiftsOn, eventsOn, onOpen }: Props) {
+export function MonthView({ days, month, shiftsOn, eventsOn, highlight, onOpen }: Props) {
   const { lookups } = useSchedule();
   const todayKey = localKey(new Date());
 
@@ -30,7 +31,8 @@ export function MonthView({ days, month, shiftsOn, eventsOn, onOpen }: Props) {
         </div>
         <div className="grid grid-cols-7">
           {days.map((day, index) => {
-            const items = shiftsOn(day);
+            // Khi chọn nhân viên: đưa ca của nhân viên đó lên đầu để không bị ẩn trong "+n ca khác"
+            const items = highlight ? [...shiftsOn(day)].sort((a, b) => Number(highlight(b)) - Number(highlight(a))) : shiftsOn(day);
             const inMonth = day.getMonth() === month;
             const isToday = localKey(day) === todayKey;
             const visible = items.slice(0, MAX_VISIBLE);
@@ -65,13 +67,14 @@ export function MonthView({ days, month, shiftsOn, eventsOn, onOpen }: Props) {
                     const style = shiftDateStyle(item.status);
                     const cap = lookups.capacityOf(item);
                     const count = lookups.activeAssignmentsOf(item).length;
+                    const marked = highlight?.(item);
                     return (
                       <button
                         key={shiftDateId(item)}
                         type="button"
                         onClick={() => onOpen(day, [item])}
                         title={`${text(item.shiftName)} · ${lookups.storeNameOf(item)} · ${style.label}`}
-                        className={`block w-full rounded-md border px-1.5 py-1 text-left transition hover:border-brand-400 hover:shadow-sm ${style.card}`}
+                        className={`block w-full rounded-md border px-1.5 py-1 text-left transition hover:border-brand-400 hover:shadow-sm ${style.card} ${marked ? "ring-2 ring-accent" : highlight ? "opacity-35" : ""}`}
                       >
                         <div className="flex items-center justify-between gap-1">
                           <span className="truncate text-[10px] font-bold text-slate-800">{hhmm(item.startTime)}–{hhmm(item.endTime)}</span>

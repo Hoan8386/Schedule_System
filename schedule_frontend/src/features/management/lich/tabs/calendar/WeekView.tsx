@@ -10,12 +10,13 @@ interface Props {
   days: Date[];
   shiftsOn: (day: Date) => ShiftByDateResponse[];
   eventsOn: (day: Date) => SpecialEventResponse[];
+  highlight: ((item: ShiftByDateResponse) => boolean) | null;
   onOpen: (day: Date, items: ShiftByDateResponse[]) => void;
 }
 
 const GRID = "grid grid-cols-[6.5rem_repeat(7,minmax(0,1fr))]";
 
-export function WeekView({ days, shiftsOn, eventsOn, onOpen }: Props) {
+export function WeekView({ days, shiftsOn, eventsOn, highlight, onOpen }: Props) {
   const { lookups } = useSchedule();
   const todayKey = localKey(new Date());
 
@@ -55,12 +56,13 @@ export function WeekView({ days, shiftsOn, eventsOn, onOpen }: Props) {
                     const style = shiftDateStyle(item.status);
                     const cap = lookups.capacityOf(item);
                     const workers = lookups.activeAssignmentsOf(item);
+                    const marked = highlight?.(item);
                     return (
                       <button
                         key={shiftDateId(item)}
                         type="button"
                         onClick={() => onOpen(day, [item])}
-                        className={`block w-full rounded-lg border p-2 text-left shadow-xs transition hover:border-brand-400 hover:shadow-sm ${style.card}`}
+                        className={`block w-full rounded-lg border p-2 text-left shadow-xs transition hover:border-brand-400 hover:shadow-sm ${style.card} ${marked ? "ring-2 ring-accent" : highlight ? "opacity-35" : ""}`}
                       >
                         <p className="truncate text-[10px] font-black text-slate-800">{text(item.shiftName, slot.label)}</p>
                         <p className="mt-0.5 text-[10px] font-bold text-slate-600">{timeRange(item.startTime, item.endTime)}</p>

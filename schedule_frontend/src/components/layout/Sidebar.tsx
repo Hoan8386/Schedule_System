@@ -1,7 +1,5 @@
-import { notify } from "@/lib/toast";
 import React from "react";
 import Image from "next/image";
-import { ChevronsUpDown, HelpCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { NavItem, NavSection, WorkspaceScope } from "./types";
 
@@ -20,44 +18,17 @@ interface SidebarProps {
 }
 
 export function Sidebar({
-  subtitle,
-  scope,
   sections,
   activeId,
   onSelect,
   variant = "soft",
-  helpMessage,
-  helpLabel = "Trợ giúp & Hỗ trợ",
-  onLogout,
   showCopyright,
 }: SidebarProps) {
   return (
     <aside className="z-20 flex w-(--sidebar-width) shrink-0 flex-col justify-between border-r border-slate-200/80 bg-surface shadow-sm">
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex items-center gap-3 border-b border-slate-100 p-4">
-          <Image src="/logo/logo1.jpg" alt="BLOAN Logo" width={48} height={48} className="h-12 w-12 shrink-0 rounded-xl object-contain shadow-sm" />
-          <div>
-            <div className="text-base font-extrabold leading-tight tracking-tight text-accent">Ăn Vặt BLOAN</div>
-            <div className="text-[11px] font-medium text-slate-400">{subtitle}</div>
-          </div>
-        </div>
-
-        <div className="p-3">
-          <div
-            className={cn(
-              "flex items-center justify-between rounded-xl border p-2.5",
-              scope.tone === "neutral" ? "border-slate-200/70 bg-slate-50" : "border-brand-200/70 bg-brand-50/40"
-            )}
-          >
-            <div>
-              <p className={cn("text-[10px] font-bold uppercase tracking-wider", scope.tone === "neutral" ? "text-slate-400" : "text-brand-800")}>
-                {scope.label}
-              </p>
-              <p className="mt-0.5 text-xs font-black text-slate-800">{scope.name}</p>
-              {scope.detail && <p className="mt-0.5 text-[10px] text-slate-400">{scope.detail}</p>}
-            </div>
-            <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400" />
-          </div>
+        <div className="border-b border-slate-100 px-4 pt-4 pb-2">
+          <Image src="/logo/logo1.jpg" alt="BLOAN Logo" width={2560} height={1810} priority className="h-24 w-full object-cover" />
         </div>
 
         <nav className="mt-1 flex-1 space-y-4 overflow-y-auto px-2">
@@ -79,25 +50,9 @@ export function Sidebar({
         </nav>
       </div>
 
-      <div className="shrink-0 space-y-1 border-t border-slate-100 p-3">
-        <button
-          type="button"
-          onClick={() => notify.info(helpMessage)}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-500 transition-all hover:bg-slate-100/80"
-        >
-          <HelpCircle className="h-4 w-4 text-slate-400" />
-          <span>{helpLabel}</span>
-        </button>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-rose-600 transition-all hover:bg-rose-50"
-        >
-          <LogOut className="h-4 w-4" />
-          <span>Đăng xuất</span>
-        </button>
-        {showCopyright && <div className="px-3 pt-2 text-[10px] font-medium text-slate-400">© 2026 Ăn Vặt BLOAN</div>}
-      </div>
+      {showCopyright && (
+        <div className="shrink-0 border-t border-slate-100 px-6 py-3 text-[10px] font-medium text-slate-400">© 2026 Ăn Vặt BLOAN</div>
+      )}
     </aside>
   );
 }

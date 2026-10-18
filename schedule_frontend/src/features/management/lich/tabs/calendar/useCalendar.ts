@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import type { ShiftByDateResponse } from "@/lib/api";
-import { dayKey, hhmm, localKey, pad, upper } from "@/lib/format";
+import { dayKey, hhmm, localKey, pad, relId, upper } from "@/lib/format";
 import { isActiveAssignment, type CalendarView } from "../../constants";
 import { useSchedule } from "../../ScheduleContext";
 
-export const EMPTY_CALENDAR_FILTERS = { periodId: "", roundId: "", status: "" };
+/** employeeId không lọc bớt ca mà chỉ làm nổi bật các ca có nhân viên đó. */
+export const EMPTY_CALENDAR_FILTERS = { periodId: "", roundId: "", status: "", employeeId: "" };
 export type CalendarFilters = typeof EMPTY_CALENDAR_FILTERS;
 
 /** Thứ Hai của tuần chứa ngày. */
@@ -86,6 +87,25 @@ export function useCalendar(storeId: string) {
     return { total: items.length, assigned, capacity, pending, missing };
   }, [byDay, days, cursor, view, lookups]);
 
+  /** Nhân viên có ca (còn hiệu lực) tại cửa hàng đang xem */
+  const employeeOptions = useMemo(() => {
+    const ids = new Set<number>();
+    shiftDates
+      .filter((item) => !storeId || lookups.storeIdOf(item) === Number(storeId))
+      .forEach((item) => lookups.activeAssignmentsOf(item).forEach((assignment) => ids.add(relId(assignment, "employee"))));
+    ids.delete(0);
+    return Array.from(ids)
+      .map((id) => ({ value: id, label: lookups.employeeName(id) }))
+      .sort((a, b) => a.label.localeCompare(b.label, "vi"));
+  }, [shiftDates, lookups, storeId]);
+
+  /** Ca có nhân viên đang chọn; null khi không chọn nhân viên nào. */
+  const highlight = useMemo(() => {
+    if (!filters.employeeId) return null;
+    const employeeId = Number(filters.employeeId);
+    return (item: ShiftByDateResponse) => lookups.activeAssignmentsOf(item).some((assignment) => relId(assignment, "employee") === employeeId);
+  }, [filters.employeeId, lookups]);
+
   const shiftsOn = (day: Date) => byDay.get(localKey(day)) ?? [];
 
   const eventsOn = (day: Date) => {
@@ -110,9 +130,9 @@ export function useCalendar(storeId: string) {
       return next;
     });
 
-  const hasFilters = Boolean(filters.periodId || filters.roundId || filters.status);
+  const hasFilters = Boolean(filters.periodId || filters.roundId || filters.status || filters.employeeId);
 
-  return { filters, setFilters, hasFilters, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
+  return { filters, setFilters, hasFilters, employeeOptions, highlight, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
 }
 
 /** Khung ca theo giờ bắt đầu: 0 sáng, 1 chiều, 2 tối. */
