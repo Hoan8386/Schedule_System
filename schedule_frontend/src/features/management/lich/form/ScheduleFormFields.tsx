@@ -146,16 +146,28 @@ export function ScheduleFormFields({ kind, f, options, item }: Props) {
   }
 }
 
-/** Chọn đợt + nhóm ca của phiên: chỉ liệt kê nhóm ca thuộc cửa hàng của đợt đã chọn. */
+/**
+ * Chọn cửa hàng → đợt → nhóm ca của phiên: đợt và nhóm ca chỉ liệt kê theo cửa hàng đã chọn.
+ * Cửa hàng chỉ để lọc (không gửi lên backend); phiên gắn cửa hàng qua đợt.
+ */
 function SessionRoundAndGroup({ item, roundOptions }: { item?: Entity; roundOptions: ScheduleLookups["options"]["rounds"] }) {
-  const { shiftGroups, lookups } = useSchedule();
+  const { lookups, storeFilter } = useSchedule();
   const [roundId, setRoundId] = useState(() => defaultValueOf(item, "scheduleRoundId") || defaultValueOf(item, "scheduleRound"));
+  const roundStoreId = (id: unknown) => {
+    const round = lookups.maps.round.get(Number(id));
+    return round ? relId(round, "store") : 0;
+  };
+  // Mặc định: cửa hàng của đợt đang sửa, không thì cửa hàng đang lọc trên trang
+  const [storeId, setStoreId] = useState(() => String(roundStoreId(roundId) || storeFilter || ""));
 
-  const round = lookups.maps.round.get(Number(roundId));
-  const storeId = round ? relId(round, "store") : 0;
-  const storeName = round?.storeName ?? lookups.maps.store.get(storeId)?.storeName;
-  const groupOptions = shiftGroups
-    .filter((group) => !storeId || Number(group.storeId) === storeId)
+  const changeStore = (value: string) => {
+    setStoreId(value);
+    if (roundId && roundStoreId(roundId) !== Number(value)) setRoundId("");
+  };
+
+  const storeRoundOptions = roundOptions.filter((option) => !storeId || roundStoreId(option.value) === Number(storeId));
+  const groupOptions = Array.from(lookups.maps.group.values())
+    .filter((group) => !storeId || Number(group.storeId) === Number(storeId))
     .map((group) => {
       const id = Number(group.id ?? group.shiftGroupId ?? 0);
       return { value: id, label: text(group.shiftGroupName, `Nhóm ca #${id}`) };
@@ -163,26 +175,30 @@ function SessionRoundAndGroup({ item, roundOptions }: { item?: Entity; roundOpti
 
   return (
     <>
+      <Field label="Cửa hàng" className="sm:col-span-2">
+        <Select value={storeId} onChange={(event) => changeStore(event.target.value)} options={lookups.options.stores} placeholder="Chọn cửa hàng..." />
+      </Field>
       <Field label="Thuộc đợt">
         <Select
           name="scheduleRoundId"
           required
           value={roundId}
           onChange={(event) => setRoundId(event.target.value)}
-          options={roundOptions}
-          placeholder="Chọn..."
+          options={storeRoundOptions}
+          placeholder={!storeId ? "Chọn cửa hàng trước" : storeRoundOptions.length ? "Chọn..." : "Cửa hàng chưa có đợt đăng ký"}
+          disabled={!storeId}
         />
       </Field>
-      <Field label={storeName ? `Nhóm ca được đăng ký · ${storeName}` : "Nhóm ca được đăng ký"}>
-        {/* key: đổi đợt thì làm mới lựa chọn nhóm ca */}
+      <Field label="Nhóm ca được đăng ký">
+        {/* key: đổi cửa hàng thì làm mới lựa chọn nhóm ca */}
         <Select
-          key={roundId}
+          key={storeId}
           name="shiftGroupId"
           required
           defaultValue={defaultValueOf(item, "shiftGroupId") || defaultValueOf(item, "shiftGroup")}
           options={groupOptions}
-          placeholder={!roundId ? "Chọn đợt trước" : groupOptions.length ? "Chọn..." : "Cửa hàng chưa có nhóm ca"}
-          disabled={!roundId}
+          placeholder={!storeId ? "Chọn cửa hàng trước" : groupOptions.length ? "Chọn..." : "Cửa hàng chưa có nhóm ca"}
+          disabled={!storeId}
         />
       </Field>
     </>

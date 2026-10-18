@@ -68,7 +68,7 @@ export function ScheduleFormModal() {
       {/* key: mỗi lần mở là một form mới để defaultValue được áp dụng lại */}
       <form key={`${modal.kind}-${id}`} onSubmit={submit} className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
-          <ScheduleFormFields kind={modal.kind} f={fieldFactory(modal.item)} options={lookups.options} item={modal.item} />
+          <ScheduleFormFields kind={modal.kind} f={fieldFactory(modal.item, !id)} options={lookups.options} item={modal.item} />
         </div>
         <button type="submit" disabled={saving} className="btn btn-primary w-full py-3 text-sm font-black">
           {saving ? "Đang lưu..." : "Lưu"}
