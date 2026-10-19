@@ -64,12 +64,6 @@ export const WEEKDAY_SHORT = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 export const WEEKDAY_LONG = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
 export const MONTH_HEADER = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"];
 
-export const SLOTS = [
-  { label: "Ca sáng", hint: "Bắt đầu trước 12:00" },
-  { label: "Ca chiều", hint: "12:00 – 16:59" },
-  { label: "Ca tối", hint: "Từ 17:00" },
-];
-
 /** Id của bản ghi bất kể backend đặt tên khóa thế nào. */
 export const idOf = (item: Entity) =>
   Number(

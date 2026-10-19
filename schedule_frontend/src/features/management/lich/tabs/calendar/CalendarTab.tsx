@@ -1,5 +1,5 @@
-import React from "react";
-import { CalendarRange, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState } from "react";
+import { CalendarRange, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { dayKey, fromDayKey, localKey } from "@/lib/format";
 import { shiftDateStyle, SHIFT_DATE_STATUS, STATUS_OPTIONS, type CalendarView } from "../../constants";
@@ -11,6 +11,7 @@ import { StoreFilter } from "../../components/StoreFilter";
 import { EMPTY_CALENDAR_FILTERS, useCalendar } from "./useCalendar";
 import { MonthView } from "./MonthView";
 import { WeekView } from "./WeekView";
+import { RequestList } from "./RequestList";
 
 export function CalendarTab() {
   const { shiftDates, loading, lookups, openShiftDetail, storeFilter } = useSchedule();
@@ -18,6 +19,7 @@ export function CalendarTab() {
   const storeId = storeFilter || String(lookups.options.stores[0]?.value ?? "");
   const calendar = useCalendar(storeId);
   const { filters, setFilters, view, stats } = calendar;
+  const [showRequests, setShowRequests] = useState(false);
 
   const openDetail = (day: Date, items: typeof shiftDates) => openShiftDetail(localKey(day), items.map(shiftDateId));
 
@@ -31,6 +33,7 @@ export function CalendarTab() {
 
   return (
     <section className="card p-4 sm:p-5">
+      {showRequests && <RequestList periodId={filters.periodId} storeId={storeId} onClose={() => setShowRequests(false)} />}
       <div className="flex flex-col gap-4 border-b border-slate-100 pb-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
@@ -53,6 +56,9 @@ export function CalendarTab() {
                 </button>
               ))}
             </div>
+            <button type="button" onClick={() => setShowRequests(true)} className="btn btn-secondary btn-sm">
+              <ClipboardList className="h-4 w-4" /> Danh sách yêu cầu ĐK
+            </button>
             <AddButton kind="shiftDate" />
           </div>
         </div>
@@ -158,7 +164,6 @@ export function CalendarTab() {
       ) : (
         <WeekView
           days={calendar.days}
-          rows={calendar.rows}
           shiftsOn={calendar.shiftsOn}
           eventsOn={calendar.eventsOn}
           highlight={calendar.highlight}
@@ -174,14 +179,25 @@ export function CalendarTab() {
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-500">
-        {Object.entries(SHIFT_DATE_STATUS).map(([key, style]) => (
-          <span key={key} className={`rounded-md border px-2 py-1 ${style.card}`}>
-            {style.label}
-          </span>
-        ))}
+        {view === "month" ? (
+          <>
+            {Object.entries(SHIFT_DATE_STATUS).map(([key, style]) => (
+              <span key={key} className={`rounded-md border px-2 py-1 ${style.card}`}>
+                {style.label}
+              </span>
+            ))}
+          </>
+        ) : (
+          <>
+            <span className="rounded-md border border-blue-300 bg-blue-200 px-2 py-1 text-slate-700">Ca có nhân viên</span>
+            <span className="rounded-md border border-dashed border-rose-300 bg-rose-50 px-2 py-1 text-rose-500">Ca chưa có nhân viên</span>
+          </>
+        )}
         <span className="rounded-md bg-rose-50 px-2 py-1 text-rose-600">★ Sự kiện đặc biệt</span>
         {calendar.highlight && <span className="rounded-md px-2 py-1 ring-2 ring-accent">Ca có nhân viên đang chọn</span>}
-        <span className="ml-auto">Số trên ca = nhân viên đã phân bổ / số người tối đa</span>
+        <span className="ml-auto">
+          {view === "month" ? "Số trên ca = nhân viên đã phân bổ / số người tối đa" : "Thanh ca: số giờ · giờ ca · nhân viên đã phân bổ / tối đa — bấm vào để xem danh sách nhân viên"}
+        </span>
       </div>
     </section>
   );

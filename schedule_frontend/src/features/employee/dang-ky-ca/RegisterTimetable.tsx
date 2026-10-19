@@ -14,7 +14,8 @@ export interface TemplateRow {
   group: MyShiftGroup;
 }
 
-type CellKind = "registered" | "available" | "full" | "closed" | "past" | "outside" | "window";
+/** pending: đã đăng ký, chờ quản lý duyệt (bấm để hủy); approved: quản lý đã duyệt */
+type CellKind = "pending" | "approved" | "available" | "full" | "closed" | "past" | "outside" | "window";
 
 export interface Cell {
   kind: CellKind;
@@ -22,13 +23,15 @@ export interface Cell {
   capacity: number;
   /** Lý do không đăng ký được / trạng thái đăng ký */
   note: string;
+  /** Đăng ký chờ duyệt còn hủy được (phiên đăng ký của nhóm còn mở) */
+  cancellable?: boolean;
   shiftByDate?: MyOpenShift;
 }
 
 /** Sức chứa mặc định khi cả ca theo ngày lẫn ca mẫu đều chưa cấu hình */
 export const DEFAULT_CAPACITY = 5;
 
-const ASSIGNMENT_LABEL: Record<string, string> = { PENDING: "Chờ duyệt", APPROVED: "Đã duyệt", COMPLETED: "Đã làm" };
+const ASSIGNMENT_LABEL: Record<string, string> = { APPROVED: "Đã duyệt", COMPLETED: "Đã làm" };
 
 const isOpenNow = (openAt: string | null, closeAt: string | null) => {
   const now = Date.now();
@@ -74,28 +77,37 @@ export function cellFor(
   const base = { count, capacity, shiftByDate };
   if (!inPeriod) return { ...base, kind: "outside", note: "Ngoài kỳ" };
   if (shiftByDate && isRegistered(shiftByDate)) {
-    return { ...base, kind: "registered", note: ASSIGNMENT_LABEL[String(shiftByDate.myAssignmentStatus).toUpperCase()] ?? "Đã đăng ký" };
+    const status = String(shiftByDate.myAssignmentStatus).toUpperCase();
+    // Chờ duyệt: chỉ hủy được khi phiên đăng ký của nhóm còn mở (backend kiểm tra lại); ngày đã qua thì không hủy
+    if (status === "PENDING") {
+      const cancellable = window.open && dayKey >= todayKey;
+      return { ...base, kind: "pending", cancellable, note: cancellable ? "Chờ duyệt" : "Chờ duyệt · hết thời gian hủy" };
+    }
+    return { ...base, kind: "approved", note: ASSIGNMENT_LABEL[status] ?? "Đã duyệt" };
   }
   if (dayKey < todayKey) return { ...base, kind: "past", note: "Đã qua" };
   if (shiftByDate && shiftByDate.status !== "OPEN") return { ...base, kind: "closed", note: "Đã đóng" };
   if (count >= capacity) return { ...base, kind: "full", note: "Hết chỗ" };
   if (!window.open) return { ...base, kind: "window", note: window.note };
-  return { ...base, kind: "available", note: "Bấm để đăng ký" };
+  return { ...base, kind: "available", note: "Còn chỗ" };
 }
 
 const CELL_TONE: Record<CellKind, string> = {
-  registered: "border-emerald-300 bg-emerald-50 text-emerald-800",
-  available: "border-brand-200 bg-white text-slate-800 hover:border-brand-400 hover:bg-brand-50 hover:shadow-sm cursor-pointer",
-  full: "border-slate-200 bg-slate-100 text-slate-400",
-  closed: "border-slate-200 bg-slate-100 text-slate-400",
+  pending: "border-amber-300 bg-amber-50 text-amber-800 hover:border-amber-400 hover:shadow-sm",
+  approved: "border-emerald-300 bg-emerald-50 text-emerald-800 hover:border-emerald-400 hover:shadow-sm",
+  available: "border-brand-200 bg-white text-slate-800 hover:border-brand-400 hover:bg-brand-50 hover:shadow-sm",
+  full: "border-slate-200 bg-slate-100 text-slate-400 hover:border-slate-300",
+  closed: "border-slate-200 bg-slate-100 text-slate-400 hover:border-slate-300",
   past: "border-slate-100 bg-slate-50 text-slate-300",
   outside: "border-transparent bg-transparent text-slate-300",
-  window: "border-dashed border-slate-200 bg-white text-slate-400",
+  window: "border-dashed border-slate-200 bg-white text-slate-400 hover:border-slate-300",
 };
 
 const countTone = (cell: Cell) =>
-  cell.kind === "registered"
+  cell.kind === "approved"
     ? "text-emerald-700"
+    : cell.kind === "pending"
+      ? "text-amber-700"
     : cell.count >= cell.capacity
       ? "text-rose-600"
       : cell.count > 0
@@ -107,15 +119,21 @@ interface CellButtonProps {
   cell: Cell;
   compact?: boolean;
   submitting: boolean;
+  clickable: boolean;
   onRegister: () => void;
 }
 
-/** Một ô đăng ký: số người đã đăng ký / sức chứa + trạng thái; bấm để đăng ký khi còn chỗ. */
-export function CellButton({ row, cell, compact = false, submitting, onRegister }: CellButtonProps) {
+/** Mọi ô trong kỳ (trừ ngày đã qua) đều bấm được để mở popup; đăng ký / hủy được hay không do popup quyết định. */
+export const isClickable = (cell: Cell) => cell.kind !== "outside" && cell.kind !== "past";
+
+/** Một ô đăng ký: số người đã đăng ký / sức chứa + trạng thái; bấm để mở popup đăng ký / hủy đăng ký. */
+export function CellButton({ row, cell, compact = false, submitting, clickable: canClick, onRegister }: CellButtonProps) {
   if (cell.kind === "outside") return compact ? null : <div className="h-full rounded-lg bg-slate-50/60" />;
-  const clickable = cell.kind === "available" && !submitting;
+  const clickable = canClick && !submitting;
   const capacity = cell.capacity;
-  const title = `${row.shift.shiftName ?? "Ca"} ${row.shift.startTime}–${row.shift.endTime} · ${cell.count}/${capacity} người · ${cell.note}`;
+  const title = `${row.shift.shiftName ?? "Ca"} ${row.shift.startTime}–${row.shift.endTime} · ${cell.count}/${capacity} người · ${cell.note}${
+    clickable ? " · bấm để xem" : ""
+  }`;
 
   if (compact) {
     return (
@@ -124,12 +142,13 @@ export function CellButton({ row, cell, compact = false, submitting, onRegister 
         title={title}
         disabled={!clickable}
         onClick={onRegister}
-        className={cn("flex w-full items-center justify-between gap-1 rounded-md border px-1.5 py-1 text-left transition", CELL_TONE[cell.kind])}
+        className={cn("flex w-full items-center justify-between gap-1 rounded-md border px-1.5 py-1 text-left transition", clickable && "cursor-pointer", CELL_TONE[cell.kind])}
       >
         <span className="truncate text-[10px] font-bold">
           {row.shift.shiftName ?? "Ca"} {row.shift.startTime}
         </span>
         <span className={cn("shrink-0 text-[10px] font-black", countTone(cell))}>
+          {cell.kind === "pending" ? "⏳ " : cell.kind === "approved" ? "✓ " : ""}
           {cell.count}/{capacity}
         </span>
       </button>
@@ -141,12 +160,12 @@ export function CellButton({ row, cell, compact = false, submitting, onRegister 
       title={title}
       disabled={!clickable}
       onClick={onRegister}
-      className={cn("flex h-full w-full flex-col justify-between rounded-lg border p-2 text-left transition", CELL_TONE[cell.kind])}
+      className={cn("flex h-full w-full flex-col justify-between rounded-lg border p-2 text-left transition", clickable && "cursor-pointer", CELL_TONE[cell.kind])}
     >
       <span className={cn("text-lg font-black leading-none", countTone(cell))}>
         {cell.count}/{capacity}
       </span>
-      <span className="mt-1 text-[10px] font-semibold">{submitting ? "Đang gửi..." : cell.kind === "registered" ? `✓ ${cell.note}` : cell.note}</span>
+      <span className="mt-1 text-[10px] font-semibold">{submitting ? "Đang gửi..." : cell.kind === "approved" ? `✓ ${cell.note}` : cell.kind === "pending" ? `⏳ ${cell.note}` : cell.note}</span>
     </button>
   );
 }
@@ -209,6 +228,7 @@ export function RegisterWeekGrid({ days, rows, todayKey, inPeriod, cellOf, submi
                   <CellButton
                     row={row}
                     cell={cellOf(row, key)}
+                    clickable={isClickable(cellOf(row, key))}
                     submitting={submittingKey === cellKey}
                     onRegister={() => onRegister(row, key)}
                   />
@@ -269,6 +289,7 @@ export function RegisterPeriodGrid({ days, rows, todayKey, inPeriod, cellOf, sub
                           key={cellKey}
                           row={row}
                           cell={cellOf(row, key)}
+                          clickable={isClickable(cellOf(row, key))}
                           compact
                           submitting={submittingKey === cellKey}
                           onRegister={() => onRegister(row, key)}

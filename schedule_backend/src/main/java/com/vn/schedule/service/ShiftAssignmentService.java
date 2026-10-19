@@ -118,6 +118,22 @@ public class ShiftAssignmentService {
         return repository.save(current);
     }
 
+    /** Duyệt hàng loạt: chỉ đổi các đăng ký đang PENDING sang APPROVED; trả về số bản ghi đã duyệt. */
+    @Transactional
+    public int approveAll(List<Integer> ids) {
+        int approved = 0;
+        for (Integer id : ids == null ? List.<Integer>of() : ids) {
+            ShiftAssignment current = findById(id);
+            requireAccess(current);
+            if (!"PENDING".equalsIgnoreCase(current.getStatus())) continue;
+            current.setStatus("APPROVED");
+            stampDecision(current);
+            repository.save(current);
+            approved++;
+        }
+        return approved;
+    }
+
     @Transactional
     public void delete(Integer id) {
         repository.delete(findById(id));

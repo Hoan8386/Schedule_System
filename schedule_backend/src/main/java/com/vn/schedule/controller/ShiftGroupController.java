@@ -50,6 +50,13 @@ public class ShiftGroupController {
         }
         return registrationService.register(shiftId, workDate);
     }
+    /** Hủy đăng ký ca của chính mình khi còn chờ duyệt (xóa bản ghi): ?shiftId=1&workDate=2026-11-05 */
+    @DeleteMapping("/me/register") @ApiMessage("Hủy đăng ký ca")
+    public ShiftGroupMemberService.OpenShift unregister(
+            @RequestParam Integer shiftId,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate workDate) {
+        return registrationService.unregister(shiftId, workDate);
+    }
     @GetMapping("/{id}") public ShiftGroupResponse get(@PathVariable Integer id) { return response(service.group(id)); }
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public ShiftGroupResponse create(@RequestBody ShiftGroupRequest body) { return response(service.createGroup(body)); }
     @PutMapping("/{id}") public ShiftGroupResponse update(@PathVariable Integer id, @RequestBody ShiftGroupRequest body) { return response(service.updateGroup(id, body)); }

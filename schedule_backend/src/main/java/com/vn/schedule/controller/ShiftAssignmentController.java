@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/shift_assignment")
@@ -52,6 +53,13 @@ public class ShiftAssignmentController {
             @RequestBody ShiftAssignmentRequest body) {
         ShiftAssignment entity = service.update(id, body);
         return ResponseEntity.ok(toResponse(entity));
+    }
+
+    /** Body: { "ids": [1, 2, ...] } – duyệt các đăng ký ca đang chờ duyệt. */
+    @PatchMapping("/approve")
+    @ApiMessage("Duyệt đăng ký ca")
+    public ResponseEntity<Map<String, Integer>> approve(@RequestBody Map<String, List<Integer>> body) {
+        return ResponseEntity.ok(Map.of("approved", service.approveAll(body.get("ids"))));
     }
 
     @DeleteMapping("/{id}")

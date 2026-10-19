@@ -49,6 +49,8 @@ export const scheduleApi = {
   createShiftAssignment: assignments.create,
   updateShiftAssignment: assignments.update,
   deleteShiftAssignment: assignments.remove,
+  /** Duyệt hàng loạt các đăng ký ca đang chờ duyệt */
+  approveShiftAssignments: (ids: number[]) => http.patch<{ approved: number }>("/api/v1/shift_assignment/approve", { ids }, { notify: false }),
 
   getScheduleRounds: rounds.list,
   createScheduleRound: rounds.create,
@@ -70,6 +72,9 @@ export const scheduleApi = {
   /** Đăng ký ca trên thời khóa biểu (tự tạo ca theo ngày nếu chưa có) */
   registerMyShift: (shiftId: number, workDate: string) =>
     http.post<MyOpenShift>("/api/v1/shift_group/me/register", { shiftId: String(shiftId), workDate }),
+  /** Hủy đăng ký ca của chính mình khi còn chờ duyệt (backend xóa bản ghi) */
+  unregisterMyShift: (shiftId: number, workDate: string) =>
+    http.delete<MyOpenShift>(withQuery("/api/v1/shift_group/me/register", { shiftId, workDate })),
   /** Lưu danh sách nhân viên của nhóm ca (thay toàn bộ) */
   saveShiftGroupEmployees: (id: number, employeeIds: number[]) =>
     http.put<{ employeeIds: number[] }>(`/api/v1/shift_group/${id}/employees`, { employeeIds }),
@@ -83,4 +88,6 @@ export const scheduleApi = {
   createEmergencyRequest: emergencies.create,
   updateEmergencyRequest: emergencies.update,
   deleteEmergencyRequest: emergencies.remove,
+  /** Duyệt hàng loạt các yêu cầu khẩn đang chờ duyệt */
+  approveEmergencyRequests: (ids: number[]) => http.patch<{ approved: number }>("/api/v1/emergency_request/approve", { ids }, { notify: false }),
 };

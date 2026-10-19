@@ -113,6 +113,45 @@ public class ShiftRegistrationService {
     }
 
     /**
+     * Nhân viên hủy đăng ký ca của mình khi đăng ký còn chờ duyệt: xóa hẳn bản ghi phân ca.
+     * Chỉ hủy được trong thời gian mở của đợt / phiên đăng ký (cùng điều kiện như khi đăng ký);
+     * đăng ký đã được duyệt (hoặc đã xử lý) thì không hủy ở đây được.
+     */
+    @Transactional
+    public ShiftGroupMemberService.OpenShift unregister(Integer shiftId, LocalDate workDate) {
+        if (shiftId == null || workDate == null) throw bad("Thiếu ca hoặc ngày làm");
+        Integer employeeId = storeScopeService.currentEmployeeId();
+
+        ShiftByDate shiftByDate = shiftByDateRepository.findByShift_IdAndWorkDate(shiftId, workDate)
+                .orElseThrow(() -> bad("Bạn chưa đăng ký ca này"));
+        List<Object[]> mine = rows(entityManager, """
+                SELECT assignment_id, status FROM shift_assignment
+                WHERE shift_by_date_id = :id AND employee_id = :employeeId
+                """, Map.of("id", shiftByDate.getId(), "employeeId", employeeId));
+        if (mine.isEmpty() || INACTIVE.contains(String.valueOf(mine.get(0)[1]).toUpperCase())) {
+            throw bad("Bạn chưa đăng ký ca này");
+        }
+        if (!"PENDING".equalsIgnoreCase(String.valueOf(mine.get(0)[1]))) {
+            throw bad("Đăng ký đã được duyệt nên không thể tự hủy. Vui lòng gửi yêu cầu hủy ca cho quản lý");
+        }
+        try {
+            registrationWindow(shiftByDate.getShift(), workDate);
+        } catch (ApiException ex) {
+            throw bad("Đã hết thời gian của phiên đăng ký nên không thể hủy (" + ex.getMessage() + ")");
+        }
+        Integer assignmentId = toInt(mine.get(0)[0]);
+        List<Object[]> linked = rows(entityManager, "SELECT COUNT(*) FROM emergency_request WHERE assignment_id = :id",
+                Map.of("id", assignmentId));
+        if (!linked.isEmpty() && toInt(linked.get(0)[0]) > 0) {
+            throw bad("Đăng ký đang gắn với yêu cầu khẩn nên không thể xóa");
+        }
+        assignmentRepository.deleteById(assignmentId);
+        assignmentRepository.flush();
+
+        return memberService.shiftsByDate(employeeId, workDate, workDate, shiftByDate.getId()).get(0);
+    }
+
+    /**
      * Ngày phải nằm trong kỳ OPEN có đợt đăng ký tại cửa hàng của ca; đợt (và phiên của nhóm, nếu đợt chia phiên)
      * phải đang trong thời gian mở đăng ký.
      */

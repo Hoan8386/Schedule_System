@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { AlertCircle, AlertTriangle, Award, Calendar, CalendarRange, Clock3, RefreshCw, Users } from "lucide-react";
 import { Alert, Button, PageHeader, Tabs, type TabItem } from "@/components/ui";
+import { cn } from "@/lib/cn";
 import type { TabKey } from "./constants";
 import { ScheduleProvider, useSchedule } from "./ScheduleContext";
 import { ScheduleFormModal } from "./form/ScheduleFormModal";
@@ -15,15 +16,32 @@ import { RoundTab } from "./tabs/RoundTab";
 import { SessionTab } from "./tabs/SessionTab";
 import { EmergencyTab, EventTab, GroupTab } from "./tabs/CatalogTabs";
 
-const TABS: TabItem<TabKey>[] = [
-  { key: "period", label: "Kỳ", icon: CalendarRange },
-  { key: "shift", label: "Ca", icon: Clock3 },
-  { key: "calendar", label: "Thời khóa biểu", icon: Calendar },
-  { key: "round", label: "Đợt đăng ký", icon: CalendarRange },
-  { key: "session", label: "Phiên", icon: Users },
-  { key: "group", label: "Nhóm ca", icon: Award },
-  { key: "event", label: "Sự kiện", icon: AlertTriangle },
-  { key: "emergency", label: "Khẩn cấp", icon: AlertCircle },
+type GroupKey = "period" | "calendar" | "group" | "event" | "emergency";
+
+/** Tab chính; nhóm có nhiều tab con thì hiện thêm thanh chọn tab con bên dưới. */
+const GROUPS: (TabItem<GroupKey> & { tabs: TabItem<TabKey>[] })[] = [
+  {
+    key: "period",
+    label: "Kỳ",
+    icon: CalendarRange,
+    tabs: [
+      { key: "period", label: "Kỳ", icon: CalendarRange },
+      { key: "round", label: "Đợt đăng ký", icon: CalendarRange },
+      { key: "session", label: "Phiên", icon: Users },
+    ],
+  },
+  { key: "calendar", label: "Thời khóa biểu", icon: Calendar, tabs: [{ key: "calendar", label: "Thời khóa biểu" }] },
+  {
+    key: "group",
+    label: "Nhóm ca",
+    icon: Award,
+    tabs: [
+      { key: "group", label: "Nhóm ca", icon: Award },
+      { key: "shift", label: "Ca", icon: Clock3 },
+    ],
+  },
+  { key: "event", label: "Sự kiện", icon: AlertTriangle, tabs: [{ key: "event", label: "Sự kiện" }] },
+  { key: "emergency", label: "Khẩn cấp", icon: AlertCircle, tabs: [{ key: "emergency", label: "Khẩn cấp" }] },
 ];
 
 const TAB_CONTENT: Record<TabKey, React.ComponentType> = {
@@ -48,7 +66,11 @@ export default function LichPage() {
 
 function LichPageContent() {
   const { loading, error, reload } = useSchedule();
-  const [activeTab, setActiveTab] = useState<TabKey>("calendar");
+  const [activeGroup, setActiveGroup] = useState<GroupKey>("calendar");
+  // Tab con đang chọn của từng nhóm (giữ nguyên khi chuyển qua lại giữa các nhóm)
+  const [subTab, setSubTab] = useState<Partial<Record<GroupKey, TabKey>>>({});
+  const group = GROUPS.find((item) => item.key === activeGroup) ?? GROUPS[0];
+  const activeTab = subTab[group.key] ?? group.tabs[0].key;
   const Content = TAB_CONTENT[activeTab];
 
   return (
@@ -70,7 +92,28 @@ function LichPageContent() {
 
       {error && <Alert>{error}</Alert>}
 
-      <Tabs items={TABS} active={activeTab} onChange={setActiveTab} />
+      <Tabs items={GROUPS} active={activeGroup} onChange={setActiveGroup} />
+
+      {group.tabs.length > 1 && (
+        <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-surface p-1 sm:w-fit" role="tablist">
+          {group.tabs.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === key}
+              onClick={() => setSubTab((current) => ({ ...current, [group.key]: key }))}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-bold transition",
+                activeTab === key ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100"
+              )}
+            >
+              {Icon && <Icon className="h-3.5 w-3.5" />}
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <Content />
     </div>

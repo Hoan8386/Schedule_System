@@ -55,6 +55,31 @@ public class EmergencyRequestService {
         return repository.save(current);
     }
 
+    /** Duyệt hàng loạt: chỉ đổi các yêu cầu đang PENDING sang APPROVED, ghi người / thời điểm xử lý. */
+    @Transactional
+    public int approveAll(List<Integer> ids) {
+        Integer processor = currentEmployeeIdOrNull();
+        int approved = 0;
+        for (Integer id : ids == null ? List.<Integer>of() : ids) {
+            EmergencyRequest current = findById(id);
+            if (!"PENDING".equalsIgnoreCase(current.getStatus())) continue;
+            current.setStatus("APPROVED");
+            current.setProcessedAt(LocalDateTime.now());
+            current.setProcessedBy(processor);
+            repository.save(current);
+            approved++;
+        }
+        return approved;
+    }
+
+    private Integer currentEmployeeIdOrNull() {
+        try {
+            return storeScopeService.currentEmployeeId();
+        } catch (ApiException ex) {
+            return null;
+        }
+    }
+
     @Transactional
     public void delete(Integer id) {
         repository.delete(findById(id));

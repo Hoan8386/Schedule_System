@@ -6,6 +6,7 @@ export const employeeApi = {
   getShiftsByDate: managerApi.getShiftsByDate,
   getMyShiftGroups: managerApi.getMyShiftGroups,
   registerMyShift: managerApi.registerMyShift,
+  unregisterMyShift: managerApi.unregisterMyShift,
   getAssignments: managerApi.getShiftAssignments,
   createAssignment: managerApi.createShiftAssignment,
   getEmergencyRequests: managerApi.getEmergencyRequests,

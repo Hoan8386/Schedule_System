@@ -47,6 +47,13 @@ public class EmergencyRequestController {
         return ResponseEntity.ok(response(service.update(id, body)));
     }
 
+    /** Body: { "ids": [1, 2, ...] } – duyệt các yêu cầu khẩn đang chờ duyệt. */
+    @PatchMapping("/approve")
+    @ApiMessage("Duyệt yêu cầu khẩn")
+    public ResponseEntity<java.util.Map<String, Integer>> approve(@RequestBody java.util.Map<String, List<Integer>> body) {
+        return ResponseEntity.ok(java.util.Map.of("approved", service.approveAll(body.get("ids"))));
+    }
+
     @DeleteMapping("/{id}")
 
     @ApiMessage("Xóa dữ liệu")

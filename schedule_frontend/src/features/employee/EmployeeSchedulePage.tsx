@@ -11,7 +11,6 @@ import { REQUEST_TYPE_LABEL } from "@/features/statistics/dashboard";
 import { useKeyedLoad, useStatData } from "@/features/statistics/useStatistics";
 import { WORK_STATUS, formatHours, formatVnd } from "@/features/statistics/utils";
 import { isRegistered } from "./dang-ky-ca/model";
-import { RegistrationPeriods } from "./RegistrationPeriods";
 
 interface EmployeeSchedulePageProps {
   onOpenRegister: () => void;
@@ -164,16 +163,6 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
 
   return (
     <div className="page">
-      <RegistrationPeriods
-        periods={groupResult.data?.periods ?? []}
-        loading={groupResult.loading}
-        onRegister={onOpenRegister}
-        onViewPeriod={(date) => {
-          setAnchor(new Date(`${date}T00:00:00`));
-          setView("month");
-        }}
-      />
-
       <section className="card p-4 sm:p-5">
         <div className="flex flex-col gap-4 border-b border-slate-100 pb-4">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">

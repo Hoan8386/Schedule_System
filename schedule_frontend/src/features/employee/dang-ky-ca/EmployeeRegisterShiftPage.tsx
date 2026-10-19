@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { CalendarRange, ChevronLeft, ChevronRight, Info, RefreshCw } from "lucide-react";
+import { CalendarClock, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Info, RefreshCw } from "lucide-react";
 import { Alert, Button, Card, EmptyState, FullPageLoader, PageHeader, Spinner } from "@/components/ui";
 import { employeeApi, type MyOpenShift, type RegistrationPeriod } from "@/lib/api";
 import { formatDate, localKey, pad } from "@/lib/format";
@@ -11,6 +11,7 @@ import { formatHours, formatVnd } from "@/features/statistics/utils";
 import { RegistrationPeriods } from "../RegistrationPeriods";
 import { isRegistered, shiftHours } from "./model";
 import { RegisterPeriodGrid, RegisterWeekGrid, cellFor, windowState, type TemplateRow } from "./RegisterTimetable";
+import { RegisterShiftModal } from "./RegisterShiftModal";
 
 type ViewMode = "period" | "week";
 
@@ -31,6 +32,8 @@ export default function EmployeeRegisterShiftPage() {
   const [view, setView] = useState<ViewMode>("period");
   const [weekOffset, setWeekOffset] = useState(0);
   const [submittingKey, setSubmittingKey] = useState<string | null>(null);
+  /** Ô đang mở popup đăng ký / hủy đăng ký */
+  const [picked, setPicked] = useState<{ row: TemplateRow; dayKey: string } | null>(null);
   /** Ca theo ngày vừa đăng ký (ghi đè dữ liệu tải về cho tới lần tải lại) */
   const [updates, setUpdates] = useState<Record<string, MyOpenShift>>({});
 
@@ -80,12 +83,17 @@ export default function EmployeeRegisterShiftPage() {
       ? Array.from({ length: weekCount * 7 }, (_, index) => addDays(firstWeek, index))
       : Array.from({ length: 7 }, (_, index) => addDays(firstWeek, safeOffset * 7 + index));
 
-  const register = async (row: TemplateRow, dayKey: string) => {
+  /** Xác nhận trong popup: đăng ký (chờ duyệt) hoặc hủy đăng ký đang chờ duyệt (xóa bản ghi). */
+  const submit = async (row: TemplateRow, dayKey: string, action: "register" | "cancel") => {
     const key = `${row.shift.shiftId}|${dayKey}`;
     setSubmittingKey(key);
     try {
-      const { data } = await employeeApi.registerMyShift(row.shift.shiftId, dayKey);
+      const { data } =
+        action === "cancel"
+          ? await employeeApi.unregisterMyShift(row.shift.shiftId, dayKey)
+          : await employeeApi.registerMyShift(row.shift.shiftId, dayKey);
       setUpdates((current) => ({ ...current, [key]: data }));
+      setPicked(null);
     } catch {
       // Lỗi (hết chỗ, ngoài giờ đăng ký...) đã được hiện bằng toast từ HTTP client
     } finally {
@@ -102,6 +110,7 @@ export default function EmployeeRegisterShiftPage() {
 
   // Tổng hợp các ca đã đăng ký trong kỳ
   const mine = [...byKey.values()].filter((item) => isRegistered(item) && inPeriod(item.workDate));
+  const minePending = mine.filter((item) => String(item.myAssignmentStatus).toUpperCase() === "PENDING").length;
   const mineHours = mine.reduce((sum, item) => sum + shiftHours(item.startTime, item.endTime), 0);
   const mineWage = mine.reduce((sum, item) => sum + shiftHours(item.startTime, item.endTime) * item.payRate, 0);
   const weekTitle = `${pad(days[0].getDate())}/${pad(days[0].getMonth() + 1)} – ${pad(days[6].getDate())}/${pad(days[6].getMonth() + 1)}/${days[6].getFullYear()}`;
@@ -110,7 +119,7 @@ export default function EmployeeRegisterShiftPage() {
     <div className="page">
       <PageHeader
         title="Đăng ký ca"
-        subtitle="Chọn kỳ đăng ký, bấm vào ô ca còn chỗ để đăng ký. Quản lý sẽ duyệt lịch sau khi kỳ đăng ký kết thúc."
+        subtitle="Chọn kỳ đăng ký, bấm vào ô ca để đăng ký hoặc hủy đăng ký. Đăng ký ở trạng thái chờ duyệt cho tới khi quản lý duyệt."
         actions={
           <Button variant="secondary" size="sm" onClick={reload} disabled={base.loading || shiftsLoad.loading}>
             <RefreshCw className={base.loading || shiftsLoad.loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
@@ -128,14 +137,46 @@ export default function EmployeeRegisterShiftPage() {
       ) : (
         base.data && (
           <>
-            <RegistrationPeriods
-              periods={periods}
-              selectedId={period?.periodId ?? null}
-              onSelect={(item) => {
-                setPickedPeriodId(item.periodId);
-                setWeekOffset(0);
-              }}
-            />
+            <Card className="p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <label className="text-[11px] font-semibold text-slate-600 sm:min-w-80">
+                  <span className="flex items-center gap-1.5">
+                    <CalendarClock className="h-3.5 w-3.5 text-brand-500" /> Kỳ đăng ký ca
+                  </span>
+                  <select
+                    value={period?.periodId ?? ""}
+                    onChange={(event) => {
+                      setPickedPeriodId(Number(event.target.value));
+                      setWeekOffset(0);
+                    }}
+                    disabled={periods.length === 0}
+                    className="field-input font-medium"
+                  >
+                    {periods.length === 0 && <option value="">Chưa có kỳ đăng ký nào đang mở</option>}
+                    {periods.map((item) => (
+                      <option key={item.periodId} value={item.periodId}>
+                        {item.periodName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {period && range && (
+                  <p className="pb-2 text-[11px] text-slate-500">
+                    Áp dụng lịch {formatDate(range.from)} – {formatDate(range.to)} · {period.rounds.length} đợt đăng ký
+                  </p>
+                )}
+              </div>
+              {period && (
+                <details className="group mt-3">
+                  <summary className="flex cursor-pointer list-none items-center gap-1 text-[11px] font-bold text-brand-700 hover:underline">
+                    <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" /> Xem đợt &amp; phiên đăng ký của kỳ
+                  </summary>
+                  <div className="mt-2">
+                    <RegistrationPeriods periods={[period]} />
+                  </div>
+                </details>
+              )}
+            </Card>
 
             {period && range && (
               <section className="card p-4 sm:p-5">
@@ -196,7 +237,8 @@ export default function EmployeeRegisterShiftPage() {
                     {shiftsLoad.loading && <Spinner />}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700">Đã đăng ký {mine.length} ca</span>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700">Đã duyệt {mine.length - minePending} ca</span>
+                    <span className="rounded-full bg-amber-50 px-2.5 py-1 font-bold text-amber-700">Chờ duyệt {minePending} ca</span>
                     <span className="rounded-full bg-blue-50 px-2.5 py-1 font-bold text-blue-700">{formatHours(mineHours)}</span>
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">Dự kiến {formatVnd(Math.round(mineWage))}</span>
                   </div>
@@ -214,7 +256,7 @@ export default function EmployeeRegisterShiftPage() {
                     inPeriod={inPeriod}
                     cellOf={cellOf}
                     submittingKey={submittingKey}
-                    onRegister={(row, dayKey) => void register(row, dayKey)}
+                    onRegister={(row, dayKey) => setPicked({ row, dayKey })}
                   />
                 ) : (
                   <RegisterWeekGrid
@@ -224,16 +266,17 @@ export default function EmployeeRegisterShiftPage() {
                     inPeriod={inPeriod}
                     cellOf={cellOf}
                     submittingKey={submittingKey}
-                    onRegister={(row, dayKey) => void register(row, dayKey)}
+                    onRegister={(row, dayKey) => setPicked({ row, dayKey })}
                   />
                 )}
 
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-500">
-                  <span className="rounded-md border border-brand-200 bg-white px-2 py-1 text-slate-700">Còn chỗ · bấm để đăng ký</span>
-                  <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-emerald-800">Bạn đã đăng ký</span>
+                  <span className="rounded-md border border-brand-200 bg-white px-2 py-1 text-slate-700">Còn chỗ</span>
+                  <span className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-amber-800">⏳ Chờ duyệt</span>
+                  <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-emerald-800">✓ Quản lý đã duyệt</span>
                   <span className="rounded-md border border-slate-200 bg-slate-100 px-2 py-1 text-slate-400">Hết chỗ / đã đóng</span>
                   <span className="rounded-md border border-dashed border-slate-200 bg-white px-2 py-1 text-slate-400">Chưa tới / hết giờ đăng ký</span>
-                  <span className="ml-auto">Ô chưa có ca theo ngày hiển thị 0 / sức chứa mặc định của ca</span>
+                  <span className="ml-auto">Bấm vào ô để đăng ký hoặc hủy đăng ký</span>
                 </div>
               </section>
             )}
@@ -241,11 +284,23 @@ export default function EmployeeRegisterShiftPage() {
         )
       )}
 
+      {picked && (
+        <RegisterShiftModal
+          row={picked.row}
+          dayKey={picked.dayKey}
+          cell={cellOf(picked.row, picked.dayKey)}
+          submitting={submittingKey === `${picked.row.shift.shiftId}|${picked.dayKey}`}
+          onClose={() => setPicked(null)}
+          onRegister={() => void submit(picked.row, picked.dayKey, "register")}
+          onCancel={() => void submit(picked.row, picked.dayKey, "cancel")}
+        />
+      )}
+
       <div className="flex items-center gap-3 rounded-2xl border border-brand-200/80 bg-brand-50/60 p-4 text-xs text-brand-900">
         <Info className="h-4 w-4 shrink-0 text-brand-600" />
         <p>
-          Chỉ đăng ký được ca thuộc nhóm ca của bạn, trong thời gian mở của đợt / phiên đăng ký và khi ca còn chỗ. Đăng ký bị từ chối hoặc đã hủy
-          có thể đăng ký lại.
+          Chỉ đăng ký được ca thuộc nhóm ca của bạn, trong thời gian mở của đợt / phiên đăng ký và khi ca còn chỗ. Đăng ký chỉ được tính là ca
+          làm khi quản lý duyệt; trước đó bạn có thể hủy, nhưng chỉ trong thời gian phiên đăng ký còn mở. Ca đã duyệt muốn hủy thì gửi yêu cầu cho quản lý. Đăng ký bị từ chối có thể đăng ký lại.
         </p>
       </div>
     </div>

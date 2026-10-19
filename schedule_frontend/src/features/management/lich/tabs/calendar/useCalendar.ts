@@ -1,20 +1,12 @@
 import { useMemo, useState } from "react";
 import type { ShiftByDateResponse } from "@/lib/api";
-import { dayKey, hhmm, localKey, pad, relId, text, timeRange, upper } from "@/lib/format";
-import { isActiveAssignment, SLOTS, type CalendarView } from "../../constants";
+import { dayKey, hhmm, localKey, pad, relId, text, upper } from "@/lib/format";
+import { isActiveAssignment, type CalendarView } from "../../constants";
 import { useSchedule } from "../../ScheduleContext";
 
 /** employeeId không lọc bớt ca mà chỉ làm nổi bật các ca có nhân viên đó. */
 export const EMPTY_CALENDAR_FILTERS = { periodId: "", groupId: "", status: "", employeeId: "" };
 export type CalendarFilters = typeof EMPTY_CALENDAR_FILTERS;
-
-/** Một hàng "Khung ca" của chế độ tuần. */
-export interface CalendarRow {
-  key: string;
-  label: string;
-  hint: string;
-  match: (item: ShiftByDateResponse) => boolean;
-}
 
 /** Thứ Hai của tuần chứa ngày. */
 const startOfWeek = (day: Date) => {
@@ -26,7 +18,7 @@ const startOfWeek = (day: Date) => {
 /** Trạng thái và dữ liệu suy ra cho thời khóa biểu. */
 /** storeId: cửa hàng đang xem (thời khóa biểu luôn xem theo một cửa hàng). */
 export function useCalendar(storeId: string) {
-  const { shiftDates, specialEvents, shifts, shiftGroups, lookups } = useSchedule();
+  const { shiftDates, specialEvents, shiftGroups, lookups } = useSchedule();
   const [filters, setFilters] = useState<CalendarFilters>(EMPTY_CALENDAR_FILTERS);
   const [view, setView] = useState<CalendarView>("month");
   const [cursor, setCursor] = useState(() => new Date());
@@ -108,35 +100,6 @@ export function useCalendar(storeId: string) {
     return { total: items.length, assigned, capacity, pending, missing };
   }, [byDay, days, cursor, view, lookups]);
 
-  /**
-   * Hàng "Khung ca" của chế độ tuần: chưa chọn nhóm thì chia sáng / chiều / tối;
-   * chọn nhóm thì mỗi ca mẫu của nhóm là một hàng với đúng giờ của ca đó.
-   */
-  const rows = useMemo<CalendarRow[]>(() => {
-    if (!groupId) {
-      return SLOTS.map((slot, index) => ({
-        key: slot.label,
-        label: slot.label,
-        hint: slot.hint,
-        match: (item) => shiftSlot(item, lookups.templateOf(item)?.startTime) === index,
-      }));
-    }
-    const used = new Set(filtered.map((item) => relId(item, "shift")));
-    const templates = shifts
-      .filter((shift) => Number(shift.shiftGroupId ?? 0) === groupId)
-      .filter((shift) => upper(shift.status) !== "INACTIVE" || used.has(Number(shift.id ?? shift.shiftId ?? 0)))
-      .sort((a, b) => hhmm(a.startTime).localeCompare(hhmm(b.startTime)));
-    const ids = new Set(templates.map((shift) => Number(shift.id ?? shift.shiftId ?? 0)));
-    const result: CalendarRow[] = templates.map((shift) => {
-      const id = Number(shift.id ?? shift.shiftId ?? 0);
-      return { key: `shift-${id}`, label: text(shift.shiftName, `Ca #${id}`), hint: timeRange(shift.startTime, shift.endTime), match: (item) => relId(item, "shift") === id };
-    });
-    if (filtered.some((item) => !ids.has(relId(item, "shift")))) {
-      result.push({ key: "other", label: "Ca khác", hint: "Không thuộc ca mẫu của nhóm", match: (item) => !ids.has(relId(item, "shift")) });
-    }
-    return result;
-  }, [groupId, shifts, filtered, lookups]);
-
   /** Nhân viên có ca (còn hiệu lực) tại cửa hàng đang xem */
   const employeeOptions = useMemo(() => {
     const ids = new Set<number>();
@@ -182,18 +145,5 @@ export function useCalendar(storeId: string) {
 
   const hasFilters = Boolean(filters.periodId || groupId || filters.status || filters.employeeId);
 
-  return { filters, setFilters, hasFilters, groupOptions, rows, employeeOptions, highlight, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
-}
-
-/** Khung ca theo giờ bắt đầu: 0 sáng, 1 chiều, 2 tối. */
-export function shiftSlot(item: ShiftByDateResponse, templateStart?: unknown) {
-  const hour = Number.parseInt(hhmm(item.startTime ?? templateStart).split(":")[0] ?? "", 10);
-  let resolved = hour;
-  if (!Number.isFinite(hour)) {
-    const name = String(item.shiftName ?? "").toLowerCase();
-    resolved = name.includes("tối") ? 18 : name.includes("chiều") ? 13 : 8;
-  }
-  if (resolved >= 17) return 2;
-  if (resolved >= 12) return 1;
-  return 0;
+  return { filters, setFilters, hasFilters, groupOptions, employeeOptions, highlight, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
 }
