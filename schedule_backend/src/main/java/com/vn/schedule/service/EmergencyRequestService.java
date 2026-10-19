@@ -44,6 +44,17 @@ public class EmergencyRequestService {
         EmergencyRequest item = toEntity(body);
         if (storeScopeService.isCurrentUserRole("EMPLOYEE")) {
             item.setEmployeeId(storeScopeService.currentEmployeeId());
+            // Nhân viên chỉ gửi yêu cầu mới, không tự đặt trạng thái / người xử lý
+            item.setStatus("PENDING");
+            item.setProcessedBy(null);
+            item.setProcessedAt(null);
+            item.setProcessNote(null);
+        }
+        if (item.getStatus() == null) {
+            item.setStatus("PENDING");
+        }
+        if (item.getRequestedAt() == null) {
+            item.setRequestedAt(LocalDateTime.now());
         }
         return repository.save(item);
     }
@@ -94,6 +105,27 @@ public class EmergencyRequestService {
     public void deleteBody(EmergencyRequestRequest body) {
         repository.delete(toEntity(body));
     }
+    /** Nhận cả LocalDateTime lẫn chuỗi ISO từ client ("2026-10-19T21:00:00" hoặc có hậu tố Z / múi giờ). */
+    private static LocalDateTime dateTime(Object value) {
+        if (value instanceof LocalDateTime dateTime) {
+            return dateTime;
+        }
+        if (!(value instanceof String text) || text.isBlank()) {
+            return null;
+        }
+        try {
+            return java.time.OffsetDateTime.parse(text)
+                    .atZoneSameInstant(java.time.ZoneId.systemDefault())
+                    .toLocalDateTime();
+        } catch (java.time.format.DateTimeParseException ignored) {
+            try {
+                return LocalDateTime.parse(text);
+            } catch (java.time.format.DateTimeParseException exception) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Thời gian không hợp lệ: " + text);
+            }
+        }
+    }
+
     private EmergencyRequest toEntity(EmergencyRequestRequest body) {
         EmergencyRequest entity = new EmergencyRequest();
         entity.setEmergencyRequestId((Integer) body.get("emergencyRequestId"));
@@ -104,9 +136,9 @@ public class EmergencyRequestService {
         entity.setToAssignmentId((Integer) body.get("toAssignmentId"));
         entity.setReason((String) body.get("reason"));
         entity.setStatus((String) body.get("status"));
-        entity.setRequestedAt((LocalDateTime) body.get("requestedAt"));
+        entity.setRequestedAt(dateTime(body.get("requestedAt")));
         entity.setProcessedBy((Integer) body.get("processedBy"));
-        entity.setProcessedAt((LocalDateTime) body.get("processedAt"));
+        entity.setProcessedAt(dateTime(body.get("processedAt")));
         entity.setProcessNote((String) body.get("processNote"));
         return entity;
     }
@@ -120,9 +152,9 @@ public class EmergencyRequestService {
         entity.setToAssignmentId((Integer) body.get("toAssignmentId"));
         entity.setReason((String) body.get("reason"));
         entity.setStatus((String) body.get("status"));
-        entity.setRequestedAt((LocalDateTime) body.get("requestedAt"));
+        entity.setRequestedAt(dateTime(body.get("requestedAt")));
         entity.setProcessedBy((Integer) body.get("processedBy"));
-        entity.setProcessedAt((LocalDateTime) body.get("processedAt"));
+        entity.setProcessedAt(dateTime(body.get("processedAt")));
         entity.setProcessNote((String) body.get("processNote"));
     }
 }

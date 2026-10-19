@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -69,7 +70,8 @@ public class GlobalException {
         res.setStatusCode(HttpStatus.NOT_FOUND.value());
         res.setError(ex.getMessage());
         res.setMessage("404 Not Found. URL may not exist...");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
+        // Đặt sẵn Content-Type để không bị HttpMediaTypeNotAcceptableException khi client gửi Accept khác JSON
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(res);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

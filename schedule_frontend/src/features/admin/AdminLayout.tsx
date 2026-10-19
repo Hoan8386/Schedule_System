@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Code, FileDigit, Mail, Palette, ShieldCheck } from "lucide-react";
+import { Code, FileDigit, Mail, MessageSquare, Palette, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { AppShell, initialsOf, usePageNavigation, TopbarSearch, type NavSection } from "@/components/layout";
 import QuanLyTaiKhoanPage from "@/features/admin/tai-khoan/QuanLyTaiKhoanPage";
@@ -9,6 +9,9 @@ import ThongTinThuongHieuPage from "@/features/admin/thuong-hieu/ThongTinThuongH
 import QuanLyApiPage from "@/features/admin/api/QuanLyApiPage";
 import CauHinhSinhMaPage from "@/features/admin/CauHinhSinhMaPage";
 import QuanLyEmailThongBaoPage from "@/features/admin/thong-bao/QuanLyEmailThongBaoPage";
+import FeedbackPage from "@/features/feedback/FeedbackPage";
+
+const PhanHoiPage = () => <FeedbackPage role="ADMIN" />;
 
 const PAGES: Record<string, React.ComponentType> = {
   taikhoan: QuanLyTaiKhoanPage,
@@ -16,18 +19,20 @@ const PAGES: Record<string, React.ComponentType> = {
   api: QuanLyApiPage,
   sinhma: CauHinhSinhMaPage,
   email_thongbao: QuanLyEmailThongBaoPage,
+  phanhoi: PhanHoiPage,
 };
 
 const SECTIONS: NavSection[] = [
   {
     title: "Quản trị hệ thống",
-    tag: "5 CHỨC NĂNG",
+    tag: "6 CHỨC NĂNG",
     items: [
       { id: "taikhoan", label: "Quản lý tài khoản", icon: ShieldCheck, badge: "RBAC" },
       { id: "thuonghieu", label: "Quản lý chuỗi cửa hàng", icon: Palette },
       { id: "api", label: "Quản lý API", icon: Code, badge: "Endpoints" },
       { id: "sinhma", label: "Cấu hình sinh mã tự động", icon: FileDigit },
       { id: "email_thongbao", label: "Quản lý thông báo & Email", icon: Mail },
+      { id: "phanhoi", label: "Phản hồi", icon: MessageSquare },
     ],
   },
 ];

@@ -4,6 +4,9 @@ import type {
   BonusDetailResponse,
   BonusRecordResponse,
   DisciplinaryRecordResponse,
+  FeedbackCreateBody,
+  FeedbackItem,
+  FeedbackReplyBody,
   RuleResponse,
   ViolationResponse,
 } from "../types/operations.types";
@@ -14,7 +17,6 @@ const violations = crud<ViolationResponse>("/api/v1/violation");
 const disciplinary = crud<DisciplinaryRecordResponse>("/api/v1/disciplinary_record");
 const bonusRecords = crud<BonusRecordResponse>("/api/v1/bonus_record");
 const bonusDetails = crud<BonusDetailResponse>("/api/v1/bonus_detail");
-const feedback = crud<Body>("/api/v1/feedback");
 const todos = crud<Body>("/api/v1/todo");
 
 /** Chấm công, nội quy, vi phạm, kỷ luật, thưởng, feedback, todo. */
@@ -51,9 +53,14 @@ export const operationsApi = {
   updateBonusDetail: bonusDetails.update,
   deleteBonusDetail: bonusDetails.remove,
 
-  getFeedback: feedback.list,
-  createFeedback: feedback.create,
-  updateFeedback: feedback.update,
+  /** Phản hồi trong phạm vi người dùng hiện tại (backend lọc theo vai trò) */
+  getFeedback: () => http.get<FeedbackItem[]>("/api/v1/feedback"),
+  /** Chi tiết phản hồi, kèm ảnh đính kèm dạng data URL */
+  getFeedbackDetail: (id: number) => http.get<FeedbackItem>(`/api/v1/feedback/${id}`),
+  createFeedback: (body: FeedbackCreateBody) => http.post<FeedbackItem>("/api/v1/feedback", body),
+  /** Trả lời / cập nhật trạng thái phản hồi */
+  replyFeedback: (id: number, body: FeedbackReplyBody) => http.put<FeedbackItem>(`/api/v1/feedback/${id}`, body),
+  deleteFeedback: (id: number) => http.delete(`/api/v1/feedback/${id}`),
 
   getTodos: todos.list,
   createTodo: todos.create,

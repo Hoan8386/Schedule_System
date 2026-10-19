@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { ArrowLeftRight, CalendarRange, Calendar as CalendarIcon, CalendarX, ChevronLeft, ChevronRight, Layers, Plus } from "lucide-react";
-import { Alert, Button, Card, CardHeader, EmptyState, Spinner } from "@/components/ui";
+import { ArrowLeftRight, CalendarRange, Calendar as CalendarIcon, CalendarX, ChevronLeft, ChevronRight, Layers, MessageSquarePlus, Plus } from "lucide-react";
+import { Alert, Button, Card, CardHeader, EmptyState, Modal, Spinner } from "@/components/ui";
 import { employeeApi, statisticsApi, type MyOpenShift, type StatShift } from "@/lib/api";
 import { localKey, pad } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -11,6 +11,8 @@ import { REQUEST_TYPE_LABEL } from "@/features/statistics/dashboard";
 import { useKeyedLoad, useStatData } from "@/features/statistics/useStatistics";
 import { WORK_STATUS, formatHours, formatVnd } from "@/features/statistics/utils";
 import { isRegistered } from "./dang-ky-ca/model";
+import FeedbackComposer, { type FeedbackShiftContext } from "@/features/feedback/FeedbackComposer";
+import { isShiftFeedbackOpen, useNow } from "@/features/feedback/model";
 
 interface EmployeeSchedulePageProps {
   onOpenRegister: () => void;
@@ -90,6 +92,17 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
   const [anchor, setAnchor] = useState(() => new Date());
   const [storeId, setStoreId] = useState<number | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  // Ca đang được gửi phản hồi trực tiếp từ thời khóa biểu
+  const [feedbackShift, setFeedbackShift] = useState<FeedbackShiftContext | null>(null);
+  const openFeedback = (shift: StatShift) =>
+    setFeedbackShift({
+      shiftByDateId: shift.shiftByDateId,
+      storeId: shift.storeId,
+      label: `${spotlightDate(shift.workDate)} · ${shift.shiftName ?? "Ca làm"} · ${timeLabel(shift.startTime, shift.endTime)}${shift.storeName ? ` · ${shift.storeName}` : ""}`,
+    });
+  const now = useNow();
+  // Chỉ ca đã duyệt và đang trong giờ làm mới có nút phản hồi
+  const feedbackFor = (shift: StatShift) => (isShiftFeedbackOpen(shift, now) ? openFeedback : undefined);
 
   const { start, end } = visibleRange(anchor, view);
   const from = localKey(start);
@@ -263,6 +276,7 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
             openByDate={openByDate}
             todayKey={todayKey}
             onOpenRegister={onOpenRegister}
+            feedbackFor={feedbackFor}
           />
         ) : (
           <MonthView
@@ -272,6 +286,7 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
             openByDate={openByDate}
             todayKey={todayKey}
             onOpenRegister={onOpenRegister}
+            feedbackFor={feedbackFor}
           />
         )}
 
@@ -288,7 +303,9 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
             </span>
           ))}
           <span className="rounded-md border border-dashed border-brand-300 px-2 py-1 text-brand-700">Ca nhóm còn mở đăng ký</span>
-          <span className="ml-auto">Ca vẫn có hiệu lực cho đến khi yêu cầu đổi / hủy được duyệt</span>
+          <span className="ml-auto inline-flex items-center gap-1">
+            <MessageSquarePlus className="h-3 w-3" /> Phản hồi được ca đã duyệt khi đang trong giờ làm · Ca vẫn có hiệu lực cho đến khi yêu cầu đổi / hủy được duyệt
+          </span>
         </div>
       </section>
 
@@ -358,6 +375,18 @@ export default function EmployeeSchedulePage({ onOpenRegister, onOpenSwap, onOpe
           </Button>
         </div>
       </Card>
+
+      <Modal open={Boolean(feedbackShift)} onClose={() => setFeedbackShift(null)} title="Phản hồi về ca làm" size="max-w-2xl" className="max-h-[90vh] overflow-y-auto">
+        {feedbackShift && (
+          <FeedbackComposer
+            key={feedbackShift.shiftByDateId}
+            role="EMPLOYEE"
+            shift={feedbackShift}
+            onCancel={() => setFeedbackShift(null)}
+            onSent={() => setFeedbackShift(null)}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
@@ -400,16 +429,24 @@ const BADGE_TONE: Record<string, string> = {
 };
 
 /** Thẻ ca đã được phân / đăng ký. */
-function ShiftCard({ shift, compact = false }: { shift: StatShift; compact?: boolean }) {
+/** onFeedback chỉ có khi ca đã duyệt và đang diễn ra. */
+function ShiftCard({ shift, compact = false, onFeedback }: { shift: StatShift; compact?: boolean; onFeedback?: (shift: StatShift) => void }) {
   const meta = WORK_STATUS[shift.workStatus] ?? WORK_STATUS.UPCOMING;
   const label = shift.pendingRequestType ? `Chờ ${(REQUEST_TYPE_LABEL[shift.pendingRequestType] ?? "thay đổi").toLowerCase()}` : meta.label;
   const badge = shift.pendingRequestType ? BADGE_TONE.warning : BADGE_TONE[meta.tone];
 
   if (compact) {
+    const title = `${shift.shiftName ?? "Ca"} · ${timeLabel(shift.startTime, shift.endTime)} · ${shift.storeName ?? ""} · ${label}`;
     return (
-      <div
-        title={`${shift.shiftName ?? "Ca"} · ${timeLabel(shift.startTime, shift.endTime)} · ${shift.storeName ?? ""} · ${label}`}
-        className={cn("rounded-md border px-1.5 py-1", cardTone(shift))}
+      <button
+        type="button"
+        disabled={!onFeedback}
+        onClick={() => onFeedback?.(shift)}
+        title={onFeedback ? `${title} – bấm để gửi phản hồi` : title}
+        className={cn(
+          "block w-full rounded-md border px-1.5 py-1 text-left transition enabled:hover:ring-1 enabled:hover:ring-brand-300 disabled:cursor-default",
+          cardTone(shift)
+        )}
       >
         <div className="flex items-center justify-between gap-1">
           <span className="truncate text-[10px] font-bold text-slate-800">
@@ -418,7 +455,7 @@ function ShiftCard({ shift, compact = false }: { shift: StatShift; compact?: boo
           <span className={cn("shrink-0 rounded px-1 text-[8px] font-bold", badge)}>{label}</span>
         </div>
         <p className="truncate text-[9px] text-slate-500">{shift.shiftName ?? "Ca làm"}</p>
-      </div>
+      </button>
     );
   }
   return (
@@ -430,6 +467,16 @@ function ShiftCard({ shift, compact = false }: { shift: StatShift; compact?: boo
         <span className="text-[10px] font-bold text-slate-600">{formatHours(plannedHours(shift))}</span>
         <span className={cn("rounded px-1 py-0.5 text-[8px] font-bold", badge)}>{label}</span>
       </div>
+      {onFeedback && (
+        <button
+          type="button"
+          onClick={() => onFeedback(shift)}
+          className="mt-1.5 flex w-full items-center justify-center gap-1 rounded-md border border-brand-300 bg-white/80 py-0.5 text-[9px] font-bold text-brand-700 transition hover:bg-brand-50"
+        >
+          <MessageSquarePlus className="h-3 w-3" />
+          Phản hồi ca đang làm
+        </button>
+      )}
     </div>
   );
 }
@@ -486,6 +533,7 @@ function WeekView({
   openByDate,
   todayKey,
   onOpenRegister,
+  feedbackFor,
 }: {
   days: Date[];
   templates: ShiftTemplate[];
@@ -493,6 +541,7 @@ function WeekView({
   openByDate: Map<string, MyOpenShift[]>;
   todayKey: string;
   onOpenRegister: () => void;
+  feedbackFor: (shift: StatShift) => ((shift: StatShift) => void) | undefined;
 }) {
   // Mỗi hàng là một khung ca: luôn có các ca mẫu của nhóm, cộng thêm ca thực tế khác xuất hiện trong tuần
   const slots = useMemo(() => {
@@ -543,7 +592,7 @@ function WeekView({
               return (
                 <div key={`${slot.key}-${dayKey}`} className={cn("space-y-2 p-1.5", index < 6 && "border-r border-slate-200", dayKey === todayKey && "bg-brand-50/30")}>
                   {items.map((shift) => (
-                    <ShiftCard key={shift.assignmentId} shift={shift} />
+                    <ShiftCard key={shift.assignmentId} shift={shift} onFeedback={feedbackFor(shift)} />
                   ))}
                   {open.map((shift) => (
                     <OpenCard key={`open-${shift.shiftByDateId}`} shift={shift} onClick={onOpenRegister} />
@@ -569,6 +618,7 @@ function MonthView({
   openByDate,
   todayKey,
   onOpenRegister,
+  feedbackFor,
 }: {
   days: Date[];
   month: number;
@@ -576,6 +626,7 @@ function MonthView({
   openByDate: Map<string, MyOpenShift[]>;
   todayKey: string;
   onOpenRegister: () => void;
+  feedbackFor: (shift: StatShift) => ((shift: StatShift) => void) | undefined;
 }) {
   return (
     <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
@@ -621,7 +672,7 @@ function MonthView({
                 </div>
                 <div className={cn("mt-1.5 space-y-1", !inMonth && "opacity-60")}>
                   {visibleItems.map((shift) => (
-                    <ShiftCard key={shift.assignmentId} shift={shift} compact />
+                    <ShiftCard key={shift.assignmentId} shift={shift} compact onFeedback={feedbackFor(shift)} />
                   ))}
                   {visibleOpen.map((shift) => (
                     <OpenCard key={`open-${shift.shiftByDateId}`} shift={shift} compact onClick={onOpenRegister} />

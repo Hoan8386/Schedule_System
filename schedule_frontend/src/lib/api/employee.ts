@@ -13,6 +13,7 @@ export const employeeApi = {
   createEmergencyRequest: managerApi.createEmergencyRequest,
   getFeedback: managerApi.getFeedback,
   createFeedback: managerApi.createFeedback,
+  deleteFeedback: managerApi.deleteFeedback,
   getAttendance: managerApi.getAttendances,
   getTestAssignments: managerApi.getTestAssignments,
   getTestResults: managerApi.getTestResults,

@@ -8,6 +8,7 @@ import {
   FileCheck,
   Inbox,
   LayoutDashboard,
+  MessageSquare,
   ShieldAlert,
   Store,
   TrendingUp,
@@ -27,6 +28,13 @@ import ThongKePage from "@/features/management/ThongKePage";
 import CuaHangPage from "@/features/management/CuaHangPage";
 import PhatThongBaoPage from "@/features/management/PhatThongBaoPage";
 import QuanLyTestPage from "@/features/management/bai-test/QuanLyTestPage";
+import FeedbackPage from "@/features/feedback/FeedbackPage";
+
+/** Phản hồi: quản lý xem / trả lời toàn bộ, gửi phản hồi tới admin. */
+function PhanHoiPage() {
+  const { user } = useAuth();
+  return <FeedbackPage role={(user?.roleCode || user?.role) === "ADMIN" ? "ADMIN" : "MANAGER"} />;
+}
 
 /** Trang có thể nhận onNavigate để chuyển sang trang khác (vd. tổng quan → xử lý yêu cầu). */
 const PAGES: Record<string, React.ComponentType<{ onNavigate?: (page: string) => void }>> = {
@@ -41,6 +49,7 @@ const PAGES: Record<string, React.ComponentType<{ onNavigate?: (page: string) =>
   thongke: ThongKePage,
   phatthongbao: PhatThongBaoPage,
   quanlytest: QuanLyTestPage,
+  phanhoi: PhanHoiPage,
 };
 
 const SECTIONS: NavSection[] = [
@@ -57,6 +66,7 @@ const SECTIONS: NavSection[] = [
       { id: "luong", label: "Quản lý lương & thưởng", icon: Wallet },
       { id: "thongke", label: "Thống kê & báo cáo", icon: TrendingUp },
       { id: "phatthongbao", label: "Phát thông báo", icon: BellRing },
+      { id: "phanhoi", label: "Phản hồi", icon: MessageSquare },
       { id: "quanlytest", label: "Quản lý bài test", icon: FileCheck },
     ],
   },

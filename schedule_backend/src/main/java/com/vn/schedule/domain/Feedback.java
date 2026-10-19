@@ -29,15 +29,26 @@ public class Feedback {
     private Integer targetEmployeeId;
     @Column(name = "rating")
     private BigDecimal rating;
-    @Column(name = "content", nullable = false)
+    @Column(name = "title")
+    private String title;
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
+    /** Vai trò của người gửi: EMPLOYEE / STORE_MANAGER */
+    @Column(name = "sender_role", length = 30)
+    private String senderRole;
+    /** Đối tượng nhận phản hồi: STORE_MANAGER / MANAGER / ADMIN */
+    @Column(name = "target_role", length = 30)
+    private String targetRole;
+    /** Danh sách attachment_id của ảnh đính kèm, phân tách bằng dấu phẩy */
+    @Column(name = "attachment_ids", length = 500)
+    private String attachmentIds;
     @Column(name = "status", nullable = false)
     private String status;
     @Column(name = "handled_by")
     private Integer handledBy;
     @Column(name = "handled_at")
     private LocalDateTime handledAt;
-    @Column(name = "response")
+    @Column(name = "response", columnDefinition = "TEXT")
     private String response;
     @Column(name = "created_at")
     private LocalDateTime createdAt;

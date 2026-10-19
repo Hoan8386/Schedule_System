@@ -19,10 +19,10 @@ import EmployeeSchedulePage from "@/features/employee/EmployeeSchedulePage";
 import EmployeeRegisterShiftPage from "@/features/employee/dang-ky-ca/EmployeeRegisterShiftPage";
 import EmployeeStatsPage from "@/features/employee/EmployeeStatsPage";
 import EmployeeProfilePage from "@/features/employee/EmployeeProfilePage";
-import EmployeeFeedbackPage from "@/features/employee/EmployeeFeedbackPage";
+import FeedbackPage from "@/features/feedback/FeedbackPage";
 import EmployeeTestPage from "@/features/employee/bai-kiem-tra/EmployeeTestPage";
-import EmployeeShiftSwapModal from "@/features/employee/EmployeeShiftSwapModal";
-import EmployeeShiftCancelModal from "@/features/employee/EmployeeShiftCancelModal";
+import ShiftRequestsPage from "@/features/employee/doi-huy-ca/ShiftRequestsPage";
+import ShiftRequestModal from "@/features/employee/doi-huy-ca/ShiftRequestModal";
 
 const SECTIONS: NavSection[] = [
   {
@@ -46,13 +46,6 @@ export default function EmployeeLayout() {
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
-  // "Đổi ca" và "Hủy ca" mở modal thay vì chuyển trang.
-  const handleNavClick = (id: string) => {
-    if (id === "doica") return setIsSwapModalOpen(true);
-    if (id === "huyca") return setIsCancelModalOpen(true);
-    setActiveTab(id);
-  };
-
   const renderPage = () => {
     switch (activeTab) {
       case "dashboard":
@@ -73,12 +66,16 @@ export default function EmployeeLayout() {
         );
       case "dangkyca":
         return <EmployeeRegisterShiftPage />;
+      case "doica":
+        return <ShiftRequestsPage key="change" type="CHANGE" />;
+      case "huyca":
+        return <ShiftRequestsPage key="cancel" type="CANCEL" />;
       case "thongke":
         return <EmployeeStatsPage />;
       case "profile":
         return <EmployeeProfilePage />;
       case "feedback":
-        return <EmployeeFeedbackPage />;
+        return <FeedbackPage role="EMPLOYEE" />;
       case "baitest":
         return <EmployeeTestPage />;
       default:
@@ -93,7 +90,7 @@ export default function EmployeeLayout() {
         scope={{ label: "Không gian nhân viên", name: "BLOAN · Nguyễn Trãi", tone: "neutral" }}
         sections={SECTIONS}
         activeId={activeTab}
-        onSelect={handleNavClick}
+        onSelect={setActiveTab}
         navigating={navigating}
         breadcrumbRoot="Nhân viên"
         topbarExtra={<span className="hidden text-xs text-slate-400 sm:inline-block">Thứ Hai, 05/10/2026</span>}
@@ -112,8 +109,9 @@ export default function EmployeeLayout() {
         {renderPage()}
       </AppShell>
 
-      <EmployeeShiftSwapModal isOpen={isSwapModalOpen} onClose={() => setIsSwapModalOpen(false)} />
-      <EmployeeShiftCancelModal isOpen={isCancelModalOpen} onClose={() => setIsCancelModalOpen(false)} />
+      {/* Mở từ nút "Yêu cầu đổi / hủy ca" ở trang tổng quan và lịch làm việc */}
+      <ShiftRequestModal type="CHANGE" open={isSwapModalOpen} onClose={() => setIsSwapModalOpen(false)} />
+      <ShiftRequestModal type="CANCEL" open={isCancelModalOpen} onClose={() => setIsCancelModalOpen(false)} />
     </>
   );
 }

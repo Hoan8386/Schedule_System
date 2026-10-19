@@ -4,8 +4,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.vn.schedule.domain.Feedback;
-import com.vn.schedule.dto.*;
 import com.vn.schedule.dto.request.*;
 import com.vn.schedule.dto.response.*;
 import com.vn.schedule.service.FeedbackService;
@@ -22,44 +20,36 @@ public class FeedbackController {
         this.service = service;
     }
 
+    /** Danh sách phản hồi theo phạm vi của người dùng hiện tại. */
     @GetMapping
-    @ApiMessage("Lấy danh sách dữ liệu")
+    @ApiMessage("Lấy danh sách phản hồi")
     public ResponseEntity<List<FeedbackResponse>> list() {
-        return ResponseEntity.ok(responses(service.findAll()));
+        return ResponseEntity.ok(service.list().stream().map(FeedbackResponse::new).toList());
     }
 
     @GetMapping("/{id}")
-    @ApiMessage("Lấy thông tin chi tiết")
+    @ApiMessage("Lấy thông tin phản hồi")
     public ResponseEntity<FeedbackResponse> get(@PathVariable Integer id) {
-        return ResponseEntity.ok(response(service.findById(id)));
+        return ResponseEntity.ok(new FeedbackResponse(service.get(id)));
     }
 
     @PostMapping
-
-    @ApiMessage("Tạo mới dữ liệu")
+    @ApiMessage("Đã gửi phản hồi")
     public ResponseEntity<FeedbackResponse> create(@RequestBody FeedbackRequest body) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(response(service.create(body)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new FeedbackResponse(service.create(body)));
     }
 
+    /** Trả lời / cập nhật trạng thái phản hồi. Body: { response, status } */
     @PutMapping("/{id}")
-    @ApiMessage("Cập nhật dữ liệu")
-    public ResponseEntity<FeedbackResponse> update(@PathVariable Integer id, @RequestBody FeedbackRequest body) {
-        return ResponseEntity.ok(response(service.update(id, body)));
+    @ApiMessage("Đã trả lời phản hồi")
+    public ResponseEntity<FeedbackResponse> reply(@PathVariable Integer id, @RequestBody FeedbackRequest body) {
+        return ResponseEntity.ok(new FeedbackResponse(service.reply(id, body)));
     }
 
     @DeleteMapping("/{id}")
-
-    @ApiMessage("Xóa dữ liệu")
+    @ApiMessage("Đã thu hồi phản hồi")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private List<FeedbackResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(value -> new FeedbackResponse(DtoMapper.toMap(value))).toList();
-    }
-
-    private FeedbackResponse response(Object value) {
-        return new FeedbackResponse(DtoMapper.toMap(value));
     }
 }

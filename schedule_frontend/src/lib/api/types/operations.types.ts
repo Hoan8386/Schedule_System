@@ -86,3 +86,60 @@ export interface BonusDetailResponse {
   reason?: string | null;
   [key: string]: unknown;
 }
+
+/** Vai trò gửi / nhận phản hồi. */
+export type FeedbackRole = "EMPLOYEE" | "STORE_MANAGER" | "MANAGER" | "ADMIN";
+export type FeedbackStatus = "PENDING" | "PROCESSING" | "RESOLVED" | "REJECTED";
+export type FeedbackType = "SYSTEM" | "SHIFT" | "EMPLOYEE" | "OTHER";
+
+export interface FeedbackItem {
+  feedbackId: number;
+  employeeId: number;
+  senderName: string | null;
+  senderCode: string | null;
+  senderRole: FeedbackRole | null;
+  targetRole: FeedbackRole;
+  storeId: number | null;
+  storeName: string | null;
+  shiftByDateId: number | null;
+  shiftLabel: string | null;
+  feedbackType: FeedbackType;
+  targetEmployeeId: number | null;
+  targetEmployeeName: string | null;
+  title: string | null;
+  content: string;
+  attachmentIdList: number[];
+  /** Ảnh nhúng sẵn dạng data URL – chỉ có ở API chi tiết */
+  attachments?: FeedbackImage[];
+  status: FeedbackStatus;
+  response: string | null;
+  handledBy: number | null;
+  handlerName: string | null;
+  handledAt: string | null;
+  createdAt: string | null;
+  /** Phản hồi do chính người dùng hiện tại gửi */
+  mine: boolean;
+  /** Người dùng hiện tại được trả lời / xử lý phản hồi này */
+  canReply: boolean;
+}
+
+export interface FeedbackImage {
+  attachmentId: number;
+  fileName: string | null;
+  dataUrl: string | null;
+}
+
+export interface FeedbackCreateBody {
+  targetRole: FeedbackRole;
+  feedbackType: FeedbackType;
+  title: string;
+  content: string;
+  storeId?: number;
+  shiftByDateId?: number;
+  attachmentIds?: number[];
+}
+
+export interface FeedbackReplyBody {
+  response?: string;
+  status: Exclude<FeedbackStatus, "PENDING">;
+}

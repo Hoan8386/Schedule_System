@@ -22,7 +22,7 @@ import StoreManagerShiftRequestsPage from "@/features/store-manager/yeu-cau/Stor
 import StoreManagerViolationPage from "@/features/store-manager/vi-pham/StoreManagerViolationPage";
 import StoreManagerTodoListPage from "@/features/store-manager/todo/StoreManagerTodoListPage";
 import StoreManagerTestManagementPage from "@/features/store-manager/bai-test/StoreManagerTestManagementPage";
-import StoreManagerFeedbackPage from "@/features/store-manager/StoreManagerFeedbackPage";
+import FeedbackPage from "@/features/feedback/FeedbackPage";
 import StoreManagerMyShiftPage from "@/features/store-manager/StoreManagerMyShiftPage";
 import StoreManagerSchedulePage from "@/features/store-manager/lich/StoreManagerSchedulePage";
 import StoreManagerRegisterShiftPage from "@/features/store-manager/dang-ky-ca/StoreManagerRegisterShiftPage";
@@ -36,8 +36,8 @@ const SECTIONS: NavSection[] = [
       { id: "dangkyca", label: "Đăng ký ca", icon: CalendarPlus },
       { id: "vipham", label: "Xử lý vi phạm", icon: ShieldAlert, badge: "2" },
       { id: "xuatca", label: "Xuất danh sách ca", icon: CalendarPlus },
-      { id: "feedback_hethong", label: "Feedback hệ thống", icon: MessageSquare },
       { id: "feedback_nhanvien", label: "Feedback nhân viên", icon: MessageCircle },
+      { id: "feedback_hethong", label: "Gửi phản hồi", icon: MessageSquare },
       { id: "lapbienban", label: "Lập biên bản", icon: FileText },
       { id: "ketquatest", label: "Kết quả bài test", icon: CheckSquare },
       { id: "mytest", label: "Bài test của tôi", icon: BookOpen },
@@ -74,9 +74,9 @@ export default function StoreManagerLayout() {
       case "lapbienban":
         return <StoreManagerViolationPage initialTab="lapbienban" />;
       case "feedback_hethong":
-        return <StoreManagerFeedbackPage initialTab="hethong" />;
+        return <FeedbackPage key="sent" role="STORE_MANAGER" initialTab="sent" />;
       case "feedback_nhanvien":
-        return <StoreManagerFeedbackPage initialTab="nhanvien" />;
+        return <FeedbackPage key="inbox" role="STORE_MANAGER" initialTab="inbox" />;
       case "todo":
         return <StoreManagerTodoListPage />;
       case "quanlytest":
