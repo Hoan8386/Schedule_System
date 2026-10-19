@@ -42,7 +42,6 @@ export const storeManagerApi = {
   getFeedback: managerApi.getFeedback,
   createFeedback: managerApi.createFeedback,
   replyFeedback: managerApi.replyFeedback,
-  deleteFeedback: managerApi.deleteFeedback,
 
   getTodos: managerApi.getTodos,
   createTodo: managerApi.createTodo,

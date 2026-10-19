@@ -27,6 +27,13 @@ public class FeedbackController {
         return ResponseEntity.ok(service.list().stream().map(FeedbackResponse::new).toList());
     }
 
+    /** Đồng nghiệp cùng cửa hàng – dùng cho phản hồi loại Đồng nghiệp. */
+    @GetMapping("/colleagues")
+    @ApiMessage("Lấy danh sách đồng nghiệp")
+    public ResponseEntity<List<java.util.Map<String, Object>>> colleagues() {
+        return ResponseEntity.ok(service.colleagues());
+    }
+
     @GetMapping("/{id}")
     @ApiMessage("Lấy thông tin phản hồi")
     public ResponseEntity<FeedbackResponse> get(@PathVariable Integer id) {
@@ -39,17 +46,10 @@ public class FeedbackController {
         return ResponseEntity.status(HttpStatus.CREATED).body(new FeedbackResponse(service.create(body)));
     }
 
-    /** Trả lời / cập nhật trạng thái phản hồi. Body: { response, status } */
+    /** Chuyển trạng thái phản hồi (kèm ghi chú trả lời tùy chọn). Body: { status, response? } */
     @PutMapping("/{id}")
-    @ApiMessage("Đã trả lời phản hồi")
+    @ApiMessage("Đã cập nhật phản hồi")
     public ResponseEntity<FeedbackResponse> reply(@PathVariable Integer id, @RequestBody FeedbackRequest body) {
         return ResponseEntity.ok(new FeedbackResponse(service.reply(id, body)));
-    }
-
-    @DeleteMapping("/{id}")
-    @ApiMessage("Đã thu hồi phản hồi")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
     }
 }

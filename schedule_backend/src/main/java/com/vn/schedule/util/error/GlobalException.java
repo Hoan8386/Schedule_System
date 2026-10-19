@@ -11,6 +11,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -72,6 +73,15 @@ public class GlobalException {
         res.setMessage("404 Not Found. URL may not exist...");
         // Đặt sẵn Content-Type để không bị HttpMediaTypeNotAcceptableException khi client gửi Accept khác JSON
         return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(res);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<RestResponse<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        RestResponse<Object> res = new RestResponse<Object>();
+        res.setStatusCode(HttpStatus.METHOD_NOT_ALLOWED.value());
+        res.setError(ex.getMessage());
+        res.setMessage("Phương thức " + ex.getMethod() + " không được hỗ trợ cho đường dẫn này");
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).contentType(MediaType.APPLICATION_JSON).body(res);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

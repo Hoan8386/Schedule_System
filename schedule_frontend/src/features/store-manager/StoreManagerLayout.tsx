@@ -11,7 +11,6 @@ import {
   Inbox,
   LayoutDashboard,
   ListTodo,
-  MessageCircle,
   MessageSquare,
   ShieldAlert,
 } from "lucide-react";
@@ -36,8 +35,7 @@ const SECTIONS: NavSection[] = [
       { id: "dangkyca", label: "Đăng ký ca", icon: CalendarPlus },
       { id: "vipham", label: "Xử lý vi phạm", icon: ShieldAlert, badge: "2" },
       { id: "xuatca", label: "Xuất danh sách ca", icon: CalendarPlus },
-      { id: "feedback_nhanvien", label: "Feedback nhân viên", icon: MessageCircle },
-      { id: "feedback_hethong", label: "Gửi phản hồi", icon: MessageSquare },
+      { id: "phanhoi", label: "Quản lý phản hồi", icon: MessageSquare },
       { id: "lapbienban", label: "Lập biên bản", icon: FileText },
       { id: "ketquatest", label: "Kết quả bài test", icon: CheckSquare },
       { id: "mytest", label: "Bài test của tôi", icon: BookOpen },
@@ -73,10 +71,8 @@ export default function StoreManagerLayout() {
         return <StoreManagerViolationPage />;
       case "lapbienban":
         return <StoreManagerViolationPage initialTab="lapbienban" />;
-      case "feedback_hethong":
-        return <FeedbackPage key="sent" role="STORE_MANAGER" initialTab="sent" />;
-      case "feedback_nhanvien":
-        return <FeedbackPage key="inbox" role="STORE_MANAGER" initialTab="inbox" />;
+      case "phanhoi":
+        return <FeedbackPage role="STORE_MANAGER" />;
       case "todo":
         return <StoreManagerTodoListPage />;
       case "quanlytest":

@@ -38,3 +38,23 @@ UPDATE feedback SET target_role = 'STORE_MANAGER' WHERE target_role IS NULL;
 UPDATE feedback SET status = 'PENDING' WHERE status IN ('NEW', 'OPEN');
 
 DESCRIBE feedback;
+
+-- ============================================================
+-- 20/10/2026: luồng trạng thái mới PENDING → REVIEWED → RESOLVED / CLOSED (bỏ PROCESSING, REJECTED)
+--             + API danh sách đồng nghiệp cho phản hồi loại Đồng nghiệp
+-- ============================================================
+UPDATE feedback SET status = 'REVIEWED' WHERE status = 'PROCESSING';
+UPDATE feedback SET status = 'CLOSED' WHERE status = 'REJECTED';
+
+INSERT INTO permission (permission_code, permission_name, description, apiPath, method)
+SELECT 'GET_FEEDBACK_COLLEAGUES', 'GET /api/v1/feedback/colleagues',
+       'Danh sách đồng nghiệp cùng cửa hàng (phản hồi loại Đồng nghiệp)', '/api/v1/feedback/colleagues', 'GET'
+WHERE NOT EXISTS (SELECT 1 FROM permission WHERE permission_code = 'GET_FEEDBACK_COLLEAGUES');
+
+INSERT IGNORE INTO role_permission (role_id, permission_id)
+SELECT r.role_id, p.permission_id
+FROM role r
+JOIN permission p ON p.permission_code = 'GET_FEEDBACK_COLLEAGUES'
+WHERE r.role_code IN ('ADMIN', 'MANAGER', 'STORE_MANAGER', 'EMPLOYEE');
+
+SELECT status, COUNT(*) FROM feedback GROUP BY status;

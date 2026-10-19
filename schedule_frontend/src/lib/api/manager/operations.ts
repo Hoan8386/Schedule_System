@@ -4,6 +4,7 @@ import type {
   BonusDetailResponse,
   BonusRecordResponse,
   DisciplinaryRecordResponse,
+  FeedbackColleague,
   FeedbackCreateBody,
   FeedbackItem,
   FeedbackReplyBody,
@@ -58,9 +59,10 @@ export const operationsApi = {
   /** Chi tiết phản hồi, kèm ảnh đính kèm dạng data URL */
   getFeedbackDetail: (id: number) => http.get<FeedbackItem>(`/api/v1/feedback/${id}`),
   createFeedback: (body: FeedbackCreateBody) => http.post<FeedbackItem>("/api/v1/feedback", body),
-  /** Trả lời / cập nhật trạng thái phản hồi */
+  /** Chuyển trạng thái phản hồi (kèm ghi chú trả lời tùy chọn) */
   replyFeedback: (id: number, body: FeedbackReplyBody) => http.put<FeedbackItem>(`/api/v1/feedback/${id}`, body),
-  deleteFeedback: (id: number) => http.delete(`/api/v1/feedback/${id}`),
+  /** Đồng nghiệp cùng cửa hàng – cho phản hồi loại Đồng nghiệp */
+  getFeedbackColleagues: () => http.get<FeedbackColleague[]>("/api/v1/feedback/colleagues"),
 
   getTodos: todos.list,
   createTodo: todos.create,

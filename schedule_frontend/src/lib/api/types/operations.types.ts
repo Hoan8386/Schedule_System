@@ -89,8 +89,10 @@ export interface BonusDetailResponse {
 
 /** Vai trò gửi / nhận phản hồi. */
 export type FeedbackRole = "EMPLOYEE" | "STORE_MANAGER" | "MANAGER" | "ADMIN";
-export type FeedbackStatus = "PENDING" | "PROCESSING" | "RESOLVED" | "REJECTED";
-export type FeedbackType = "SYSTEM" | "SHIFT" | "EMPLOYEE" | "OTHER";
+/** PENDING → REVIEWED | CLOSED; REVIEWED → RESOLVED; RESOLVED → REVIEWED | CLOSED; CLOSED là trạng thái cuối. */
+export type FeedbackStatus = "PENDING" | "REVIEWED" | "RESOLVED" | "CLOSED";
+/** SHIFT: Ca làm · EMPLOYEE: Đồng nghiệp · SYSTEM: Hệ thống (gửi admin) */
+export type FeedbackType = "SHIFT" | "EMPLOYEE" | "SYSTEM";
 
 export interface FeedbackItem {
   feedbackId: number;
@@ -121,6 +123,14 @@ export interface FeedbackItem {
   mine: boolean;
   /** Người dùng hiện tại được trả lời / xử lý phản hồi này */
   canReply: boolean;
+  /** Trạng thái người dùng hiện tại được chuyển sang (rỗng nếu không có quyền / đã đóng) */
+  nextStatuses: FeedbackStatus[];
+}
+
+export interface FeedbackColleague {
+  employeeId: number;
+  fullName: string | null;
+  employeeCode: string | null;
 }
 
 export interface FeedbackImage {
@@ -130,8 +140,10 @@ export interface FeedbackImage {
 }
 
 export interface FeedbackCreateBody {
-  targetRole: FeedbackRole;
   feedbackType: FeedbackType;
+  /** Bỏ trống với loại Hệ thống (luôn gửi admin) */
+  targetRole?: FeedbackRole;
+  targetEmployeeId?: number;
   title: string;
   content: string;
   storeId?: number;
@@ -140,6 +152,6 @@ export interface FeedbackCreateBody {
 }
 
 export interface FeedbackReplyBody {
-  response?: string;
   status: Exclude<FeedbackStatus, "PENDING">;
+  response?: string;
 }

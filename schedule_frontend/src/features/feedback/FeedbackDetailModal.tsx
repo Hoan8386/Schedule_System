@@ -1,22 +1,27 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, Clock, ImageOff, Loader2, Trash2, X, XCircle } from "lucide-react";
+import { CheckCircle2, Eye, ImageOff, Loader2, Lock, X } from "lucide-react";
 import { Button, Modal, Textarea } from "@/components/ui";
 import { managerApi, type FeedbackImage, type FeedbackItem, type FeedbackReplyBody } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { ROLE_LABEL, feedbackCode, statusMeta, targetMeta, typeMeta } from "./model";
+import { ACTION_LABEL, ROLE_LABEL, feedbackCode, statusMeta, targetMeta, typeMeta } from "./model";
 
 interface FeedbackDetailModalProps {
   item: FeedbackItem | null;
   onClose: () => void;
   onChanged: (item: FeedbackItem) => void;
-  onDeleted: (id: number) => void;
 }
 
-/** Chi tiết phản hồi: nội dung, ảnh, trả lời của người xử lý; form trả lời nếu người xem có quyền. */
-export default function FeedbackDetailModal({ item, onClose, onChanged, onDeleted }: FeedbackDetailModalProps) {
+const ACTION_ICON = { REVIEWED: Eye, RESOLVED: CheckCircle2, CLOSED: Lock } as const;
+const ACTION_VARIANT = { REVIEWED: "secondary", RESOLVED: "primary", CLOSED: "ghost" } as const;
+
+/**
+ * Chi tiết phản hồi (người gửi chỉ xem lại).
+ * Người xử lý chuyển trạng thái theo luồng PENDING → REVIEWED → RESOLVED, đóng (CLOSED) từ PENDING / RESOLVED.
+ */
+export default function FeedbackDetailModal({ item, onClose, onChanged }: FeedbackDetailModalProps) {
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
   const [lastId, setLastId] = useState<number | null>(null);
@@ -48,28 +53,16 @@ export default function FeedbackDetailModal({ item, onClose, onChanged, onDelete
 
   const status = statusMeta(item.status);
   const type = typeMeta(item.feedbackType);
-  const canWithdraw = item.mine && item.status === "PENDING";
+  const actions = (item.nextStatuses ?? []).filter((next): next is FeedbackReplyBody["status"] => next !== "PENDING");
+  // Thứ tự nút: xem xét → giải quyết → đóng
+  const ordered = (["REVIEWED", "RESOLVED", "CLOSED"] as const).filter((next) => actions.includes(next));
 
   const handle = async (nextStatus: FeedbackReplyBody["status"]) => {
+    if (nextStatus === "CLOSED" && !window.confirm("Đóng phản hồi? Phản hồi đã đóng không thể chuyển sang trạng thái khác.")) return;
     setBusy(true);
     try {
       const { data } = await managerApi.replyFeedback(item.feedbackId, { status: nextStatus, response: reply.trim() || undefined });
       onChanged(data);
-      if (nextStatus !== "PROCESSING") onClose();
-    } catch {
-      // toast đã hiển thị
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const withdraw = async () => {
-    if (!window.confirm("Thu hồi phản hồi này?")) return;
-    setBusy(true);
-    try {
-      await managerApi.deleteFeedback(item.feedbackId);
-      onDeleted(item.feedbackId);
-      onClose();
     } catch {
       // toast đã hiển thị
     } finally {
@@ -152,7 +145,7 @@ export default function FeedbackDetailModal({ item, onClose, onChanged, onDelete
           </div>
         )}
 
-        {item.response && !item.canReply && (
+        {item.response && !ordered.length && (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5">
             <p className="text-[10px] font-bold uppercase text-emerald-700">
               Trả lời từ {item.handlerName ?? "người xử lý"} · {formatDateTime(item.handledAt)}
@@ -161,10 +154,16 @@ export default function FeedbackDetailModal({ item, onClose, onChanged, onDelete
           </div>
         )}
 
-        {item.canReply && (
+        {item.canReply && item.status === "CLOSED" && (
+          <p className="flex items-center gap-1.5 border-t border-slate-100 pt-3 text-[11px] font-semibold text-slate-400">
+            <Lock className="h-3.5 w-3.5" /> Phản hồi đã đóng – không thể chuyển sang trạng thái khác.
+          </p>
+        )}
+
+        {ordered.length > 0 && (
           <div className="space-y-2 border-t border-slate-100 pt-3">
             <label className="font-bold text-slate-700" htmlFor="feedback-reply">
-              Trả lời
+              Ghi chú trả lời (không bắt buộc)
               {item.handledAt && (
                 <span className="ml-1 font-normal text-slate-400">
                   (cập nhật lần cuối bởi {item.handlerName ?? "—"} · {formatDateTime(item.handledAt)})
@@ -180,24 +179,12 @@ export default function FeedbackDetailModal({ item, onClose, onChanged, onDelete
               className="resize-y"
             />
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button variant="ghost" icon={XCircle} disabled={busy || !reply.trim()} onClick={() => void handle("REJECTED")}>
-                Từ chối
-              </Button>
-              <Button variant="secondary" icon={Clock} disabled={busy} onClick={() => void handle("PROCESSING")}>
-                Đánh dấu đang xử lý
-              </Button>
-              <Button icon={CheckCircle2} disabled={busy || !reply.trim()} onClick={() => void handle("RESOLVED")}>
-                Gửi trả lời
-              </Button>
+              {ordered.map((next) => (
+                <Button key={next} variant={ACTION_VARIANT[next]} icon={ACTION_ICON[next]} disabled={busy} onClick={() => void handle(next)}>
+                  {ACTION_LABEL[next]}
+                </Button>
+              ))}
             </div>
-          </div>
-        )}
-
-        {canWithdraw && (
-          <div className="flex justify-end border-t border-slate-100 pt-3">
-            <Button variant="danger" size="sm" icon={Trash2} disabled={busy} onClick={() => void withdraw()}>
-              Thu hồi phản hồi
-            </Button>
           </div>
         )}
       </div>

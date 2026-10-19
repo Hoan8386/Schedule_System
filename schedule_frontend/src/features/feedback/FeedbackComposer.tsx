@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ImagePlus, Loader2, Send, X } from "lucide-react";
+import { ImagePlus, Info, Loader2, Send, X } from "lucide-react";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 import {
   managerApi,
   statisticsApi,
+  type FeedbackColleague,
   type FeedbackItem,
   type FeedbackRole,
   type FeedbackType,
@@ -15,15 +16,7 @@ import {
 import { localKey } from "@/lib/format";
 import { notify } from "@/lib/toast";
 import { cn } from "@/lib/cn";
-import {
-  MAX_IMAGES,
-  MAX_IMAGE_BYTES,
-  TARGETS_BY_ROLE,
-  TARGET_META,
-  TYPE_META,
-  isShiftFeedbackOpen,
-  useNow,
-} from "./model";
+import { MAX_IMAGES, MAX_IMAGE_BYTES, TARGETS_BY_ROLE, TARGET_META, TYPES_BY_ROLE, TYPE_META, isShiftFeedbackOpen, useNow } from "./model";
 
 /** Ca được chọn sẵn khi gửi phản hồi trực tiếp từ thời khóa biểu. */
 export interface FeedbackShiftContext {
@@ -33,8 +26,9 @@ export interface FeedbackShiftContext {
 }
 
 interface FeedbackComposerProps {
-  /** Vai trò người gửi – quyết định danh sách đối tượng nhận */
+  /** Vai trò người gửi – quyết định loại phản hồi và người nhận */
   role: FeedbackRole;
+  /** Có ca sẵn (từ thời khóa biểu) → khóa loại Ca làm */
   shift?: FeedbackShiftContext;
   onSent?: (item: FeedbackItem) => void;
   onCancel?: () => void;
@@ -48,81 +42,76 @@ interface UploadedImage {
   uploading: boolean;
 }
 
-const TYPES: FeedbackType[] = ["SHIFT", "SYSTEM", "EMPLOYEE", "OTHER"];
+const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 
-const addDays = (date: Date, days: number) =>
-  new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+const shiftOptionLabel = (item: StatShift) =>
+  `${item.workDate ? item.workDate.split("-").reverse().join("/") : ""} · ${item.shiftName ?? "Ca"} · ${item.startTime ?? ""}–${item.endTime ?? ""}${item.storeName ? ` · ${item.storeName}` : ""}`;
 
-/** Form gửi phản hồi: chọn đối tượng nhận, loại, ca / cửa hàng liên quan, nội dung và ảnh đính kèm. */
-export default function FeedbackComposer({
-  role,
-  shift,
-  onSent,
-  onCancel,
-}: FeedbackComposerProps) {
+/**
+ * Form gửi phản hồi.
+ * - Ca làm: bắt buộc chọn ca (đã duyệt, đang diễn ra) · Đồng nghiệp: chọn người (không bắt buộc) · Hệ thống: tự gửi admin.
+ */
+export default function FeedbackComposer({ role, shift, onSent, onCancel }: FeedbackComposerProps) {
+  const types = shift ? (["SHIFT"] as FeedbackType[]) : TYPES_BY_ROLE[role];
   const targets = TARGETS_BY_ROLE[role];
+  const [type, setType] = useState<FeedbackType>(types[0]);
   const [target, setTarget] = useState<FeedbackRole | undefined>(targets[0]);
-  const [type, setType] = useState<FeedbackType>(shift ? "SHIFT" : "OTHER");
-  const [storeId, setStoreId] = useState<number | undefined>(
-    shift?.storeId ?? undefined,
-  );
-  const [shiftByDateId, setShiftByDateId] = useState<number | undefined>(
-    shift?.shiftByDateId,
-  );
+  const [storeId, setStoreId] = useState<number | undefined>(shift?.storeId ?? undefined);
+  const [shiftByDateId, setShiftByDateId] = useState<number | undefined>(shift?.shiftByDateId);
+  const [colleagueId, setColleagueId] = useState<number | undefined>();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [stores, setStores] = useState<StatStoreOption[]>([]);
   const [recentShifts, setRecentShifts] = useState<StatShift[]>([]);
+  const [colleagues, setColleagues] = useState<FeedbackColleague[] | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const now = useNow();
-  // Chỉ ca đã duyệt và đang diễn ra mới được gắn vào phản hồi
-  const openShifts = recentShifts.filter(
-    (item) =>
-      isShiftFeedbackOpen(item, now) && (!storeId || item.storeId === storeId),
-  );
 
-  // Cửa hàng & ca của chính mình quanh hôm nay (hôm qua → ngày mai, đủ cho ca qua đêm) để chọn ca đang làm
+  const isSystem = type === "SYSTEM";
+  // Chỉ ca đã duyệt và đang diễn ra mới được chọn cho loại Ca làm
+  const openShifts = recentShifts.filter((item) => isShiftFeedbackOpen(item, now));
+
+  // Cửa hàng & ca của chính mình quanh hôm nay (hôm qua → ngày mai, đủ cho ca qua đêm)
+  const needsMine = !shift && types.some((option) => option !== "SYSTEM");
   useEffect(() => {
-    if (shift) return;
+    if (!needsMine) return;
     let active = true;
     const today = new Date();
     statisticsApi
-      .getMine({
-        from: localKey(addDays(today, -1)),
-        to: localKey(addDays(today, 1)),
-      })
+      .getMine({ from: localKey(addDays(today, -1)), to: localKey(addDays(today, 1)) })
       .then(({ data }) => {
         if (!active) return;
         setStores(data.stores ?? []);
-        setRecentShifts(
-          [...(data.shifts ?? [])]
-            .filter((item) => item.workStatus !== "CANCELLED")
-            .sort((a, b) =>
-              `${b.workDate}${b.startTime}`.localeCompare(
-                `${a.workDate}${a.startTime}`,
-              ),
-            ),
-        );
-        if (data.stores?.length === 1) setStoreId(data.stores[0].storeId);
+        setRecentShifts(data.shifts ?? []);
       })
       .catch(() => undefined);
     return () => {
       active = false;
     };
-  }, [shift]);
+  }, [needsMine]);
+
+  // Đồng nghiệp cùng cửa hàng – chỉ tải khi chọn loại Đồng nghiệp
+  const wantsColleagues = type === "EMPLOYEE" && colleagues === null;
+  useEffect(() => {
+    if (!wantsColleagues) return;
+    let active = true;
+    managerApi
+      .getFeedbackColleagues()
+      .then(({ data }) => active && setColleagues(data ?? []))
+      .catch(() => active && setColleagues([]));
+    return () => {
+      active = false;
+    };
+  }, [wantsColleagues]);
 
   // Giải phóng URL xem trước khi rời form
   const imagesRef = useRef(images);
   useEffect(() => {
     imagesRef.current = images;
   }, [images]);
-  useEffect(
-    () => () =>
-      imagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview)),
-    [],
-  );
+  useEffect(() => () => imagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview)), []);
 
   const pickFiles = async (fileList: FileList | null) => {
     const files = Array.from(fileList ?? []);
@@ -144,17 +133,11 @@ export default function FeedbackComposer({
       }
       return true;
     });
-    if (files.length > room)
-      notify.error(`Chỉ đính kèm tối đa ${MAX_IMAGES} ảnh`);
+    if (files.length > room) notify.error(`Chỉ đính kèm tối đa ${MAX_IMAGES} ảnh`);
 
     const pending = accepted.map((file) => ({
       file,
-      image: {
-        key: `${file.name}-${file.size}-${Math.random()}`,
-        name: file.name,
-        preview: URL.createObjectURL(file),
-        uploading: true,
-      },
+      image: { key: `${file.name}-${file.size}-${Math.random()}`, name: file.name, preview: URL.createObjectURL(file), uploading: true },
     }));
     setImages((current) => [...current, ...pending.map((item) => item.image)]);
 
@@ -162,20 +145,12 @@ export default function FeedbackComposer({
       pending.map(async ({ file, image }) => {
         try {
           const { data } = await managerApi.uploadAttachment(file);
-          setImages((current) =>
-            current.map((item) =>
-              item.key === image.key
-                ? { ...item, attachmentId: data.attachmentId, uploading: false }
-                : item,
-            ),
-          );
+          setImages((current) => current.map((item) => (item.key === image.key ? { ...item, attachmentId: data.attachmentId, uploading: false } : item)));
         } catch {
           URL.revokeObjectURL(image.preview);
-          setImages((current) =>
-            current.filter((item) => item.key !== image.key),
-          );
+          setImages((current) => current.filter((item) => item.key !== image.key));
         }
-      }),
+      })
     );
   };
 
@@ -190,47 +165,43 @@ export default function FeedbackComposer({
     const id = value ? Number(value) : undefined;
     setShiftByDateId(id);
     const picked = recentShifts.find((item) => item.shiftByDateId === id);
-    if (picked) {
-      setStoreId(picked.storeId);
-      setType("SHIFT");
-    }
+    if (picked) setStoreId(picked.storeId);
   };
 
   const uploading = images.some((image) => image.uploading);
+  const missingShift = type === "SHIFT" && !shiftByDateId;
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!target) return;
     if (!content.trim()) {
       notify.error("Vui lòng nhập nội dung phản hồi");
       return;
     }
-    if (
-      target === "STORE_MANAGER" &&
-      !storeId &&
-      !shiftByDateId &&
-      stores.length > 1
-    ) {
+    if (missingShift) {
+      notify.error("Phản hồi loại Ca làm phải chọn ca cụ thể");
+      return;
+    }
+    if (!isSystem && target === "STORE_MANAGER" && !storeId && !shiftByDateId && stores.length > 1) {
       notify.error("Vui lòng chọn cửa hàng để gửi tới trưởng cửa hàng");
       return;
     }
     setSubmitting(true);
     try {
       const { data } = await managerApi.createFeedback({
-        targetRole: target,
         feedbackType: type,
+        targetRole: isSystem ? undefined : target,
         title: title.trim(),
         content: content.trim(),
         storeId,
-        shiftByDateId,
-        attachmentIds: images
-          .map((image) => image.attachmentId)
-          .filter((id): id is number => typeof id === "number"),
+        shiftByDateId: type === "SHIFT" ? shiftByDateId : undefined,
+        targetEmployeeId: type === "EMPLOYEE" ? colleagueId : undefined,
+        attachmentIds: images.map((image) => image.attachmentId).filter((id): id is number => typeof id === "number"),
       });
       images.forEach((image) => URL.revokeObjectURL(image.preview));
       setImages([]);
       setTitle("");
       setContent("");
+      setColleagueId(undefined);
       if (!shift) setShiftByDateId(undefined);
       onSent?.(data);
     } catch {
@@ -240,161 +211,141 @@ export default function FeedbackComposer({
     }
   };
 
-  if (!targets.length) return null;
+  if (!types.length) return null;
 
   return (
     <form onSubmit={submit} className="space-y-4 text-xs">
-      {/* Chỉ một đối tượng nhận (vd. quản lý → admin) thì không cần chọn */}
-      {targets.length > 1 && (
+      {types.length > 1 && (
         <div className="space-y-2">
           <p className="font-bold text-slate-700">
-            Gửi tới <span className="text-rose-500">*</span>
+            Loại phản hồi <span className="text-rose-500">*</span>
           </p>
-          <div
-            className={cn(
-              "grid gap-2",
-              targets.length === 3
-                ? "sm:grid-cols-3"
-                : targets.length === 2
-                  ? "sm:grid-cols-2"
-                  : "",
-            )}
-          >
-            {targets.map((option) => {
-              const meta = TARGET_META[option];
+          <div className="grid gap-2 sm:grid-cols-3">
+            {types.map((option) => {
+              const meta = TYPE_META[option];
               const Icon = meta.icon;
-              const active = target === option;
+              const active = type === option;
               return (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => setTarget(option)}
+                  title={meta.hint}
+                  onClick={() => setType(option)}
                   aria-pressed={active}
                   className={cn(
-                    "flex items-start gap-2.5 rounded-xl border p-3 text-left transition",
-                    active
-                      ? "border-brand-400 bg-brand-50/70 ring-1 ring-brand-300"
-                      : "border-slate-200 hover:border-slate-300",
+                    "flex items-center gap-2 rounded-xl border p-3 text-left font-bold transition",
+                    active ? "border-brand-400 bg-brand-50/70 text-brand-900 ring-1 ring-brand-300" : "border-slate-200 text-slate-600 hover:border-slate-300"
                   )}
                 >
-                  <Icon
-                    className={cn(
-                      "mt-0.5 h-4 w-4 shrink-0",
-                      active ? "text-brand-600" : "text-slate-400",
-                    )}
-                  />
-                  <span>
-                    <span
-                      className={cn(
-                        "block font-bold",
-                        active ? "text-brand-900" : "text-slate-700",
-                      )}
-                    >
-                      {meta.label}
-                    </span>
-                    <span className="mt-0.5 block text-[10px] text-slate-400">
-                      {meta.hint}
-                    </span>
-                  </span>
+                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-brand-600" : "text-slate-400")} />
+                  {meta.label}
                 </button>
               );
             })}
           </div>
+          <p className="text-[11px] text-slate-400">{TYPE_META[type].hint}</p>
         </div>
       )}
 
-      <div className="space-y-2">
-        <p className="font-bold text-slate-700">Loại phản hồi</p>
-        <div className="flex flex-wrap gap-2">
-          {TYPES.map((option) => {
-            const meta = TYPE_META[option];
-            const Icon = meta.icon;
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setType(option)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-bold transition",
-                  type === option
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 text-slate-600 hover:border-slate-300",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {meta.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {shift ? (
-        <div className="rounded-xl border border-brand-200 bg-brand-50/60 px-3 py-2.5">
-          <span className="text-[10px] font-bold uppercase text-brand-700">
-            Ca liên quan
-          </span>
-          <p className="mt-0.5 font-bold text-slate-800">{shift.label}</p>
+      {isSystem ? (
+        <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50/60 px-3 py-2.5 text-blue-800">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Phản hồi <b>Hệ thống</b> được gửi tới <b>Admin</b>. {TYPE_META.SYSTEM.hint}.
+          </p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Cửa hàng liên quan">
+        targets.length > 1 && (
+          <div className="space-y-2">
+            <p className="font-bold text-slate-700">
+              Gửi tới <span className="text-rose-500">*</span>
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {targets.map((option) => {
+                const meta = TARGET_META[option];
+                const Icon = meta.icon;
+                const active = target === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setTarget(option)}
+                    aria-pressed={active}
+                    className={cn(
+                      "flex items-center gap-2 rounded-xl border p-3 text-left font-bold transition",
+                      active ? "border-brand-400 bg-brand-50/70 text-brand-900 ring-1 ring-brand-300" : "border-slate-200 text-slate-600 hover:border-slate-300"
+                    )}
+                  >
+                    <Icon className={cn("h-4 w-4 shrink-0", active ? "text-brand-600" : "text-slate-400")} />
+                    {meta.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )
+      )}
+
+      {type === "SHIFT" &&
+        (shift ? (
+          <div className="rounded-xl border border-brand-200 bg-brand-50/60 px-3 py-2.5">
+            <span className="text-[10px] font-bold uppercase text-brand-700">Ca làm</span>
+            <p className="mt-0.5 font-bold text-slate-800">{shift.label}</p>
+          </div>
+        ) : (
+          <Field label={<span>Ca làm <span className="text-rose-500">*</span></span>}>
+            {openShifts.length ? (
+              <Select
+                value={shiftByDateId ?? ""}
+                onChange={(event) => selectShift(event.target.value)}
+                placeholder="Chọn ca đang làm"
+                options={openShifts.map((item) => ({ value: item.shiftByDateId, label: shiftOptionLabel(item) }))}
+              />
+            ) : (
+              <p className="rounded-xl border border-dashed border-slate-200 px-3 py-2.5 font-medium text-slate-400">
+                Bạn không có ca đã duyệt đang diễn ra. Chỉ phản hồi được ca làm trong thời gian diễn ra ca.
+              </p>
+            )}
+          </Field>
+        ))}
+
+      {type === "EMPLOYEE" && (
+        <div className={cn("grid gap-3", stores.length > 1 && "sm:grid-cols-2")}>
+          <Field label="Đồng nghiệp (không bắt buộc)">
             <Select
-              value={storeId ?? ""}
-              onChange={(event) =>
-                setStoreId(
-                  event.target.value ? Number(event.target.value) : undefined,
-                )
-              }
-              placeholder={
-                stores.length ? "Cửa hàng chính của tôi" : "Không có cửa hàng"
-              }
-              options={stores.map((store) => ({
-                value: store.storeId,
-                label: store.storeName,
+              value={colleagueId ?? ""}
+              onChange={(event) => setColleagueId(event.target.value ? Number(event.target.value) : undefined)}
+              placeholder={colleagues === null ? "Đang tải..." : "Không chỉ đích danh"}
+              options={(colleagues ?? []).map((item) => ({
+                value: item.employeeId,
+                label: `${item.fullName ?? `#${item.employeeId}`}${item.employeeCode ? ` (${item.employeeCode})` : ""}`,
               }))}
             />
           </Field>
-          <Field label="Ca đang làm (không bắt buộc)">
-            <Select
-              value={shiftByDateId ?? ""}
-              onChange={(event) => selectShift(event.target.value)}
-              placeholder={
-                openShifts.length
-                  ? "Không gắn ca"
-                  : "Không có ca đã duyệt đang diễn ra"
-              }
-              options={openShifts.map((item) => ({
-                value: item.shiftByDateId,
-                label: `${item.workDate ? item.workDate.split("-").reverse().slice(0, 2).join("/") : ""} · ${item.shiftName ?? "Ca"} · ${item.startTime ?? ""}–${item.endTime ?? ""}`,
-              }))}
-            />
-          </Field>
+          {stores.length > 1 && (
+            <Field label="Cửa hàng">
+              <Select
+                value={storeId ?? ""}
+                onChange={(event) => setStoreId(event.target.value ? Number(event.target.value) : undefined)}
+                placeholder="Cửa hàng chính của tôi"
+                options={stores.map((store) => ({ value: store.storeId, label: store.storeName }))}
+              />
+            </Field>
+          )}
         </div>
       )}
 
       <Field label="Tiêu đề">
-        <Input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          maxLength={200}
-          placeholder="Tóm tắt ngắn gọn vấn đề"
-        />
+        <Input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={200} placeholder="Tóm tắt ngắn gọn vấn đề" />
       </Field>
 
-      <Field
-        label={
-          <span>
-            Nội dung <span className="text-rose-500">*</span>
-          </span>
-        }
-      >
+      <Field label={<span>Nội dung <span className="text-rose-500">*</span></span>}>
         <Textarea
           rows={5}
           required
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          placeholder="Mô tả rõ tình huống, thời gian, người liên quan để được hỗ trợ nhanh hơn..."
+          placeholder={TYPE_META[type].hint + "..."}
           className="resize-y leading-relaxed"
         />
       </Field>
@@ -408,16 +359,9 @@ export default function FeedbackComposer({
         </div>
         <div className="flex flex-wrap gap-2">
           {images.map((image) => (
-            <div
-              key={image.key}
-              className="group relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
-            >
+            <div key={image.key} className="group relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={image.preview}
-                alt={image.name}
-                className="h-full w-full object-cover"
-              />
+              <img src={image.preview} alt={image.name} className="h-full w-full object-cover" />
               {image.uploading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/70">
                   <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
@@ -443,14 +387,7 @@ export default function FeedbackComposer({
               <span className="text-[10px] font-bold">Thêm ảnh</span>
             </button>
           )}
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            onChange={(event) => void pickFiles(event.target.files)}
-          />
+          <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(event) => void pickFiles(event.target.files)} />
         </div>
       </div>
 
@@ -460,16 +397,8 @@ export default function FeedbackComposer({
             Hủy
           </Button>
         )}
-        <Button
-          type="submit"
-          icon={submitting ? Loader2 : Send}
-          disabled={submitting || uploading || !target}
-        >
-          {uploading
-            ? "Đang tải ảnh..."
-            : submitting
-              ? "Đang gửi..."
-              : "Gửi phản hồi"}
+        <Button type="submit" icon={submitting ? Loader2 : Send} disabled={submitting || uploading || missingShift}>
+          {uploading ? "Đang tải ảnh..." : submitting ? "Đang gửi..." : "Gửi phản hồi"}
         </Button>
       </div>
     </form>

@@ -39,7 +39,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Phản hồi nội bộ giữa các vai trò.
- * - EMPLOYEE gửi tới STORE_MANAGER / MANAGER / ADMIN; STORE_MANAGER gửi tới MANAGER / ADMIN; MANAGER gửi tới ADMIN.
+ * - 3 loại: SHIFT (Ca làm – bắt buộc chọn ca), EMPLOYEE (Đồng nghiệp – chọn người không bắt buộc), SYSTEM (Hệ thống – luôn gửi admin).
+ * - EMPLOYEE gửi Ca làm / Đồng nghiệp tới STORE_MANAGER hoặc MANAGER; STORE_MANAGER gửi tới MANAGER; MANAGER chỉ gửi loại Hệ thống.
+ * - Trạng thái: PENDING → REVIEWED | CLOSED; REVIEWED → RESOLVED; RESOLVED → REVIEWED | CLOSED; CLOSED là trạng thái cuối.
+ * - Người gửi chỉ xem lại phản hồi, không sửa / thu hồi.
  * - EMPLOYEE chỉ xem phản hồi của mình.
  * - STORE_MANAGER xem phản hồi của mình + phản hồi gửi tới trưởng cửa hàng tại cửa hàng mình quản lý (và trả lời được).
  * - MANAGER / ADMIN xem và trả lời mọi phản hồi.
@@ -51,12 +54,25 @@ public class FeedbackService {
     public static final String MANAGER = "MANAGER";
     public static final String ADMIN = "ADMIN";
 
+    public static final String SHIFT = "SHIFT";
+    public static final String COLLEAGUE = "EMPLOYEE";
+    public static final String SYSTEM = "SYSTEM";
+
+    /** Loại phản hồi mỗi vai trò được gửi. */
+    private static final Map<String, Set<String>> ALLOWED_TYPES = Map.of(
+            EMPLOYEE, Set.of(SHIFT, COLLEAGUE, SYSTEM),
+            STORE_MANAGER, Set.of(SHIFT, COLLEAGUE, SYSTEM),
+            MANAGER, Set.of(SYSTEM));
+    /** Đối tượng nhận của loại Ca làm / Đồng nghiệp (loại Hệ thống luôn gửi ADMIN). */
     private static final Map<String, Set<String>> ALLOWED_TARGETS = Map.of(
-            EMPLOYEE, Set.of(STORE_MANAGER, MANAGER, ADMIN),
-            STORE_MANAGER, Set.of(MANAGER, ADMIN),
-            MANAGER, Set.of(ADMIN));
-    private static final Set<String> FEEDBACK_TYPES = Set.of("SYSTEM", "SHIFT", "EMPLOYEE", "OTHER");
-    private static final Set<String> HANDLE_STATUSES = Set.of("PROCESSING", "RESOLVED", "REJECTED");
+            EMPLOYEE, Set.of(STORE_MANAGER, MANAGER),
+            STORE_MANAGER, Set.of(MANAGER));
+    /** Chuyển trạng thái hợp lệ; CLOSED là trạng thái cuối. */
+    private static final Map<String, Set<String>> TRANSITIONS = Map.of(
+            "PENDING", Set.of("REVIEWED", "CLOSED"),
+            "REVIEWED", Set.of("RESOLVED"),
+            "RESOLVED", Set.of("REVIEWED", "CLOSED"),
+            "CLOSED", Set.of());
     private static final int MAX_ATTACHMENTS = 5;
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -193,7 +209,7 @@ public class FeedbackService {
 
     // ------------------------------------------------------------------ Thao tác
 
-    /** Body: { targetRole, feedbackType, title, content, storeId?, shiftByDateId?, targetEmployeeId?, attachmentIds?: number[] } */
+    /** Body: { feedbackType, targetRole?, title, content, storeId?, shiftByDateId?, targetEmployeeId?, attachmentIds?: number[] } */
     @Transactional
     public Map<String, Object> create(FeedbackRequest body) {
         Viewer viewer = viewer();
@@ -201,12 +217,28 @@ public class FeedbackService {
             throw new ApiException(HttpStatus.FORBIDDEN, "Tài khoản chưa có hồ sơ nhân viên nên không thể gửi phản hồi");
         }
 
-        String targetRole = upper(body.get("targetRole"));
-        Set<String> allowed = ALLOWED_TARGETS.getOrDefault(viewer.role(), Set.of());
-        if (targetRole == null || !allowed.contains(targetRole)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, allowed.isEmpty()
-                    ? "Vai trò của bạn không gửi phản hồi được"
-                    : "Đối tượng nhận phản hồi không hợp lệ");
+        String type = upper(body.get("feedbackType"));
+        Set<String> allowedTypes = ALLOWED_TYPES.getOrDefault(viewer.role(), Set.of());
+        if (allowedTypes.isEmpty()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Vai trò của bạn không gửi phản hồi được");
+        }
+        if (type == null || !allowedTypes.contains(type)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Loại phản hồi không hợp lệ");
+        }
+
+        // Hệ thống luôn gửi admin; Ca làm / Đồng nghiệp chọn trưởng cửa hàng hoặc quản lý
+        String targetRole;
+        if (SYSTEM.equals(type)) {
+            targetRole = ADMIN;
+        } else {
+            Set<String> allowedTargets = ALLOWED_TARGETS.getOrDefault(viewer.role(), Set.of());
+            targetRole = upper(body.get("targetRole"));
+            if (targetRole == null && allowedTargets.size() == 1) {
+                targetRole = allowedTargets.iterator().next();
+            }
+            if (targetRole == null || !allowedTargets.contains(targetRole)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Đối tượng nhận phản hồi không hợp lệ");
+            }
         }
 
         String content = text(body.get("content"));
@@ -222,7 +254,10 @@ public class FeedbackService {
         String title = text(body.get("title"));
         item.setTitle(title != null ? truncate(title, 200) : truncate(content, 80));
 
-        Integer shiftByDateId = toInt(body.get("shiftByDateId"));
+        Integer shiftByDateId = SHIFT.equals(type) ? toInt(body.get("shiftByDateId")) : null;
+        if (SHIFT.equals(type) && shiftByDateId == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Phản hồi loại Ca làm phải chọn ca cụ thể");
+        }
         Integer storeId = toInt(body.get("storeId"));
         if (shiftByDateId != null) {
             ShiftByDate shift = shiftByDateRepository.findById(shiftByDateId)
@@ -244,19 +279,22 @@ public class FeedbackService {
         }
         item.setStoreId(storeId);
 
-        String type = upper(body.get("feedbackType"));
-        if (shiftByDateId != null) {
-            type = "SHIFT";
+        item.setFeedbackType(type);
+        Integer targetEmployeeId = COLLEAGUE.equals(type) ? toInt(body.get("targetEmployeeId")) : null;
+        if (targetEmployeeId != null) {
+            boolean colleague = colleagueIds(viewer).contains(targetEmployeeId);
+            if (!colleague) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Đồng nghiệp được chọn không cùng cửa hàng với bạn");
+            }
         }
-        item.setFeedbackType(type != null && FEEDBACK_TYPES.contains(type) ? type : "OTHER");
-        item.setTargetEmployeeId(toInt(body.get("targetEmployeeId")));
+        item.setTargetEmployeeId(targetEmployeeId);
         item.setAttachmentIds(joinIds(body.get("attachmentIds")));
         item.setStatus("PENDING");
         item.setCreatedAt(LocalDateTime.now());
         return views(List.of(repository.save(item)), viewer).get(0);
     }
 
-    /** Trả lời / cập nhật trạng thái. Body: { response, status: PROCESSING | RESOLVED | REJECTED } */
+    /** Chuyển trạng thái (kèm ghi chú trả lời tùy chọn). Body: { status: REVIEWED | RESOLVED | CLOSED, response? } */
     @Transactional
     public Map<String, Object> reply(Integer id, FeedbackRequest body) {
         Viewer viewer = viewer();
@@ -264,17 +302,16 @@ public class FeedbackService {
         if (!canHandle(item, viewer)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Bạn không có quyền xử lý phản hồi này");
         }
+        String current = normalizeStatus(item.getStatus());
         String status = upper(body.get("status"));
-        if (status == null) {
-            status = "RESOLVED";
+        if ("CLOSED".equals(current)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Phản hồi đã đóng, không thể chuyển trạng thái");
         }
-        if (!HANDLE_STATUSES.contains(status)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Trạng thái không hợp lệ");
+        if (status == null || !TRANSITIONS.getOrDefault(current, Set.of()).contains(status)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Không thể chuyển từ " + current + " sang " + (status == null ? "(trống)" : status));
         }
         String response = text(body.get("response"));
-        if (response == null && !"PROCESSING".equals(status)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng nhập nội dung trả lời");
-        }
         if (response != null) {
             item.setResponse(response);
         }
@@ -284,16 +321,48 @@ public class FeedbackService {
         return views(List.of(repository.save(item)), viewer).get(0);
     }
 
-    /** Người gửi thu hồi phản hồi chưa được xử lý; ADMIN xóa được mọi phản hồi. */
-    @Transactional
-    public void delete(Integer id) {
+    /** Dữ liệu cũ: PROCESSING → REVIEWED, REJECTED → CLOSED. */
+    private static String normalizeStatus(String status) {
+        String value = status == null ? "PENDING" : status.toUpperCase();
+        return switch (value) {
+            case "PROCESSING" -> "REVIEWED";
+            case "REJECTED" -> "CLOSED";
+            default -> value;
+        };
+    }
+
+    // ------------------------------------------------------------------ Đồng nghiệp
+
+    /** Đồng nghiệp đang làm cùng cửa hàng (để chọn khi gửi phản hồi loại Đồng nghiệp). */
+    public List<Map<String, Object>> colleagues() {
         Viewer viewer = viewer();
-        Feedback item = findVisible(id, viewer);
-        boolean ownPending = isSender(item, viewer) && "PENDING".equalsIgnoreCase(item.getStatus());
-        if (!ownPending && !ADMIN.equals(viewer.role())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Chỉ thu hồi được phản hồi của mình khi chưa được xử lý");
-        }
-        repository.delete(item);
+        Set<Integer> ids = colleagueIds(viewer);
+        return employeeRepository.findAllById(ids).stream()
+                .filter(employee -> "ACTIVE".equalsIgnoreCase(employee.getStatus()))
+                .sorted(Comparator.comparing(Employee::getFullName, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(employee -> {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("employeeId", employee.getId());
+                    row.put("fullName", employee.getFullName());
+                    row.put("employeeCode", employee.getEmployeeCode());
+                    return row;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private Set<Integer> colleagueIds(Viewer viewer) {
+        Set<Integer> storeIds = viewer.storeIds();
+        Set<Integer> ids = new HashSet<>();
+        employeeStoreRepository.findAll().stream()
+                .filter(link -> "ACTIVE".equalsIgnoreCase(link.getStatus()))
+                .filter(link -> storeIds == null || storeIds.contains(link.getStoreId()))
+                .forEach(link -> ids.add(link.getEmployeeId()));
+        storeManagerRepository.findAll().stream()
+                .filter(link -> "ACTIVE".equalsIgnoreCase(link.getStatus()))
+                .filter(link -> storeIds == null || storeIds.contains(link.getStoreId()))
+                .forEach(link -> ids.add(link.getEmployeeId()));
+        ids.remove(viewer.employeeId());
+        return ids;
     }
 
     // ------------------------------------------------------------------ Hiển thị
@@ -320,6 +389,10 @@ public class FeedbackService {
             Employee handler = employees.get(item.getHandledBy());
             Employee target = employees.get(item.getTargetEmployeeId());
             view.put("targetRole", targetOf(item));
+            view.put("status", normalizeStatus(item.getStatus()));
+            view.put("nextStatuses", canHandle(item, viewer)
+                    ? TRANSITIONS.getOrDefault(normalizeStatus(item.getStatus()), Set.of()).stream().sorted().toList()
+                    : List.of());
             view.put("senderName", sender != null ? sender.getFullName() : null);
             view.put("senderCode", sender != null ? sender.getEmployeeCode() : null);
             view.put("handlerName", handler != null ? handler.getFullName() : null);
