@@ -152,6 +152,10 @@ export interface SpecialEventResponse {
   [key: string]: unknown;
 }
 
+/**
+ * Yêu cầu khẩn (ADD / CHANGE / CANCEL). Theo khóa ngoại của DB:
+ * assignmentId → phân ca nguồn · fromShiftAssignmentId → ca theo ngày nguồn · toAssignmentId → ca theo ngày đích.
+ */
 export interface EmergencyRequestResponse {
   id?: number;
   emergencyRequestId?: number;

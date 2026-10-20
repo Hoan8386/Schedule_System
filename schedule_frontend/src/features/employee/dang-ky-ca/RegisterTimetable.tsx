@@ -14,7 +14,7 @@ export interface TemplateRow {
   group: MyShiftGroup;
 }
 
-/** pending: đã đăng ký, chờ quản lý duyệt (bấm để hủy); approved: quản lý đã duyệt */
+/** pending: đã đăng ký, chờ quản lý duyệt; approved: quản lý đã duyệt (cả hai bỏ đăng ký được khi đợt / phiên còn mở) */
 type CellKind = "pending" | "approved" | "available" | "full" | "closed" | "past" | "outside" | "window";
 
 export interface Cell {
@@ -23,7 +23,7 @@ export interface Cell {
   capacity: number;
   /** Lý do không đăng ký được / trạng thái đăng ký */
   note: string;
-  /** Đăng ký chờ duyệt còn hủy được (phiên đăng ký của nhóm còn mở) */
+  /** Còn bỏ đăng ký được (đợt / phiên đăng ký của nhóm còn mở) – xóa luôn, không cần duyệt */
   cancellable?: boolean;
   shiftByDate?: MyOpenShift;
 }
@@ -78,12 +78,12 @@ export function cellFor(
   if (!inPeriod) return { ...base, kind: "outside", note: "Ngoài kỳ" };
   if (shiftByDate && isRegistered(shiftByDate)) {
     const status = String(shiftByDate.myAssignmentStatus).toUpperCase();
-    // Chờ duyệt: chỉ hủy được khi phiên đăng ký của nhóm còn mở (backend kiểm tra lại); ngày đã qua thì không hủy
+    // Còn trong thời gian đăng ký thì bỏ đăng ký được (kể cả đã duyệt) – backend kiểm tra lại; ngày đã qua thì không
+    const cancellable = window.open && dayKey >= todayKey && status !== "COMPLETED";
     if (status === "PENDING") {
-      const cancellable = window.open && dayKey >= todayKey;
-      return { ...base, kind: "pending", cancellable, note: cancellable ? "Chờ duyệt" : "Chờ duyệt · hết thời gian hủy" };
+      return { ...base, kind: "pending", cancellable, note: cancellable ? "Chờ duyệt" : "Chờ duyệt · hết thời gian đăng ký" };
     }
-    return { ...base, kind: "approved", note: ASSIGNMENT_LABEL[status] ?? "Đã duyệt" };
+    return { ...base, kind: "approved", cancellable, note: ASSIGNMENT_LABEL[status] ?? "Đã duyệt" };
   }
   if (dayKey < todayKey) return { ...base, kind: "past", note: "Đã qua" };
   if (shiftByDate && shiftByDate.status !== "OPEN") return { ...base, kind: "closed", note: "Đã đóng" };

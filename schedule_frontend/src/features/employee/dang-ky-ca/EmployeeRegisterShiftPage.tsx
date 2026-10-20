@@ -25,8 +25,11 @@ const periodRange = (period: RegistrationPeriod) => ({
   to: period.effectiveEndDate ?? period.endDate ?? period.effectiveStartDate ?? period.startDate ?? localKey(new Date()),
 });
 
-/** Đăng ký ca trên thời khóa biểu của kỳ: mỗi ô là ca mẫu của nhóm × ngày, bấm để đăng ký. */
-export default function EmployeeRegisterShiftPage() {
+/**
+ * Đăng ký ca trên thời khóa biểu của kỳ: mỗi ô là ca mẫu của nhóm × ngày, bấm để đăng ký.
+ * `toolbar`: bộ chọn loại (Đăng ký / Thêm / Đổi / Hủy ca) hiển thị ngay dưới tiêu đề trang.
+ */
+export default function EmployeeRegisterShiftPage({ toolbar }: { toolbar?: React.ReactNode }) {
   const [version, setVersion] = useState(0);
   const [pickedPeriodId, setPickedPeriodId] = useState<number | null>(null);
   const [view, setView] = useState<ViewMode>("period");
@@ -127,6 +130,8 @@ export default function EmployeeRegisterShiftPage() {
           </Button>
         }
       />
+
+      {toolbar}
 
       {base.error && <Alert>{base.error}</Alert>}
 
@@ -299,8 +304,9 @@ export default function EmployeeRegisterShiftPage() {
       <div className="flex items-center gap-3 rounded-2xl border border-brand-200/80 bg-brand-50/60 p-4 text-xs text-brand-900">
         <Info className="h-4 w-4 shrink-0 text-brand-600" />
         <p>
-          Chỉ đăng ký được ca thuộc nhóm ca của bạn, trong thời gian mở của đợt / phiên đăng ký và khi ca còn chỗ. Đăng ký chỉ được tính là ca
-          làm khi quản lý duyệt; trước đó bạn có thể hủy, nhưng chỉ trong thời gian phiên đăng ký còn mở. Ca đã duyệt muốn hủy thì gửi yêu cầu cho quản lý. Đăng ký bị từ chối có thể đăng ký lại.
+          Chỉ đăng ký được ca thuộc nhóm ca của bạn, trong thời gian mở của đợt / phiên đăng ký và khi ca còn chỗ. Trong thời gian đăng ký, bạn có
+          thể bỏ đăng ký bất kỳ lúc nào (kể cả ca đã duyệt) – đăng ký bị xóa luôn, không cần duyệt. Hết thời gian đăng ký, muốn thêm / đổi / hủy ca
+          thì chọn loại tương ứng ở đầu trang để gửi yêu cầu cho quản lý.
         </p>
       </div>
     </div>

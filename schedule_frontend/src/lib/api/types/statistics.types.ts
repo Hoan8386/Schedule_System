@@ -85,6 +85,8 @@ export interface StatShift {
   workStatus: WorkStatus;
   /** Yêu cầu đổi / hủy đang chờ duyệt cho ca này (CHANGE / CANCEL ...) */
   pendingRequestType: string | null;
+  /** Kỳ đăng ký của ca đã kết thúc → ca thuộc lịch làm việc chính thức */
+  scheduleReleased: boolean;
 }
 
 export interface StatPayroll {

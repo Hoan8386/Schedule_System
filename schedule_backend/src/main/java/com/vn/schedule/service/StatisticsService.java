@@ -263,11 +263,17 @@ public class StatisticsService {
                        (SELECT er.request_type FROM emergency_request er
                         WHERE er.status = 'PENDING' AND er.employee_id = sa.employee_id
                           AND (er.assignment_id = sa.assignment_id OR er.from_shift_assignment_id = sa.shift_by_date_id)
-                        ORDER BY er.emergency_request_id DESC LIMIT 1)
+                        ORDER BY er.emergency_request_id DESC LIMIT 1),
+                       CASE WHEN sp.schedule_period_id IS NULL
+                                 OR sp.status IN ('CLOSED', 'FINALIZED', 'PUBLISHED', 'COMPLETED', 'LOCKED')
+                                 OR sp.finalized_at IS NOT NULL
+                                 OR (sp.registration_close_at IS NOT NULL AND sp.registration_close_at < NOW())
+                            THEN 1 ELSE 0 END
                 FROM shift_assignment sa
                 JOIN shift_by_date sbd ON sbd.shift_by_date_id = sa.shift_by_date_id
                 JOIN shift sh ON sh.shift_id = sbd.shift_id
                 LEFT JOIN shift_group sg ON sg.shift_group_id = sh.shift_group_id
+                LEFT JOIN schedule_period sp ON sp.schedule_period_id = sbd.schedule_period_id
                 JOIN store st ON st.store_id = sh.store_id
                 JOIN employee e ON e.employee_id = sa.employee_id
                 LEFT JOIN attendance a ON a.attendance_id = (
@@ -309,7 +315,7 @@ public class StatisticsService {
                     toInt(row[5]), text(row[6]), workDate == null ? null : workDate.toString(), text(row[8]),
                     formatTime(start), formatTime(end), assignmentStatus, attendanceStatus,
                     formatDateTime(checkIn), formatDateTime(checkOut), round(hours, 2), money(payRate), wage, workStatus,
-                    text(row[17])));
+                    text(row[17]), toInt(row[18]) == 1));
         }
         return result;
     }

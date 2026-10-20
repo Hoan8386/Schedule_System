@@ -26,7 +26,7 @@ const STATUS_BADGE: Partial<Record<Cell["kind"], { label: string; className: str
   available: { label: "Còn chỗ", className: "bg-brand-100 text-brand-800" },
 };
 
-/** Popup một ô ca × ngày: thông tin ca và nút đăng ký / hủy đăng ký (khi còn chờ duyệt và phiên còn mở). */
+/** Popup một ô ca × ngày: thông tin ca và nút đăng ký / bỏ đăng ký (khi đợt / phiên đăng ký còn mở). */
 export function RegisterShiftModal({ row, dayKey, cell, submitting, onClose, onRegister, onCancel }: Props) {
   const { shift, group } = row;
   const startTime = cell.shiftByDate?.startTime ?? shift.startTime;
@@ -37,7 +37,7 @@ export function RegisterShiftModal({ row, dayKey, cell, submitting, onClose, onR
   const badge = STATUS_BADGE[cell.kind] ?? { label: cell.note, className: "bg-slate-100 text-slate-600" };
 
   const canRegister = cell.kind === "available";
-  const canCancel = cell.kind === "pending" && Boolean(cell.cancellable);
+  const canCancel = (cell.kind === "pending" || cell.kind === "approved") && Boolean(cell.cancellable);
 
   const info = [
     { icon: Clock3, label: "Giờ làm", value: `${startTime ?? "—"} – ${endTime ?? "—"} · ${formatHours(hours)}` },
@@ -49,7 +49,7 @@ export function RegisterShiftModal({ row, dayKey, cell, submitting, onClose, onR
   return (
     <Modal
       open
-      title={canCancel ? "Hủy đăng ký ca" : "Đăng ký ca"}
+      title={canCancel ? "Bỏ đăng ký ca" : "Đăng ký ca"}
       onClose={submitting ? () => undefined : onClose}
       size="max-w-md"
       footer={
@@ -64,7 +64,7 @@ export function RegisterShiftModal({ row, dayKey, cell, submitting, onClose, onR
           )}
           {canCancel && (
             <Button variant="danger" icon={CalendarX} onClick={onCancel} disabled={submitting}>
-              {submitting ? "Đang hủy..." : "Hủy đăng ký"}
+              {submitting ? "Đang bỏ..." : "Bỏ đăng ký"}
             </Button>
           )}
         </div>
@@ -95,10 +95,11 @@ export function RegisterShiftModal({ row, dayKey, cell, submitting, onClose, onR
       </div>
 
       <p className="text-xs text-slate-500">
-        {canRegister && "Sau khi đăng ký, ca ở trạng thái chờ duyệt cho tới khi quản lý duyệt. Bạn có thể hủy trong thời gian phiên đăng ký còn mở."}
-        {canCancel && "Đăng ký sẽ bị xóa và chỗ trống được trả lại cho người khác. Bạn có thể đăng ký lại khi phiên còn mở."}
-        {cell.kind === "pending" && !canCancel && "Phiên đăng ký đã đóng nên không thể hủy. Vui lòng liên hệ quản lý nếu cần thay đổi."}
-        {cell.kind === "approved" && "Ca đã được duyệt. Muốn hủy hoặc đổi ca, vui lòng gửi yêu cầu cho quản lý."}
+        {canRegister && "Sau khi đăng ký, ca ở trạng thái chờ duyệt cho tới khi quản lý duyệt. Bạn có thể bỏ đăng ký trong thời gian đăng ký còn mở."}
+        {canCancel &&
+          "Còn trong thời gian đăng ký: đăng ký sẽ bị xóa luôn (xem như chưa từng đăng ký, không cần duyệt) và chỗ trống được trả lại cho người khác."}
+        {!canCancel && (cell.kind === "pending" || cell.kind === "approved") &&
+          "Đã hết thời gian đăng ký nên không thể tự bỏ. Muốn hủy hoặc đổi ca, hãy chọn “Hủy ca” / “Đổi ca” ở đầu trang để gửi yêu cầu cho quản lý."}
         {!["available", "pending", "approved"].includes(cell.kind) && `Không thể đăng ký: ${cell.note}.`}
       </p>
     </Modal>

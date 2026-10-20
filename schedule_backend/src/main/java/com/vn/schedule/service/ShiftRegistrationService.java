@@ -113,9 +113,9 @@ public class ShiftRegistrationService {
     }
 
     /**
-     * Nhân viên hủy đăng ký ca của mình khi đăng ký còn chờ duyệt: xóa hẳn bản ghi phân ca.
-     * Chỉ hủy được trong thời gian mở của đợt / phiên đăng ký (cùng điều kiện như khi đăng ký);
-     * đăng ký đã được duyệt (hoặc đã xử lý) thì không hủy ở đây được.
+     * Nhân viên bỏ đăng ký ca của mình khi đợt / phiên đăng ký còn mở: xóa hẳn bản ghi phân ca
+     * (xem như chưa từng đăng ký), không cần duyệt – kể cả khi đăng ký đã được duyệt.
+     * Hết thời gian đăng ký thì phải gửi yêu cầu hủy ca cho quản lý.
      */
     @Transactional
     public ShiftGroupMemberService.OpenShift unregister(Integer shiftId, LocalDate workDate) {
@@ -131,20 +131,16 @@ public class ShiftRegistrationService {
         if (mine.isEmpty() || INACTIVE.contains(String.valueOf(mine.get(0)[1]).toUpperCase())) {
             throw bad("Bạn chưa đăng ký ca này");
         }
-        if (!"PENDING".equalsIgnoreCase(String.valueOf(mine.get(0)[1]))) {
-            throw bad("Đăng ký đã được duyệt nên không thể tự hủy. Vui lòng gửi yêu cầu hủy ca cho quản lý");
-        }
         try {
             registrationWindow(shiftByDate.getShift(), workDate);
         } catch (ApiException ex) {
-            throw bad("Đã hết thời gian của phiên đăng ký nên không thể hủy (" + ex.getMessage() + ")");
+            throw bad("Đã hết thời gian đăng ký nên không thể bỏ đăng ký (" + ex.getMessage()
+                    + "). Vui lòng gửi yêu cầu hủy ca cho quản lý");
         }
         Integer assignmentId = toInt(mine.get(0)[0]);
-        List<Object[]> linked = rows(entityManager, "SELECT COUNT(*) FROM emergency_request WHERE assignment_id = :id",
-                Map.of("id", assignmentId));
-        if (!linked.isEmpty() && toInt(linked.get(0)[0]) > 0) {
-            throw bad("Đăng ký đang gắn với yêu cầu khẩn nên không thể xóa");
-        }
+        // Xem như chưa từng đăng ký: bỏ luôn các yêu cầu khẩn gắn với phân ca này
+        entityManager.createNativeQuery("DELETE FROM emergency_request WHERE assignment_id = :id")
+                .setParameter("id", assignmentId).executeUpdate();
         assignmentRepository.deleteById(assignmentId);
         assignmentRepository.flush();
 

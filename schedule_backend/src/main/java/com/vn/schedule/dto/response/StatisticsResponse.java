@@ -87,7 +87,9 @@ public final class StatisticsResponse {
             /** COMPLETED / IN_PROGRESS / ABSENT / UPCOMING / PENDING / CANCELLED */
             String workStatus,
             /** Loại yêu cầu đổi/hủy đang chờ duyệt cho ca này (CHANGE / CANCEL ...), null nếu không có */
-            String pendingRequestType) {
+            String pendingRequestType,
+            /** Kỳ đăng ký của ca đã kết thúc (hết hạn đăng ký / đã chốt) – lịch chính thức được hiển thị */
+            boolean scheduleReleased) {
     }
 
     public record PayrollInfo(
