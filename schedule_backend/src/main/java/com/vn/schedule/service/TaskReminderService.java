@@ -86,17 +86,17 @@ public class TaskReminderService {
                         WHERE er.status = 'PENDING'""" + storeFilter, params),
                 storeManager ? "quanlyca" : "lich", "warning");
 
-        // Ca 7 ngày tới chưa đủ số người tối thiểu (min, không có min thì max)
+        // Ca 7 ngày tới chưa đủ số người tối thiểu (min, không có min hoặc min = 0 thì max)
         add(tasks, "understaffed", "Ca thiếu người trong 7 ngày tới", "Ca chưa đủ số lượng tối thiểu – cần phân bổ thêm nhân viên",
                 count(entityManager, """
                         SELECT COUNT(*) FROM shift_by_date sbd
                         JOIN shift sh ON sh.shift_id = sbd.shift_id
                         WHERE sbd.work_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
                           AND COALESCE(sbd.status, '') <> 'CANCELLED'
-                          AND COALESCE(sh.min_capacity, sbd.max_capacity, sh.max_capacity, 0) > 0
+                          AND COALESCE(NULLIF(sh.min_capacity, 0), sbd.max_capacity, sh.max_capacity, 0) > 0
                           AND (SELECT COUNT(*) FROM shift_assignment a
                                WHERE a.shift_by_date_id = sbd.shift_by_date_id AND a.status NOT IN ('CANCELLED', 'REJECTED'))
-                              < COALESCE(sh.min_capacity, sbd.max_capacity, sh.max_capacity, 0)""" + storeFilter, params),
+                              < COALESCE(NULLIF(sh.min_capacity, 0), sbd.max_capacity, sh.max_capacity, 0)""" + storeFilter, params),
                 schedulePage, "info");
 
         add(tasks, "feedback", "Phản hồi chờ xử lý",
@@ -158,9 +158,7 @@ public class TaskReminderService {
     // ------------------------------------------------------------------ Tiện ích
 
     private long pendingFeedback() {
-        return feedbackService.list().stream()
-                .filter(item -> Boolean.TRUE.equals(item.get("canReply")) && "PENDING".equals(item.get("status")))
-                .count();
+        return feedbackService.countPendingToHandle();
     }
 
     private Integer currentEmployeeIdOrNull() {

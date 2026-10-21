@@ -40,9 +40,45 @@ public class UserRoleService {
     @Transactional
     public UserRole update(UserRoleId id, UserRoleRequest body) {
         UserRole current = findById(id);
+        UserRole next = toEntity(body);
         guard.checkAssignRole(current.getUserId());
-        applyFields(current, body);
-        return repository.save(current);
+        guard.checkAssignRole(next.getUserId());
+        boolean keyChanged = !java.util.Objects.equals(current.getUserId(), next.getUserId())
+                || !java.util.Objects.equals(current.getRoleId(), next.getRoleId());
+        if (!keyChanged) {
+            applyFields(current, body);
+            return repository.save(current);
+        }
+        // Đổi người / đổi vai trò = gỡ liên kết cũ rồi gán liên kết mới (khóa chính ghép không sửa tại chỗ được)
+        guard.checkRemoveRole(current.getUserId(), current.getRoleId());
+        repository.delete(current);
+        repository.flush();
+        return repository.save(next);
+    }
+
+    /**
+     * Đổi vai trò của tài khoản trong một giao dịch: gỡ mọi vai trò khác rồi gán vai trò mới
+     * (tài khoản chưa có vai trò nào thì chỉ gán). Một bước thất bại thì không thay đổi gì.
+     */
+    @Transactional
+    public UserRole changeRole(Integer userId, Integer roleId) {
+        if (userId == null || roleId == null) throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu tài khoản hoặc vai trò");
+        guard.checkAssignRole(userId);
+        UserRole kept = null;
+        for (UserRole link : repository.findByUserId(userId)) {
+            if (roleId.equals(link.getRoleId())) {
+                kept = link;
+                continue;
+            }
+            guard.checkRemoveRole(link.getUserId(), link.getRoleId());
+            repository.delete(link);
+        }
+        if (kept != null) return kept;
+        UserRole entity = new UserRole();
+        entity.setUserId(userId);
+        entity.setRoleId(roleId);
+        entity.setAssignedAt(LocalDateTime.now());
+        return repository.save(entity);
     }
 
     @Transactional

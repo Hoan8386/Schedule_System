@@ -121,6 +121,12 @@ public class EmergencyRequestService {
         for (Integer id : ids == null ? List.<Integer>of() : ids) {
             EmergencyRequest current = findById(id);
             if (!"PENDING".equalsIgnoreCase(current.getStatus())) continue;
+            // Yêu cầu đã lỗi thời (ca đã đổi / đã bắt đầu) thì bỏ qua, không làm hỏng cả lô
+            try {
+                requireApprovable(current);
+            } catch (ApiException ex) {
+                continue;
+            }
             current.setStatus("APPROVED");
             current.setProcessedAt(LocalDateTime.now());
             current.setProcessedBy(processor);
@@ -181,9 +187,11 @@ public class EmergencyRequestService {
             }
             requireUpcomingReleased(source.getShiftByDate(), "Ca hiện tại");
             Integer sourceId = source.getId();
+            // Kể cả khi ca này là ca đối tác trong yêu cầu đổi ca của người khác
             boolean pending = repository.findAll().stream()
                     .anyMatch(other -> "PENDING".equalsIgnoreCase(other.getStatus())
-                            && Objects.equals(other.getAssignmentId(), sourceId));
+                            && (Objects.equals(other.getAssignmentId(), sourceId)
+                            || Objects.equals(other.getSwapAssignmentId(), sourceId)));
             if (pending) throw bad("Ca này đã có yêu cầu đang chờ duyệt");
             item.setFromShiftAssignmentId(source.getShiftByDate().getId());
         } else {
@@ -277,8 +285,43 @@ public class EmergencyRequestService {
         }
     }
 
+    /**
+     * Kiểm tra yêu cầu còn áp dụng được lúc duyệt (chỉ đọc, chưa thay đổi gì):
+     * đổi ca với đồng nghiệp thì cả hai phân ca còn APPROVED; ca được đưa người vào chưa bắt đầu.
+     */
+    private void requireApprovable(EmergencyRequest request) {
+        String type = request.getRequestType() == null ? "" : request.getRequestType().toUpperCase();
+        if ("CHANGE".equals(type) && request.getSwapAssignmentId() != null) {
+            ShiftAssignment mine = assignmentRepository.findById(request.getAssignmentId())
+                    .orElseThrow(() -> bad("Không tìm thấy ca hiện tại của người gửi"));
+            ShiftAssignment partner = assignmentRepository.findById(request.getSwapAssignmentId())
+                    .orElseThrow(() -> bad("Không tìm thấy phân ca của nhân viên đổi cùng"));
+            if (!"APPROVED".equalsIgnoreCase(mine.getStatus()) || !"APPROVED".equalsIgnoreCase(partner.getStatus())
+                    || mine.getEmployee() == null || partner.getEmployee() == null) {
+                throw bad("Một trong hai ca đã thay đổi, không thể đổi ca");
+            }
+            requireNotStarted(mine.getShiftByDate(), "Ca hiện tại");
+            requireNotStarted(partner.getShiftByDate(), "Ca muốn đổi sang");
+            return;
+        }
+        if (("ADD".equals(type) || "CHANGE".equals(type)) && request.getToAssignmentId() != null) {
+            ShiftByDate target = shiftByDateRepository.findById(request.getToAssignmentId()).orElse(null);
+            if (target != null) requireNotStarted(target, "ADD".equals(type) ? "Ca muốn thêm" : "Ca muốn đổi sang");
+        }
+    }
+
+    private void requireNotStarted(ShiftByDate shift, String label) {
+        if (shift == null || shift.getWorkDate() == null) return;
+        LocalTime start = shift.getStartTime() != null ? shift.getStartTime()
+                : shift.getShift() != null ? shift.getShift().getStartTime() : null;
+        if (!shift.getWorkDate().atTime(start != null ? start : LocalTime.MIN).isAfter(LocalDateTime.now())) {
+            throw bad(label + " đã bắt đầu hoặc đã qua, không thể duyệt yêu cầu");
+        }
+    }
+
     /** Áp dụng yêu cầu đã duyệt vào bảng phân ca. */
     private void applyApproval(EmergencyRequest request) {
+        requireApprovable(request);
         String type = request.getRequestType() == null ? "" : request.getRequestType().toUpperCase();
         Integer processor = request.getProcessedBy();
         LocalDateTime now = LocalDateTime.now();

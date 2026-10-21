@@ -71,24 +71,13 @@ export function CapacityConfigTab() {
     setSaving(true);
     setError("");
     try {
-      // PUT /shift/{id} ghi đè toàn bộ trường nên gửi kèm dữ liệu hiện có của ca mẫu
-      for (const shift of changed) {
-        const value = valueOf(shift);
-        const groupId = relId(shift, "shiftGroup");
-        await managerApi.updateShift(shiftIdOf(shift), {
-          store: Number(shift.storeId ?? relId(shift, "store")),
-          ...(groupId ? { shiftGroup: groupId } : {}),
-          shiftCode: shift.shiftCode,
-          shiftName: shift.shiftName,
-          startTime: hhmm(shift.startTime),
-          endTime: hhmm(shift.endTime),
-          minCapacity: numberOrNull(value.min),
-          maxCapacity: numberOrNull(value.max),
-          payRate: shift.payRate ?? null,
-          status: shift.status,
-          note: shift.note ?? null,
-        });
-      }
+      // Lưu mọi khung giờ đã sửa trong một giao dịch: lỗi một khung giờ thì không khung giờ nào bị đổi
+      await managerApi.updateShiftCapacities(
+        changed.map((shift) => {
+          const value = valueOf(shift);
+          return { id: shiftIdOf(shift), minCapacity: numberOrNull(value.min), maxCapacity: numberOrNull(value.max) };
+        })
+      );
       setDraft({});
       await reload();
     } catch (cause) {

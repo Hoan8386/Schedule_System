@@ -41,6 +41,16 @@ public class UserRoleController {
         return ResponseEntity.ok(response(service.save(body)));
     }
 
+    @PutMapping("/change")
+    @ApiMessage("Đổi vai trò tài khoản")
+    public ResponseEntity<UserRoleResponse> change(@RequestBody UserRoleRequest body) {
+        return ResponseEntity.ok(response(service.changeRole(id(body.get("userId")), id(body.get("roleId")))));
+    }
+
+    private static Integer id(Object value) {
+        return value instanceof Number number ? number.intValue() : null;
+    }
+
     @DeleteMapping
 
     @ApiMessage("Xóa dữ liệu")

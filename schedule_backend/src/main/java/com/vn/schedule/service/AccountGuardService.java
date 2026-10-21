@@ -57,13 +57,7 @@ public class AccountGuardService {
     private long activeManagersExcept(Integer userId) {
         Integer managerRoleId = roleRepository.findByRoleCode(MANAGER).map(Role::getRoleId).orElse(null);
         if (managerRoleId == null) return 0;
-        return userRoleRepository.findAll().stream()
-                .filter(link -> managerRoleId.equals(link.getRoleId()) && !Objects.equals(link.getUserId(), userId))
-                .map(link -> userRepository.findById(link.getUserId()).orElse(null))
-                .filter(Objects::nonNull)
-                .map(User::getStatus)
-                .filter(ACTIVE::equalsIgnoreCase)
-                .count();
+        return userRoleRepository.countActiveUsersWithRole(managerRoleId, userId);
     }
 
     /** Đổi trạng thái tài khoản. */

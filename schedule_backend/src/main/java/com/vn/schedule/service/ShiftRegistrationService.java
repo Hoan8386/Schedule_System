@@ -153,7 +153,10 @@ public class ShiftRegistrationService {
         return memberService.shiftsByDate(employeeId, workDate, workDate, shiftByDate.getId()).get(0);
     }
 
-    /** Mọi khung giờ (ca mẫu đang hoạt động có min) của nhóm ca trong ngày đã đủ số lượng tối thiểu chưa. */
+    /**
+     * Mọi khung giờ (ca mẫu đang hoạt động có min) của nhóm ca trong ngày đã đủ số lượng tối thiểu chưa.
+     * Bỏ qua khung giờ không thể đăng ký trong ngày đó (ca theo ngày đã hủy / đóng), vì sẽ không bao giờ đủ min.
+     */
     public boolean allSlotsReachedMin(Integer shiftGroupId, LocalDate workDate) {
         return rows(entityManager, """
                 SELECT sh.shift_id, sh.min_capacity,
@@ -163,6 +166,8 @@ public class ShiftRegistrationService {
                           AND a.status NOT IN ('CANCELLED', 'REJECTED'))
                 FROM shift sh
                 WHERE sh.shift_group_id = :groupId AND sh.status = 'ACTIVE' AND COALESCE(sh.min_capacity, 0) > 0
+                  AND NOT EXISTS (SELECT 1 FROM shift_by_date x
+                                  WHERE x.shift_id = sh.shift_id AND x.work_date = :workDate AND x.status <> 'OPEN')
                 """, Map.of("groupId", shiftGroupId, "workDate", workDate)).stream()
                 .allMatch(row -> toLong(row[2]) >= toInt(row[1]));
     }

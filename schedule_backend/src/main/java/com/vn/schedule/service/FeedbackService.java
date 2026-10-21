@@ -179,6 +179,18 @@ public class FeedbackService {
         return views(items, viewer);
     }
 
+    /** Số phản hồi chờ xử lý mà người hiện tại xử lý được (cùng phạm vi canHandle) – đếm trực tiếp, không dựng danh sách. */
+    public long countPendingToHandle() {
+        Viewer viewer = viewer();
+        if (viewer.global()) {
+            return repository.countPendingExceptSender(viewer.employeeId());
+        }
+        if (!STORE_MANAGER.equals(viewer.role()) || viewer.storeIds() == null || viewer.storeIds().isEmpty()) {
+            return 0;
+        }
+        return repository.countPendingForStoreManager(viewer.employeeId(), viewer.storeIds());
+    }
+
     /** Chi tiết phản hồi, kèm ảnh nhúng sẵn dạng data URL (giống ảnh cửa hàng) để xem trực tiếp. */
     public Map<String, Object> get(Integer id) {
         Viewer viewer = viewer();

@@ -43,6 +43,12 @@ public class ShiftController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response(service.create(body)));
     }
 
+    @PutMapping("/capacity")
+    @ApiMessage("Cập nhật số lượng theo khung giờ")
+    public ResponseEntity<List<ShiftResponse>> updateCapacities(@RequestBody List<java.util.Map<String, Object>> body) {
+        return ResponseEntity.ok(responses(service.updateCapacities(body)));
+    }
+
     @PutMapping("/{id}")
     @ApiMessage("Cập nhật dữ liệu")
     public ResponseEntity<ShiftResponse> update(@PathVariable Integer id, @RequestBody ShiftRequest body) {

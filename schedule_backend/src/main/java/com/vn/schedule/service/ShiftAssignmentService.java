@@ -93,7 +93,31 @@ public class ShiftAssignmentService {
         requireGroupMembership(entity);
         requireNotAssigned(entity);
         requireBelowMax(entity);
+        // Bảng phân ca chỉ cho một bản ghi / nhân viên / ca theo ngày: phân lại thì dùng lại bản ghi đã hủy / từ chối
+        ShiftAssignment previous = findInactive(entity);
+        if (previous != null) {
+            previous.setStatus(entity.getStatus());
+            previous.setRegisteredAt(entity.getRegisteredAt());
+            previous.setApprovedBy(entity.getApprovedBy());
+            previous.setApprovedAt(entity.getApprovedAt());
+            previous.setCancelledBy(entity.getCancelledBy());
+            previous.setCancelledAt(entity.getCancelledAt());
+            previous.setCancellationReason(entity.getCancellationReason());
+            previous.setNote(entity.getNote());
+            return repository.save(previous);
+        }
         return repository.save(entity);
+    }
+
+    private ShiftAssignment findInactive(ShiftAssignment entity) {
+        if (entity.getEmployee() == null || entity.getShiftByDate() == null) return null;
+        Integer employeeId = entity.getEmployee().getId();
+        return repository.findByShiftByDateId(entity.getShiftByDate().getId()).stream()
+                .filter(other -> !java.util.Objects.equals(other.getId(), entity.getId())
+                        && other.getEmployee() != null
+                        && employeeId.equals(other.getEmployee().getId()))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -126,6 +150,7 @@ public class ShiftAssignmentService {
                 : shiftByDate.getShift() != null ? shiftByDate.getShift().getMaxCapacity() : null;
         if (max == null || max <= 0) return;
         long active = repository.findByShiftByDateId(shiftByDate.getId()).stream()
+                .filter(other -> !java.util.Objects.equals(other.getId(), entity.getId()))
                 .filter(other -> !"CANCELLED".equalsIgnoreCase(other.getStatus()) && !"REJECTED".equalsIgnoreCase(other.getStatus()))
                 .count();
         if (active >= max) {
@@ -153,15 +178,33 @@ public class ShiftAssignmentService {
         ShiftAssignment current = findById(id);
         Integer oldEmployee = current.getEmployee() != null ? current.getEmployee().getId() : null;
         Integer oldShift = current.getShiftByDate() != null ? current.getShiftByDate().getId() : null;
+        boolean wasInactive = isInactive(current.getStatus());
+        // Kiểm tra trên bản nháp trước khi sửa entity đang quản lý (tránh auto-flush dính khóa unique)
+        ShiftAssignment next = new ShiftAssignment();
+        next.setId(current.getId());
+        applyFields(next, body);
+        boolean shiftChanged = !java.util.Objects.equals(oldShift, next.getShiftByDate() != null ? next.getShiftByDate().getId() : null);
+        // Đổi người / đổi ca thì kiểm tra lại nhóm ca
+        if (shiftChanged
+                || !java.util.Objects.equals(oldEmployee, next.getEmployee() != null ? next.getEmployee().getId() : null)) {
+            requireGroupMembership(next);
+            requireNotAssigned(next);
+            if (findInactive(next) != null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "Nhân viên đã có bản ghi (đã hủy / từ chối) trong ca này, hãy phân lại trực tiếp bản ghi đó");
+            }
+        }
+        // Chuyển sang ca khác hoặc kích hoạt lại bản ghi đã hủy / từ chối thì không được vượt max
+        if (shiftChanged || wasInactive && !isInactive(next.getStatus())) {
+            requireBelowMax(next);
+        }
         applyFields(current, body);
         requireAccess(current);
-        // Đổi người / đổi ca thì kiểm tra lại nhóm ca
-        if (!java.util.Objects.equals(oldEmployee, current.getEmployee() != null ? current.getEmployee().getId() : null)
-                || !java.util.Objects.equals(oldShift, current.getShiftByDate() != null ? current.getShiftByDate().getId() : null)) {
-            requireGroupMembership(current);
-            requireNotAssigned(current);
-        }
         return repository.save(current);
+    }
+
+    private static boolean isInactive(String status) {
+        return "CANCELLED".equalsIgnoreCase(status) || "REJECTED".equalsIgnoreCase(status);
     }
 
     /** Duyệt hàng loạt: chỉ đổi các đăng ký đang PENDING sang APPROVED; trả về số bản ghi đã duyệt. */

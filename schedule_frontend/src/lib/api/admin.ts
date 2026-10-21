@@ -50,6 +50,8 @@ export const adminUserApi = {
   getUserRoles: () => http.get<UserRoleResponse[]>("/api/v1/user_role"),
   assignRole: (body: UserRoleRequest) => http.post<UserRoleResponse>("/api/v1/user_role", body),
   updateUserRole: (body: UserRoleRequest) => http.put<UserRoleResponse>("/api/v1/user_role", body),
+  // Đổi vai trò trong một giao dịch ở backend: gỡ vai trò cũ (nếu có) và gán vai trò mới
+  changeRole: (body: { userId: number; roleId: number }) => http.put<UserRoleResponse>("/api/v1/user_role/change", body),
   // Bước phụ khi đổi vai trò (có thể chưa từng có vai trò cũ) nên không hiện toast
   removeRole: (body: { userId: number; roleId: number }) => deleteWithBody("/api/v1/user_role", body, false),
 

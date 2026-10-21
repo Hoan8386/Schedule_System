@@ -76,9 +76,12 @@ export function cellFor(
   const max = shiftByDate?.maxCapacity || row.shift.maxCapacity || DEFAULT_CAPACITY;
   // Ngưỡng ban đầu là min; chỉ nâng lên max khi mọi khung giờ của nhóm trong ngày đã đạt min (khớp ShiftRegistrationService)
   const min = row.shift.minCapacity ?? 0;
-  const allReachedMin = row.group.shifts.every(
-    (slot) => !slot.minCapacity || (byKey.get(`${slot.shiftId}|${dayKey}`)?.registeredCount ?? 0) >= slot.minCapacity
-  );
+  // Khung giờ có ca theo ngày đã hủy / đóng thì không thể đủ min nên bỏ qua
+  const allReachedMin = row.group.shifts.every((slot) => {
+    const slotByDate = byKey.get(`${slot.shiftId}|${dayKey}`);
+    if (!slot.minCapacity || (slotByDate && slotByDate.status !== "OPEN")) return true;
+    return (slotByDate?.registeredCount ?? 0) >= slot.minCapacity;
+  });
   const limitedByMin = min > 0 && !allReachedMin && min < max;
   const capacity = limitedByMin ? min : max;
   const base = { count, capacity, shiftByDate };

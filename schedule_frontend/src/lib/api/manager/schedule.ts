@@ -39,6 +39,9 @@ export const scheduleApi = {
   createShift: shifts.create,
   updateShift: shifts.update,
   deleteShift: shifts.remove,
+  /** Lưu min / max của nhiều ca mẫu trong một giao dịch */
+  updateShiftCapacities: (items: { id: number; minCapacity: number | null; maxCapacity: number | null }[]) =>
+    http.put<ShiftResponse[]>("/api/v1/shift/capacity", items),
 
   getShiftsByDate: (filters?: RangeFilters) => http.get<ShiftByDateResponse[]>(withQuery("/api/v1/shift_by_date", filters)),
   createShiftByDate: shiftsByDate.create,

@@ -39,9 +39,8 @@ export function EditAccountModal({ account, roles, stores, onClose, onSaved }: P
         status: isAdmin ? "ACTIVE" : status,
       });
       if (!isAdmin && roleId !== account.roleId) {
-        // Đổi vai trò = gỡ vai trò cũ rồi gán vai trò mới; gỡ thất bại (vd. quản lý hoạt động cuối cùng) thì dừng
-        await adminUserApi.removeRole({ userId: account.id, roleId: account.roleId });
-        await adminUserApi.assignRole({ userId: account.id, roleId });
+        // Đổi vai trò nguyên tử ở backend; thất bại (vd. quản lý hoạt động cuối cùng) thì giữ nguyên vai trò cũ
+        await adminUserApi.changeRole({ userId: account.id, roleId });
       }
       onSaved();
     } catch {

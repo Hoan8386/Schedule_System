@@ -71,6 +71,25 @@ public class ShiftService {
         return repository.save(current);
     }
 
+    /**
+     * Lưu min / max của nhiều ca mẫu trong một giao dịch: một ca lỗi thì không ca nào bị đổi.
+     * Mỗi phần tử gồm id, minCapacity, maxCapacity (bỏ trống = không giới hạn).
+     */
+    @Transactional
+    public List<Shift> updateCapacities(List<java.util.Map<String, Object>> items) {
+        List<Shift> saved = new java.util.ArrayList<>();
+        for (java.util.Map<String, Object> item : items == null ? List.<java.util.Map<String, Object>>of() : items) {
+            Integer id = integerValue(item.get("id"), "id");
+            if (id == null) throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu mã ca mẫu");
+            Shift current = findById(id);
+            current.setMinCapacity(integerValue(item.get("minCapacity"), "minCapacity"));
+            current.setMaxCapacity(integerValue(item.get("maxCapacity"), "maxCapacity"));
+            validateCapacity(current);
+            saved.add(repository.save(current));
+        }
+        return saved;
+    }
+
     @Transactional
     public void delete(Integer id) {
         repository.delete(findById(id));
@@ -104,8 +123,8 @@ public class ShiftService {
         return entity;
     }
 
+    /** Khóa chính lấy từ đường dẫn, người tạo giữ nguyên nếu client không gửi. */
     private void applyFields(Shift entity, ShiftRequest body) {
-        entity.setId(integerValue(body.get("id"), "id"));
         entity.setStore(resolveStore(body));
         entity.setShiftGroup(resolveShiftGroup(body));
         entity.setShiftCode((String) body.get("shiftCode"));
@@ -118,7 +137,8 @@ public class ShiftService {
         entity.setPayRate(decimalValue(body.get("payRate"), "payRate"));
         entity.setStatus((String) body.get("status"));
         entity.setNote((String) body.get("note"));
-        entity.setCreatedBy(integerValue(body.get("createdBy"), "createdBy"));
+        Integer createdBy = integerValue(body.get("createdBy"), "createdBy");
+        if (createdBy != null) entity.setCreatedBy(createdBy);
     }
 
     /** Phạm vi số lượng của khung giờ: 0 ≤ min ≤ max. */
