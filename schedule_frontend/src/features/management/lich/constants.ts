@@ -1,8 +1,9 @@
 import { localMinuteKey, minuteKey, text, upper } from "@/lib/format";
 
-export type TabKey = "period" | "shift" | "calendar" | "round" | "session" | "group" | "event" | "emergency";
+export type TabKey = "period" | "shift" | "calendar" | "round" | "session" | "group" | "event" | "config";
 export type Kind = "period" | "shift" | "shiftDate" | "assignment" | "round" | "session" | "group" | "event" | "emergency";
-export type CalendarView = "month" | "week";
+/** list: chế độ danh sách (lọc theo khoảng thời gian, xuất Excel) */
+export type CalendarView = "month" | "week" | "list";
 export type Entity = Record<string, unknown>;
 
 export const KIND_LABEL: Record<Kind, string> = {

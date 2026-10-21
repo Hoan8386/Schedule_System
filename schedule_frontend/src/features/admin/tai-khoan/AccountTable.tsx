@@ -1,6 +1,6 @@
 import { notify } from "@/lib/toast";
 import React, { useState } from "react";
-import { CheckCircle2, Edit, KeyRound, Lock, MoreHorizontal, RotateCcw, Search, Trash2, Unlock, Users } from "lucide-react";
+import { CheckCircle2, Edit, KeyRound, Lock, MoreHorizontal, RotateCcw, Search, ShieldCheck, Unlock, Users } from "lucide-react";
 import { roleBadgeClass, roleLabel, type AccountItem } from "./roles";
 import { EMPTY_ACCOUNT_FILTERS } from "./useAccounts";
 
@@ -11,12 +11,12 @@ interface Props {
   onFiltersChange: (filters: typeof EMPTY_ACCOUNT_FILTERS) => void;
   onEdit: (account: AccountItem) => void;
   onToggleStatus: (account: AccountItem) => void;
-  onDelete: (account: AccountItem) => void;
 }
 
 const control = "rounded-xl border border-slate-300 bg-white font-bold text-slate-800 outline-hidden hover:border-slate-400";
 
-export function AccountTable({ accounts, totalCount, filters, onFiltersChange, onEdit, onToggleStatus, onDelete }: Props) {
+/** Không có chức năng xóa tài khoản; tài khoản admin luôn hoạt động, không khóa / không chỉnh quyền. */
+export function AccountTable({ accounts, totalCount, filters, onFiltersChange, onEdit, onToggleStatus }: Props) {
   const [menuFor, setMenuFor] = useState<number | null>(null);
   const set = (key: keyof typeof filters, next: string) => onFiltersChange({ ...filters, [key]: next });
 
@@ -65,7 +65,8 @@ export function AccountTable({ accounts, totalCount, filters, onFiltersChange, o
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs">
             {accounts.map((account, index) => {
-              const active = account.status === "ACTIVE";
+              const isAdmin = account.roleCode === "ADMIN";
+              const active = isAdmin || account.status === "ACTIVE";
               // Hai dòng cuối mở menu lên trên để không bị cắt
               const openUp = index >= accounts.length - 2 && accounts.length > 2;
               return (
@@ -86,8 +87,9 @@ export function AccountTable({ accounts, totalCount, filters, onFiltersChange, o
                   <td className="whitespace-nowrap px-5 py-3.5 text-center">
                     <button
                       onClick={() => onToggleStatus(account)}
-                      title="Nhấn để đổi trạng thái"
-                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold transition-all ${
+                      disabled={isAdmin}
+                      title={isAdmin ? "Tài khoản admin luôn hoạt động" : "Nhấn để đổi trạng thái"}
+                      className={`inline-flex cursor-pointer items-center disabled:cursor-default gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold transition-all ${
                         active ? "border-emerald-300 bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "border-rose-300 bg-rose-100 text-rose-800 hover:bg-rose-200"
                       }`}
                     >
@@ -108,19 +110,27 @@ export function AccountTable({ accounts, totalCount, filters, onFiltersChange, o
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setMenuFor(null)} />
                           <div className={`absolute right-0 z-50 w-48 rounded-xl border border-slate-200 bg-white py-1.5 text-xs shadow-2xl ${openUp ? "bottom-full mb-1" : "top-full mt-1"}`}>
-                            <MenuItem icon={<Edit className="h-3.5 w-3.5 text-brand-600" />} label="Sửa & Phân quyền" onClick={() => { setMenuFor(null); onEdit(account); }} />
                             <MenuItem
-                              icon={active ? <Lock className="h-3.5 w-3.5 text-rose-600" /> : <Unlock className="h-3.5 w-3.5 text-emerald-600" />}
-                              label={active ? "Khóa tài khoản" : "Mở khóa tài khoản"}
-                              onClick={() => { setMenuFor(null); onToggleStatus(account); }}
+                              icon={<Edit className="h-3.5 w-3.5 text-brand-600" />}
+                              label={isAdmin ? "Sửa thông tin liên hệ" : "Sửa & Phân quyền"}
+                              onClick={() => { setMenuFor(null); onEdit(account); }}
                             />
+                            {isAdmin ? (
+                              <p className="flex items-center gap-2 px-3 py-2 text-[11px] font-semibold text-slate-400">
+                                <ShieldCheck className="h-3.5 w-3.5" /> Admin luôn hoạt động
+                              </p>
+                            ) : (
+                              <MenuItem
+                                icon={active ? <Lock className="h-3.5 w-3.5 text-rose-600" /> : <Unlock className="h-3.5 w-3.5 text-emerald-600" />}
+                                label={active ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                                onClick={() => { setMenuFor(null); onToggleStatus(account); }}
+                              />
+                            )}
                             <MenuItem
                               icon={<KeyRound className="h-3.5 w-3.5 text-blue-600" />}
                               label="Cấp lại mật khẩu"
                               onClick={() => { setMenuFor(null); notify.success(`Mật khẩu tạm thời cho @${account.username} đã được cấp lại: Bloan@2026`); }}
                             />
-                            <div className="my-1 border-t border-slate-100" />
-                            <MenuItem danger icon={<Trash2 className="h-3.5 w-3.5 text-rose-600" />} label="Xóa tài khoản" onClick={() => { setMenuFor(null); onDelete(account); }} />
                           </div>
                         </>
                       )}

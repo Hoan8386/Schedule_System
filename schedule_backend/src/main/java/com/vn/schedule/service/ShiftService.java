@@ -94,7 +94,9 @@ public class ShiftService {
         entity.setShiftName((String) body.get("shiftName"));
         entity.setStartTime(timeValue(body.get("startTime"), "startTime"));
         entity.setEndTime(timeValue(body.get("endTime"), "endTime"));
+        entity.setMinCapacity(integerValue(body.get("minCapacity"), "minCapacity"));
         entity.setMaxCapacity(integerValue(body.get("maxCapacity"), "maxCapacity"));
+        validateCapacity(entity);
         entity.setPayRate(decimalValue(body.get("payRate"), "payRate"));
         entity.setStatus((String) body.get("status"));
         entity.setNote((String) body.get("note"));
@@ -110,11 +112,25 @@ public class ShiftService {
         entity.setShiftName((String) body.get("shiftName"));
         entity.setStartTime(timeValue(body.get("startTime"), "startTime"));
         entity.setEndTime(timeValue(body.get("endTime"), "endTime"));
+        entity.setMinCapacity(integerValue(body.get("minCapacity"), "minCapacity"));
         entity.setMaxCapacity(integerValue(body.get("maxCapacity"), "maxCapacity"));
+        validateCapacity(entity);
         entity.setPayRate(decimalValue(body.get("payRate"), "payRate"));
         entity.setStatus((String) body.get("status"));
         entity.setNote((String) body.get("note"));
         entity.setCreatedBy(integerValue(body.get("createdBy"), "createdBy"));
+    }
+
+    /** Phạm vi số lượng của khung giờ: 0 ≤ min ≤ max. */
+    private static void validateCapacity(Shift entity) {
+        Integer min = entity.getMinCapacity();
+        Integer max = entity.getMaxCapacity();
+        if ((min != null && min < 0) || (max != null && max < 0)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Số lượng tối thiểu / tối đa không được âm");
+        }
+        if (min != null && max != null && min > max) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Số lượng tối thiểu không được lớn hơn tối đa");
+        }
     }
 
     private ShiftGroup resolveShiftGroup(ShiftRequest body) {

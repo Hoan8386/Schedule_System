@@ -5,6 +5,8 @@ import { STATUS_OPTIONS, TYPE_OPTIONS, type Entity, type Kind } from "../constan
 import { useSchedule } from "../ScheduleContext";
 import type { ScheduleLookups } from "../useScheduleLookups";
 import { defaultValueOf, type FieldFactory } from "./fieldFactory";
+import { ShiftDateFields } from "./ShiftDateFields";
+import { AssignmentFields } from "./AssignmentFields";
 
 interface Props {
   kind: Kind;
@@ -47,40 +49,18 @@ export function ScheduleFormFields({ kind, f, options, item }: Props) {
           {f.input("shiftName", "Tên ca", "text", true)}
           {f.input("startTime", "Bắt đầu", "time", true)}
           {f.input("endTime", "Kết thúc", "time", true)}
-          {f.input("maxCapacity", "Số lượng", "number", true)}
+          {f.input("minCapacity", "Số lượng tối thiểu (min)", "number")}
+          {f.input("maxCapacity", "Số lượng tối đa (max)", "number", true)}
           {f.input("payRate", "Lương theo giờ", "number")}
           {f.enumSelect("status", "Trạng thái", STATUS_OPTIONS.shift)}
         </>
       );
 
     case "shiftDate":
-      return (
-        <>
-          {f.select("shift", "Ca mẫu", options.shifts)}
-          {f.select("scheduleRound", "Đợt đăng ký", options.rounds, false)}
-          {f.select("scheduleSession", "Phiên đăng ký", options.sessions, false)}
-          {f.select("schedulePeriod", "Kỳ lập lịch (bỏ trống = theo đợt)", options.periods, false)}
-          {f.input("workDate", "Ngày làm", "date", true)}
-          {f.input("maxCapacity", "Số người tối đa", "number")}
-          {f.input("shiftName", "Tên ca hiển thị")}
-          {f.input("startTime", "Bắt đầu", "time")}
-          {f.input("endTime", "Kết thúc", "time")}
-          {f.input("payRate", "Đơn giá", "number")}
-          {f.enumSelect("status", "Trạng thái", STATUS_OPTIONS.shiftDate)}
-          {f.input("managerNote", "Ghi chú quản lý")}
-        </>
-      );
+      return <ShiftDateFields f={f} item={item} />;
 
     case "assignment":
-      return (
-        <>
-          {f.select("shiftByDate", "Ca theo ngày", options.shiftDates)}
-          {f.select("employee", "Nhân viên", options.employees)}
-          {f.enumSelect("status", "Trạng thái", STATUS_OPTIONS.assignment)}
-          {f.input("note", "Ghi chú")}
-          {f.input("cancellationReason", "Lý do hủy (khi hủy)")}
-        </>
-      );
+      return <AssignmentFields f={f} item={item} />;
 
     case "round":
       return (

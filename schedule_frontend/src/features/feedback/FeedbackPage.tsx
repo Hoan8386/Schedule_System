@@ -26,7 +26,7 @@ const PAGE_TEXT: Record<FeedbackRole, { title: string; subtitle: string; send?: 
   },
   MANAGER: {
     title: "Phản hồi",
-    subtitle: "Toàn bộ phản hồi trong chuỗi – xem và xử lý. Quản lý chỉ gửi được phản hồi loại Hệ thống tới admin.",
+    subtitle: "Toàn bộ phản hồi trong chuỗi – xem và xử lý, phản hồi thay trưởng cửa hàng khi cần (mỗi lần chuyển trạng thái kèm nhận xét). Quản lý chỉ gửi được phản hồi loại Hệ thống tới admin.",
     send: "Gửi phản hồi hệ thống",
   },
   ADMIN: { title: "Phản hồi", subtitle: "Phản hồi từ nhân viên, trưởng cửa hàng và quản lý." },
@@ -162,7 +162,7 @@ export default function FeedbackPage({ role }: FeedbackPageProps) {
         </Modal>
       )}
 
-      <FeedbackDetailModal item={active} onClose={() => setActiveId(null)} onChanged={upsert} />
+      <FeedbackDetailModal role={role} item={active} onClose={() => setActiveId(null)} onChanged={upsert} />
     </div>
   );
 }
@@ -368,7 +368,12 @@ function InboxView({ role, items, loading, onOpen }: { role: FeedbackRole; items
                       {item.shiftLabel && <p className="text-[11px] text-slate-400">{item.shiftLabel}</p>}
                       {item.targetEmployeeName && <p className="text-[11px] text-slate-400">Về: {item.targetEmployeeName}</p>}
                     </td>
-                    {global && <td className="px-4 py-3.5 text-slate-600">{targetMeta(item.targetRole).label}</td>}
+                    {global && (
+                      <td className="px-4 py-3.5 text-slate-600">
+                        <p>{targetMeta(item.targetRole).label}</p>
+                        {item.handledOnBehalf && <p className="text-[10px] font-semibold text-violet-600">Quản lý phản hồi thay</p>}
+                      </td>
+                    )}
                     <td className="whitespace-nowrap px-4 py-3.5 text-slate-500">{formatDateTime(item.createdAt)}</td>
                     <td className="px-4 py-3.5">
                       <span className={cn("rounded-md border px-2 py-0.5 text-[10px] font-bold", meta.className)}>{meta.label}</span>

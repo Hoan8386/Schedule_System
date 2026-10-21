@@ -26,6 +26,9 @@ public class EmergencyRequest {
     private Integer fromShiftAssignmentId;
     @Column(name = "to_assignment_id")
     private Integer toAssignmentId;
+    /** Đổi ca: phân ca (shift_assignment) của đồng nghiệp ở ca đích – hai người đổi chỗ cho nhau, giữ nguyên số lượng */
+    @Column(name = "swap_assignment_id")
+    private Integer swapAssignmentId;
     @Column(name = "reason", nullable = false)
     private String reason;
     @Column(name = "status", nullable = false)

@@ -19,7 +19,7 @@ export { managerApi, hrApi, scheduleApi, operationsApi, testApi } from "./manage
 export { employeeApi } from "./employee";
 export { storeManagerApi } from "./storeManager";
 export { notificationApi, broadcastApi, NOTIFICATION_PAGE_SIZE } from "./notification";
-export type { NotificationStatus, BroadcastAudience, BroadcastAudiences, BroadcastHistoryItem, BroadcastPriority } from "./notification";
+export type { NotificationStatus, NotificationTask, BroadcastAudience, BroadcastAudiences, BroadcastHistoryItem, BroadcastPriority } from "./notification";
 export { statisticsApi } from "./statistics";
 
 export type * from "./types/admin.types";

@@ -145,5 +145,5 @@ export function useCalendar(storeId: string) {
 
   const hasFilters = Boolean(filters.periodId || groupId || filters.status || filters.employeeId);
 
-  return { filters, setFilters, hasFilters, groupOptions, employeeOptions, highlight, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
+  return { filters, setFilters, hasFilters, filtered, groupOptions, employeeOptions, highlight, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
 }

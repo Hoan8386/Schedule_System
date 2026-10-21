@@ -39,11 +39,11 @@ function PhanHoiPage() {
 /** Trang có thể nhận onNavigate để chuyển sang trang khác (vd. tổng quan → xử lý yêu cầu). */
 const PAGES: Record<string, React.ComponentType<{ onNavigate?: (page: string) => void }>> = {
   dashboard: DashboardPage,
-  nhansu: NhanSuPage,
+  nhansu: () => <NhanSuPage />,
   cuahang: CuaHangPage,
   chamcong: ChamCongPage,
   yeucau: YeuCauPage,
-  lich: LichPage,
+  lich: () => <LichPage />,
   noiquy: NoiQuyPage,
   luong: LuongPage,
   thongke: ThongKePage,

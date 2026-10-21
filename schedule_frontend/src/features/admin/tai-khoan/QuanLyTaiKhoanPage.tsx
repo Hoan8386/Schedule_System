@@ -11,7 +11,7 @@ export type { AccountItem } from "./roles";
 
 /** Quản lý tài khoản: danh sách, khóa/mở khóa, sửa và gán vai trò. */
 export default function QuanLyTaiKhoanPage() {
-  const { accounts, filtered, roles, stores, loading, error, filters, setFilters, reload, toggleStatus, remove } = useAccounts();
+  const { accounts, filtered, roles, stores, loading, error, filters, setFilters, reload, toggleStatus } = useAccounts();
   const [editing, setEditing] = useState<AccountItem | null>(null);
 
   const stats = [
@@ -91,7 +91,6 @@ export default function QuanLyTaiKhoanPage() {
         onFiltersChange={setFilters}
         onEdit={setEditing}
         onToggleStatus={(account) => void toggleStatus(account)}
-        onDelete={(account) => void remove(account)}
       />
 
       {editing && (

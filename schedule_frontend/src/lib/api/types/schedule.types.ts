@@ -39,6 +39,7 @@ export interface ShiftResponse {
   shiftName?: string | null;
   startTime?: string | null;
   endTime?: string | null;
+  minCapacity?: number | null;
   maxCapacity?: number | null;
   payRate?: number | null;
   status?: string | null;
@@ -60,6 +61,7 @@ export interface ShiftByDateResponse {
   shiftName?: string | null;
   startTime?: string | null;
   endTime?: string | null;
+  minCapacity?: number | null;
   maxCapacity?: number | null;
   payRate?: number | null;
   status?: string | null;
@@ -163,6 +165,8 @@ export interface EmergencyRequestResponse {
   requestType?: string | null;
   sourceAssignmentId?: number | null;
   targetAssignmentId?: number | null;
+  /** Đổi ca: phân ca của đồng nghiệp ở ca đích (hai người đổi chỗ cho nhau) */
+  swapAssignmentId?: number | null;
   reason?: string | null;
   status?: string | null;
   createdAt?: string | null;
@@ -181,6 +185,8 @@ export interface MyGroupShift {
   payRate: number;
   /** Sức chứa mặc định khi ngày đó chưa có ca theo ngày */
   maxCapacity: number | null;
+  /** Ngưỡng tối thiểu của khung giờ (nhân viên tự đăng ký chỉ tới min cho tới khi mọi khung giờ của nhóm trong ngày đạt min) */
+  minCapacity: number | null;
 }
 
 export interface MyShiftGroup {
@@ -203,6 +209,7 @@ export interface MyOpenShift {
   shiftName: string | null;
   startTime: string | null;
   endTime: string | null;
+  storeId: number | null;
   storeName: string | null;
   registeredCount: number;
   maxCapacity: number | null;
@@ -210,6 +217,17 @@ export interface MyOpenShift {
   myAssignmentStatus: string | null;
   /** Trạng thái ca theo ngày; chỉ OPEN mới đăng ký được */
   status: string | null;
+  /** Kỳ đăng ký đã kết thúc → ca thuộc lịch làm việc đang dùng (được Đặt lịch khẩn) */
+  released: boolean;
+  /** Nhân viên đã được duyệt vào ca (chỉ có với ca thuộc lịch đang dùng) – để chọn người đổi ca */
+  members: ShiftMember[];
+}
+
+export interface ShiftMember {
+  assignmentId: number;
+  employeeId: number;
+  employeeCode: string | null;
+  fullName: string | null;
 }
 
 export interface RegistrationSession {

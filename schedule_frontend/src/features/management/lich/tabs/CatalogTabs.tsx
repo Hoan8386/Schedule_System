@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { AlertCircle, AlertTriangle, Award, Users } from "lucide-react";
+import { AlertTriangle, Award, Users } from "lucide-react";
 import { formatDate, relId, text, timeRange } from "@/lib/format";
 import { useSchedule } from "../ScheduleContext";
 import { AddButton, EntityActions } from "../components/EntityActions";
@@ -121,46 +121,6 @@ export function EventTab() {
             <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500">
               <span className="rounded-full bg-slate-100 px-2 py-1">{formatDate(item.startDate)}</span>
               <span className="rounded-full bg-slate-100 px-2 py-1">{formatDate(item.endDate)}</span>
-            </div>
-          </div>
-        );
-      })}
-    </TabSection>
-  );
-}
-
-/** Tab yêu cầu khẩn cấp */
-export function EmergencyTab() {
-  const { emergencyRequests, lookups } = useSchedule();
-  return (
-    <TabSection
-      title={`Yêu cầu khẩn cấp (${emergencyRequests.length})`}
-      icon={AlertCircle}
-      iconClassName="text-rose-600"
-      layout="list"
-      actions={
-        <>
-          <StoreFilter />
-          <AddButton kind="emergency" className="" />
-        </>
-      }
-    >
-      {emergencyRequests.map((item) => {
-        const id = Number(item.id ?? item.emergencyRequestId ?? 0);
-        return (
-          <div key={id} className="tile">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-black text-slate-800">{text(item.requestType, `Yêu cầu #${id}`)}</p>
-                <p className="mt-1 text-[11px] text-slate-500">{item.employeeId ? lookups.employeeName(item.employeeId) : "Nhân viên —"}</p>
-              </div>
-              <EntityActions kind="emergency" item={item} />
-            </div>
-            <p className="mt-3 text-[11px] text-slate-600">{text(item.reason, "Không có lý do")}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="badge badge-danger text-[11px]">{text(item.status)}</span>
-              <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">Từ #{text(item.fromShiftAssignmentId, "—")}</span>
-              <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">Đến #{text(item.toAssignmentId, "—")}</span>
             </div>
           </div>
         );

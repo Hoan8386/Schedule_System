@@ -16,8 +16,10 @@ import java.util.List;
 @Service
 public class UserService {
     private final UserRepository repository;
-    public UserService(UserRepository repository) {
+    private final AccountGuardService guard;
+    public UserService(UserRepository repository, AccountGuardService guard) {
         this.repository = repository;
+        this.guard = guard;
     }
 
     public List<User> findAll() {
@@ -36,23 +38,30 @@ public class UserService {
     @Transactional
     public User update(Integer id, UserRequest body) {
         User current = findById(id);
+        guard.checkStatusChange(current, (String) body.get("status"));
         applyFields(current, body);
         return repository.save(current);
     }
 
     @Transactional
     public void delete(Integer id) {
-        repository.delete(findById(id));
+        // Không có chức năng xóa tài khoản
+        findById(id);
+        throw guard.deleteNotSupported();
     }
 
     @Transactional
     public User save(UserRequest body) {
-        return repository.save(toEntity(body));
+        User entity = toEntity(body);
+        if (entity.getId() != null) {
+            repository.findById(entity.getId()).ifPresent(current -> guard.checkStatusChange(current, entity.getStatus()));
+        }
+        return repository.save(entity);
     }
 
     @Transactional
     public void deleteBody(UserRequest body) {
-        repository.delete(toEntity(body));
+        throw guard.deleteNotSupported();
     }
     private User toEntity(UserRequest body) {
         User entity = new User();

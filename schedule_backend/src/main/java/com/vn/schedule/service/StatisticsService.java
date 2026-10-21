@@ -261,8 +261,10 @@ public class StatisticsService {
                        COALESCE(sbd.pay_rate, sh.pay_rate, sg.pay_rate, 0),
                        sa.status, a.attendance_status, a.check_in_at, a.check_out_at, a.worked_hours,
                        (SELECT er.request_type FROM emergency_request er
-                        WHERE er.status = 'PENDING' AND er.employee_id = sa.employee_id
-                          AND (er.assignment_id = sa.assignment_id OR er.from_shift_assignment_id = sa.shift_by_date_id)
+                        WHERE er.status = 'PENDING'
+                          AND ((er.employee_id = sa.employee_id
+                                AND (er.assignment_id = sa.assignment_id OR er.from_shift_assignment_id = sa.shift_by_date_id))
+                               OR er.swap_assignment_id = sa.assignment_id)
                         ORDER BY er.emergency_request_id DESC LIMIT 1),
                        CASE WHEN sp.schedule_period_id IS NULL
                                  OR sp.status IN ('CLOSED', 'FINALIZED', 'PUBLISHED', 'COMPLETED', 'LOCKED')

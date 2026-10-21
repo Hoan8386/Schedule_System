@@ -14,7 +14,8 @@ import { useAuth } from "@/context/AuthContext";
 import { AppShell, initialsOf, usePageNavigation, type NavSection } from "@/components/layout";
 import EmployeeDashboard from "@/features/employee/EmployeeDashboard";
 import EmployeeSchedulePage from "@/features/employee/EmployeeSchedulePage";
-import EmployeeShiftHubPage, { type ShiftHubType } from "@/features/employee/dang-ky-ca/EmployeeShiftHubPage";
+import EmployeeRegisterShiftPage from "@/features/employee/dang-ky-ca/EmployeeRegisterShiftPage";
+import type { ShiftRequestType } from "@/features/employee/doi-huy-ca/model";
 import EmployeeStatsPage from "@/features/employee/EmployeeStatsPage";
 import EmployeeProfilePage from "@/features/employee/EmployeeProfilePage";
 import FeedbackPage from "@/features/feedback/FeedbackPage";
@@ -37,15 +38,16 @@ const SECTIONS: NavSection[] = [
 export default function EmployeeLayout() {
   const { user, logout } = useAuth();
   const { activePage: activeTab, navigate: setActiveTab, navigating } = usePageNavigation("dashboard");
-  // Đổi / thêm / hủy ca thuộc trang Đăng ký ca: mở trang với loại chọn sẵn
-  const [shiftType, setShiftType] = useState<ShiftHubType>("REGISTER");
-  const [shiftTypeVersion, setShiftTypeVersion] = useState(0);
-  const openShiftHub = (type: ShiftHubType) => {
-    setShiftType(type);
-    setShiftTypeVersion((value) => value + 1);
-    setActiveTab("dangkyca");
+  // Đặt lịch khẩn (thêm / đổi / hủy ca) nằm ở Lịch làm việc: mở trang kèm popup chọn sẵn loại
+  const [urgent, setUrgent] = useState<{ type: ShiftRequestType; version: number } | null>(null);
+  const openUrgent = (type: ShiftRequestType) => {
+    setUrgent((current) => ({ type, version: (current?.version ?? 0) + 1 }));
+    setActiveTab("lich");
   };
-  const selectPage = (id: string) => (id === "dangkyca" ? openShiftHub("REGISTER") : setActiveTab(id));
+  const selectPage = (id: string) => {
+    if (id === "lich") setUrgent(null);
+    setActiveTab(id);
+  };
 
   const renderPage = () => {
     switch (activeTab) {
@@ -53,20 +55,20 @@ export default function EmployeeLayout() {
         return (
           <EmployeeDashboard
             onGoToSchedule={() => setActiveTab("lich")}
-            onOpenSwap={() => openShiftHub("CHANGE")}
-            onOpenCancel={() => openShiftHub("CANCEL")}
+            onOpenSwap={() => openUrgent("CHANGE")}
+            onOpenCancel={() => openUrgent("CANCEL")}
           />
         );
       case "lich":
         return (
           <EmployeeSchedulePage
-            onOpenRegister={() => openShiftHub("REGISTER")}
-            onOpenSwap={() => openShiftHub("CHANGE")}
-            onOpenCancel={() => openShiftHub("CANCEL")}
+            key={urgent?.version ?? 0}
+            initialUrgentType={urgent?.type}
+            onOpenRegister={() => setActiveTab("dangkyca")}
           />
         );
       case "dangkyca":
-        return <EmployeeShiftHubPage key={shiftTypeVersion} initialType={shiftType} />;
+        return <EmployeeRegisterShiftPage />;
       case "thongke":
         return <EmployeeStatsPage />;
       case "profile":

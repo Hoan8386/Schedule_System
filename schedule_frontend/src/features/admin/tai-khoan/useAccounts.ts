@@ -89,23 +89,21 @@ export function useAccounts() {
   }, [fetchAll, apply, fail]);
 
   const toggleStatus = async (account: AccountItem) => {
+    // Admin luôn hoạt động, không khóa được (backend kiểm tra lại, kể cả quản lý hoạt động cuối cùng)
+    if (account.roleCode === "ADMIN") return;
     const status = account.status === "ACTIVE" ? "LOCKED" : "ACTIVE";
+    if (status === "LOCKED" && account.roleCode === "MANAGER") {
+      const otherActiveManagers = accounts.filter((item) => item.id !== account.id && item.roleCode === "MANAGER" && item.status === "ACTIVE");
+      if (otherActiveManagers.length === 0) {
+        alert("Phải luôn có ít nhất 1 tài khoản quản lý đang hoạt động – không thể khóa quản lý cuối cùng.");
+        return;
+      }
+    }
     try {
       await adminUserApi.updateUser(account.id, { status });
       setAccounts((prev) => prev.map((item) => (item.id === account.id ? { ...item, status } : item)));
     } catch (cause) {
       alert(`Không thể thay đổi trạng thái tài khoản: ${cause instanceof Error ? cause.message : "Lỗi kết nối API"}`);
-    }
-  };
-
-  const remove = async (account: AccountItem) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản @${account.username} khỏi hệ thống?`)) return;
-    try {
-      await adminUserApi.deleteUser(account.id);
-      setAccounts((prev) => prev.filter((item) => item.id !== account.id));
-      alert(`Đã xóa tài khoản @${account.username} thành công!`);
-    } catch (cause) {
-      alert(`Xóa tài khoản thất bại: ${cause instanceof Error ? cause.message : "Lỗi máy chủ khi xóa"}`);
     }
   };
 
@@ -117,5 +115,5 @@ export function useAccounts() {
     });
   }, [accounts, filters]);
 
-  return { accounts, filtered, roles, stores, loading, error, filters, setFilters, reload, toggleStatus, remove };
+  return { accounts, filtered, roles, stores, loading, error, filters, setFilters, reload, toggleStatus };
 }

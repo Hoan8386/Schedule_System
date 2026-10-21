@@ -7,6 +7,7 @@ import type {
 } from "@/lib/api";
 import { formatDate, relId, text } from "@/lib/format";
 import { isActiveAssignment } from "./constants";
+import { buildGroupPalette } from "./groupColors";
 import type { ScheduleData } from "./useScheduleData";
 
 /** Lập map theo id: key được lấy bằng hàm getId. */
@@ -90,6 +91,20 @@ export function useScheduleLookups(data: ScheduleData) {
     const roundNameOf = (id: number) => (id ? text(maps.round.get(id)?.roundName, `Đợt #${id}`) : "");
     const sessionNameOf = (id: number) => (id ? text(maps.session.get(id)?.sessionName, `Phiên #${id}`) : "");
     const groupNameOf = (id: number) => (id ? text(maps.group.get(id)?.shiftGroupName, `Nhóm ca #${id}`) : "");
+    /** Nhóm ca của ca theo ngày (qua ca mẫu) */
+    const groupIdOf = (item: ShiftByDateResponse) => {
+      const template = templateOf(item);
+      return template ? relId(template, "shiftGroup") : 0;
+    };
+    // Màu TKB: họ màu theo nhóm ca, đậm nhạt theo khung giờ (Sáng / Trưa / Tối)
+    const groupColor = buildGroupPalette(
+      shiftGroups.map((item) => {
+        const id = Number(item.id ?? item.shiftGroupId ?? 0);
+        return { id, name: text(item.shiftGroupName, "") };
+      })
+    );
+    const colorOf = (item: ShiftByDateResponse) =>
+      groupColor(groupIdOf(item), item.startTime ?? templateOf(item)?.startTime);
 
     const options = {
       stores: stores.map((item) => ({ value: Number(item.id), label: text(item.storeName, `Cửa hàng #${item.id}`) })),
@@ -137,6 +152,9 @@ export function useScheduleLookups(data: ScheduleData) {
       roundNameOf,
       sessionNameOf,
       groupNameOf,
+      groupIdOf,
+      groupColor,
+      colorOf,
       options,
     };
   }, [maps, roundsByPeriod, sessionsByRound, assignmentsByShiftDate, stores, shifts, periods, data.shiftDates, employees, shiftGroups, rounds, sessions]);

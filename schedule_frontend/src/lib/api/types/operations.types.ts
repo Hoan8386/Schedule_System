@@ -117,7 +117,12 @@ export interface FeedbackItem {
   response: string | null;
   handledBy: number | null;
   handlerName: string | null;
+  handlerRole: FeedbackRole | null;
   handledAt: string | null;
+  /** Quản lý / admin đã xử lý thay trưởng cửa hàng */
+  handledOnBehalf: boolean;
+  /** Lịch sử chuyển trạng thái kèm ghi chú – chỉ có ở API chi tiết / sau khi chuyển trạng thái */
+  history?: FeedbackHistoryEntry[];
   createdAt: string | null;
   /** Phản hồi do chính người dùng hiện tại gửi */
   mine: boolean;
@@ -125,6 +130,18 @@ export interface FeedbackItem {
   canReply: boolean;
   /** Trạng thái người dùng hiện tại được chuyển sang (rỗng nếu không có quyền / đã đóng) */
   nextStatuses: FeedbackStatus[];
+}
+
+export interface FeedbackHistoryEntry {
+  historyId: number;
+  fromStatus: FeedbackStatus | null;
+  toStatus: FeedbackStatus;
+  /** Ghi chú (nhận xét) của lần chuyển trạng thái này */
+  note: string | null;
+  handledBy: number | null;
+  handlerName: string | null;
+  handlerRole: FeedbackRole | null;
+  createdAt: string | null;
 }
 
 export interface FeedbackColleague {
@@ -153,5 +170,6 @@ export interface FeedbackCreateBody {
 
 export interface FeedbackReplyBody {
   status: Exclude<FeedbackStatus, "PENDING">;
+  /** Ghi chú (nhận xét) cho lần chuyển trạng thái này */
   response?: string;
 }

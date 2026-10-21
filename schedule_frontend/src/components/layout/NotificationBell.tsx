@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Bell, CheckCheck, Loader2 } from "lucide-react";
-import { notificationApi, type NotificationResponse } from "@/lib/api";
+import { AlertCircle, Bell, CheckCheck, ChevronRight, Info, Loader2 } from "lucide-react";
+import { notificationApi, type NotificationResponse, type NotificationTask } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -33,9 +33,13 @@ function timeAgo(value?: string) {
   return formatDateTime(value);
 }
 
-/** Chuông thông báo: số chưa đọc, một danh sách chung (chưa đọc được tô nổi), tải 20 thông báo mỗi lần. */
-export function NotificationBell() {
+/**
+ * Chuông thông báo: việc cần xử lý / thông báo cần quan tâm theo vai trò (bấm để mở trang tương ứng),
+ * số chưa đọc và một danh sách chung (chưa đọc được tô nổi), tải 20 thông báo mỗi lần.
+ */
+export function NotificationBell({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const [open, setOpen] = useState(false);
+  const [tasks, setTasks] = useState<NotificationTask[]>([]);
   const [list, setList] = useState<ListState>(EMPTY_LIST);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -47,6 +51,12 @@ export function NotificationBell() {
       setUnreadCount(Number(data?.unreadCount ?? 0));
     } catch {
       // Giữ số cũ nếu lỗi mạng; không làm phiền người dùng
+    }
+    try {
+      const { data } = await notificationApi.getTasks();
+      setTasks(Array.isArray(data) ? data : []);
+    } catch {
+      // Chưa có quyền / lỗi mạng: giữ danh sách cũ
     }
   }, []);
 
@@ -90,8 +100,11 @@ export function NotificationBell() {
   const toggle = () => {
     const next = !open;
     setOpen(next);
-    // Mỗi lần mở chuông tải lại trang đầu để có dữ liệu mới
-    if (next) void loadPage(true);
+    // Mỗi lần mở chuông tải lại trang đầu và việc cần xử lý để có dữ liệu mới
+    if (next) {
+      void loadPage(true);
+      void refreshCount();
+    }
   };
 
   const markRead = async (item: NotificationResponse) => {
@@ -119,6 +132,12 @@ export function NotificationBell() {
 
   const current = list;
   const badge = unreadCount > 99 ? "99+" : String(unreadCount);
+  // Số việc cần xử lý (tone warning) hiện thành chấm cam trên chuông
+  const pendingTasks = tasks.filter((task) => task.tone === "warning").reduce((sum, task) => sum + task.count, 0);
+  const openTask = (task: NotificationTask) => {
+    setOpen(false);
+    onNavigate?.(task.page);
+  };
 
   return (
     <div className="relative">
@@ -127,13 +146,21 @@ export function NotificationBell() {
         onClick={toggle}
         className="relative rounded-xl border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50"
         title="Thông báo"
-        aria-label={unreadCount ? `Thông báo, ${unreadCount} chưa đọc` : "Thông báo"}
+        aria-label={`Thông báo${unreadCount ? `, ${unreadCount} chưa đọc` : ""}${pendingTasks ? `, ${pendingTasks} việc cần xử lý` : ""}`}
         aria-expanded={open}
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
           <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white">
             {badge}
+          </span>
+        )}
+        {pendingTasks > 0 && (
+          <span
+            title={`${pendingTasks} việc cần xử lý`}
+            className="absolute -bottom-1.5 -right-1.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-black leading-none text-white ring-2 ring-white"
+          >
+            {pendingTasks > 99 ? "99+" : pendingTasks}
           </span>
         )}
       </button>
@@ -155,6 +182,39 @@ export function NotificationBell() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
+              {tasks.length > 0 && (
+                <div className="border-b border-slate-100 bg-slate-50/70 px-2 py-2">
+                  <p className="px-2 pb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Việc cần xử lý & cần quan tâm</p>
+                  {tasks.map((task) => (
+                    <button
+                      key={task.key}
+                      type="button"
+                      onClick={() => openTask(task)}
+                      disabled={!onNavigate}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition hover:bg-white disabled:cursor-default"
+                    >
+                      {task.tone === "warning" ? (
+                        <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+                      ) : (
+                        <Info className="h-4 w-4 shrink-0 text-blue-500" />
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-bold text-slate-800">{task.title}</span>
+                        <span className="block truncate text-[11px] text-slate-500">{task.detail}</span>
+                      </span>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black",
+                          task.tone === "warning" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                        )}
+                      >
+                        {task.count}
+                      </span>
+                      {onNavigate && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />}
+                    </button>
+                  ))}
+                </div>
+              )}
               {error && <p className="m-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</p>}
 
               {current.items.map((item) => (

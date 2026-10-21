@@ -11,7 +11,7 @@ import { ScheduleFormFields } from "./ScheduleFormFields";
 /** Trường gửi lên backend dưới dạng số. */
 const NUMERIC_FIELDS = [
   "store", "storeId", "shift", "schedulePeriod", "schedulePeriodId", "scheduleRound", "scheduleRoundId", "scheduleSession",
-  "shiftByDate", "employee", "shiftGroup", "shiftGroupId", "capacity", "maxCapacity", "payRate", "employeeId",
+  "shiftByDate", "employee", "shiftGroup", "shiftGroupId", "capacity", "minCapacity", "maxCapacity", "payRate", "employeeId",
   "assignmentId", "fromShiftAssignmentId", "toAssignmentId",
 ];
 

@@ -46,6 +46,9 @@ public class Feedback {
     private String status;
     @Column(name = "handled_by")
     private Integer handledBy;
+    /** Vai trò người xử lý gần nhất (MANAGER xử lý phản hồi gửi trưởng cửa hàng = phản hồi thay) */
+    @Column(name = "handler_role", length = 30)
+    private String handlerRole;
     @Column(name = "handled_at")
     private LocalDateTime handledAt;
     @Column(name = "response", columnDefinition = "TEXT")

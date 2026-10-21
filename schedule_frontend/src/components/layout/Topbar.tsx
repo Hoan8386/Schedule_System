@@ -11,9 +11,11 @@ interface TopbarProps {
   user: ShellUser;
   menuActions?: UserMenuAction[];
   onLogout: () => void;
+  /** Mở trang theo id menu (bấm việc cần xử lý trên chuông thông báo) */
+  onNavigate?: (page: string) => void;
 }
 
-export function Topbar({ breadcrumbRoot, title, extra, user, menuActions = [], onLogout }: TopbarProps) {
+export function Topbar({ breadcrumbRoot, title, extra, user, menuActions = [], onLogout, onNavigate }: TopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -27,7 +29,7 @@ export function Topbar({ breadcrumbRoot, title, extra, user, menuActions = [], o
       <div className="flex items-center gap-3">
         {extra}
 
-        <NotificationBell />
+        <NotificationBell onNavigate={onNavigate} />
 
         <div className="relative">
           <button

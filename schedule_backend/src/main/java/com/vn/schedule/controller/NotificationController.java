@@ -19,8 +19,10 @@ import com.vn.schedule.util.anotation.ApiMessage;
 @RequestMapping("/api/v1/notification")
 public class NotificationController {
     private final NotificationService service;
+    private final com.vn.schedule.service.TaskReminderService taskReminderService;
 
-    public NotificationController(NotificationService service) {
+    public NotificationController(NotificationService service, com.vn.schedule.service.TaskReminderService taskReminderService) {
+        this.taskReminderService = taskReminderService;
         this.service = service;
     }
 
@@ -49,6 +51,13 @@ public class NotificationController {
     @ApiMessage("Đếm thông báo chưa đọc")
     public ResponseEntity<Map<String, Long>> myUnreadCount() {
         return ResponseEntity.ok(Map.of("unreadCount", service.countMyUnread()));
+    }
+
+    /** Việc cần xử lý / thông báo cần quan tâm của người dùng hiện tại (hiện trên chuông thông báo). */
+    @GetMapping("/me/tasks")
+    @ApiMessage("Lấy việc cần xử lý")
+    public ResponseEntity<List<com.vn.schedule.service.TaskReminderService.Task>> myTasks() {
+        return ResponseEntity.ok(taskReminderService.myTasks());
     }
 
     @PatchMapping("/me/{id}/read")

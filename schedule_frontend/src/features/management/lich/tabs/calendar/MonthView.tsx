@@ -1,7 +1,7 @@
 import React from "react";
 import { Star } from "lucide-react";
 import type { ShiftByDateResponse, SpecialEventResponse } from "@/lib/api";
-import { hhmm, localKey, text } from "@/lib/format";
+import { hhmm, localKey, text, upper } from "@/lib/format";
 import { MONTH_HEADER, shiftDateStyle } from "../../constants";
 import { useSchedule } from "../../ScheduleContext";
 import { shiftDateId } from "../../useScheduleLookups";
@@ -73,16 +73,16 @@ export function MonthView({ days, month, shiftsOn, eventsOn, highlight, onOpen }
                         key={shiftDateId(item)}
                         type="button"
                         onClick={() => onOpen(day, [item])}
-                        title={`${text(item.shiftName)} · ${lookups.storeNameOf(item)} · ${style.label}`}
-                        className={`block w-full rounded-md border px-1.5 py-1 text-left transition hover:border-brand-400 hover:shadow-sm ${style.card} ${marked ? "ring-2 ring-accent" : highlight ? "opacity-35" : ""}`}
+                        title={`${text(item.shiftName)} · ${lookups.groupNameOf(lookups.groupIdOf(item))} · ${lookups.storeNameOf(item)} · ${style.label}`}
+                        className={`block w-full rounded-md border px-1.5 py-1 text-left transition hover:brightness-95 hover:shadow-sm ${lookups.colorOf(item)} ${upper(item.status) === "CANCELLED" ? "line-through opacity-60" : ""} ${marked ? "ring-2 ring-accent" : highlight ? "opacity-35" : ""}`}
                       >
                         <div className="flex items-center justify-between gap-1">
-                          <span className="truncate text-[10px] font-bold text-slate-800">{hhmm(item.startTime)}–{hhmm(item.endTime)}</span>
-                          <span className={`shrink-0 text-[9px] font-bold ${cap > 0 && count >= cap ? "text-blue-600" : count === 0 ? "text-rose-500" : "text-slate-600"}`}>
-                            {count}{cap > 0 ? `/${cap}` : ""}
+                          <span className="truncate text-[10px] font-bold">{hhmm(item.startTime)}–{hhmm(item.endTime)}</span>
+                          <span className={`shrink-0 rounded px-0.5 text-[9px] font-bold ${count === 0 ? "bg-white text-rose-500" : ""}`}>
+                            {count}{cap > 0 ? `/${cap}` : ""}{cap > 0 && count >= cap ? " ✓" : ""}
                           </span>
                         </div>
-                        <p className="truncate text-[9px] text-slate-500">{text(item.shiftName, `Ca #${shiftDateId(item)}`)}</p>
+                        <p className="truncate text-[9px] opacity-80">{text(item.shiftName, `Ca #${shiftDateId(item)}`)}</p>
                       </button>
                     );
                   })}

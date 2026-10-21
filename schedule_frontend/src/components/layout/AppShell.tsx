@@ -76,6 +76,7 @@ export function AppShell({
           user={user}
           menuActions={userMenuActions}
           onLogout={onLogout}
+          onNavigate={onSelect}
         />
         <div className="relative min-h-0 flex-1">
           <main ref={mainRef} className="h-full overflow-y-auto">{children}</main>

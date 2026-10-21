@@ -58,3 +58,37 @@ JOIN permission p ON p.permission_code = 'GET_FEEDBACK_COLLEAGUES'
 WHERE r.role_code IN ('ADMIN', 'MANAGER', 'STORE_MANAGER', 'EMPLOYEE');
 
 SELECT status, COUNT(*) FROM feedback GROUP BY status;
+
+-- ============================================================
+-- 20/10/2026 (2): nhận xét (ghi chú) mỗi lần chuyển trạng thái + quản lý phản hồi thay trưởng cửa hàng
+--   feedback_history: lịch sử chuyển trạng thái, mỗi dòng 1 ghi chú
+--   feedback.handler_role: vai trò người xử lý gần nhất (MANAGER xử lý phản hồi gửi trưởng cửa hàng = phản hồi thay)
+-- (ddl-auto=update cũng tự tạo; script này để chạy tay khi cần)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS feedback_history (
+    history_id   INT AUTO_INCREMENT PRIMARY KEY,
+    feedback_id  INT NOT NULL,
+    from_status  VARCHAR(30) NULL,
+    to_status    VARCHAR(30) NOT NULL,
+    note         TEXT NULL,
+    handled_by   INT NULL,
+    handler_role VARCHAR(30) NULL,
+    created_at   DATETIME NULL,
+    INDEX idx_feedback_history_feedback (feedback_id)
+);
+
+DROP PROCEDURE IF EXISTS add_feedback_column;
+DELIMITER //
+CREATE PROCEDURE add_feedback_column(IN col VARCHAR(64), IN definition VARCHAR(255))
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
+                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'feedback' AND COLUMN_NAME = col) THEN
+        SET @ddl = CONCAT('ALTER TABLE feedback ADD COLUMN ', col, ' ', definition);
+        PREPARE stmt FROM @ddl;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END //
+DELIMITER ;
+CALL add_feedback_column('handler_role', 'VARCHAR(30) NULL AFTER handled_by');
+DROP PROCEDURE add_feedback_column;

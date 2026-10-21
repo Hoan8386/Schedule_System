@@ -3,6 +3,7 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Employee;
 import com.vn.schedule.domain.EmployeeStore;
 import com.vn.schedule.domain.Feedback;
+import com.vn.schedule.domain.FeedbackHistory;
 import com.vn.schedule.domain.ShiftByDate;
 import com.vn.schedule.domain.StoreManager;
 import com.vn.schedule.dto.DtoMapper;
@@ -10,6 +11,7 @@ import com.vn.schedule.dto.request.FeedbackRequest;
 import com.vn.schedule.repository.AttachmentRepository;
 import com.vn.schedule.repository.EmployeeRepository;
 import com.vn.schedule.repository.EmployeeStoreRepository;
+import com.vn.schedule.repository.FeedbackHistoryRepository;
 import com.vn.schedule.repository.FeedbackRepository;
 import com.vn.schedule.repository.ShiftAssignmentRepository;
 import com.vn.schedule.repository.ShiftByDateRepository;
@@ -45,7 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
  * - Người gửi chỉ xem lại phản hồi, không sửa / thu hồi.
  * - EMPLOYEE chỉ xem phản hồi của mình.
  * - STORE_MANAGER xem phản hồi của mình + phản hồi gửi tới trưởng cửa hàng tại cửa hàng mình quản lý (và trả lời được).
- * - MANAGER / ADMIN xem và trả lời mọi phản hồi.
+ * - MANAGER (quản lý chuỗi) / ADMIN xem và xử lý mọi phản hồi; phản hồi gửi trưởng cửa hàng mà quản lý xử lý = phản hồi thay.
+ * - Mỗi lần chuyển trạng thái được kèm ghi chú (nhận xét) riêng, lưu ở feedback_history.
  */
 @Service
 public class FeedbackService {
@@ -86,6 +89,7 @@ public class FeedbackService {
     private final AttachmentRepository attachmentRepository;
     private final R2StorageService storage;
     private final ShiftAssignmentRepository shiftAssignmentRepository;
+    private final FeedbackHistoryRepository historyRepository;
 
     public FeedbackService(FeedbackRepository repository,
                            StoreScopeService storeScopeService,
@@ -96,7 +100,8 @@ public class FeedbackService {
                            StoreManagerRepository storeManagerRepository,
                            AttachmentRepository attachmentRepository,
                            R2StorageService storage,
-                           ShiftAssignmentRepository shiftAssignmentRepository) {
+                           ShiftAssignmentRepository shiftAssignmentRepository,
+                           FeedbackHistoryRepository historyRepository) {
         this.repository = repository;
         this.storeScopeService = storeScopeService;
         this.employeeRepository = employeeRepository;
@@ -107,6 +112,7 @@ public class FeedbackService {
         this.attachmentRepository = attachmentRepository;
         this.storage = storage;
         this.shiftAssignmentRepository = shiftAssignmentRepository;
+        this.historyRepository = historyRepository;
     }
 
     /** Người dùng hiện tại: vai trò, hồ sơ nhân viên (có thể null với ADMIN/MANAGER), cửa hàng được xem (null = toàn chuỗi). */
@@ -152,6 +158,7 @@ public class FeedbackService {
             return false;
         }
         if (viewer.global()) {
+            // Quản lý chuỗi / admin xử lý được mọi phản hồi, kể cả phản hồi thay trưởng cửa hàng
             return true;
         }
         return STORE_MANAGER.equals(viewer.role())
@@ -178,6 +185,7 @@ public class FeedbackService {
         Feedback item = findVisible(id, viewer);
         Map<String, Object> view = views(List.of(item), viewer).get(0);
         view.put("attachments", embeddedImages(splitIds(item.getAttachmentIds())));
+        view.put("history", history(item.getFeedbackId()));
         return view;
     }
 
@@ -294,7 +302,7 @@ public class FeedbackService {
         return views(List.of(repository.save(item)), viewer).get(0);
     }
 
-    /** Chuyển trạng thái (kèm ghi chú trả lời tùy chọn). Body: { status: REVIEWED | RESOLVED | CLOSED, response? } */
+    /** Chuyển trạng thái kèm ghi chú (nhận xét) cho lần chuyển này. Body: { status: REVIEWED | RESOLVED | CLOSED, response? } */
     @Transactional
     public Map<String, Object> reply(Integer id, FeedbackRequest body) {
         Viewer viewer = viewer();
@@ -311,14 +319,51 @@ public class FeedbackService {
             throw new ApiException(HttpStatus.BAD_REQUEST,
                     "Không thể chuyển từ " + current + " sang " + (status == null ? "(trống)" : status));
         }
-        String response = text(body.get("response"));
-        if (response != null) {
-            item.setResponse(response);
+        String note = text(body.get("response"));
+        LocalDateTime now = LocalDateTime.now();
+        if (note != null) {
+            item.setResponse(note);
         }
         item.setStatus(status);
         item.setHandledBy(viewer.employeeId());
-        item.setHandledAt(LocalDateTime.now());
-        return views(List.of(repository.save(item)), viewer).get(0);
+        item.setHandlerRole(viewer.role());
+        item.setHandledAt(now);
+        Feedback saved = repository.save(item);
+
+        FeedbackHistory entry = new FeedbackHistory();
+        entry.setFeedbackId(saved.getFeedbackId());
+        entry.setFromStatus(current);
+        entry.setToStatus(status);
+        entry.setNote(note);
+        entry.setHandledBy(viewer.employeeId());
+        entry.setHandlerRole(viewer.role());
+        entry.setCreatedAt(now);
+        historyRepository.save(entry);
+
+        Map<String, Object> view = views(List.of(saved), viewer).get(0);
+        view.put("history", history(saved.getFeedbackId()));
+        return view;
+    }
+
+    /** Dòng thời gian chuyển trạng thái (cũ → mới) kèm ghi chú từng lần. */
+    private List<Map<String, Object>> history(Integer feedbackId) {
+        List<FeedbackHistory> entries = historyRepository.findByFeedbackIdOrderByCreatedAtAscHistoryIdAsc(feedbackId);
+        Set<Integer> handlerIds = new HashSet<>();
+        entries.forEach(entry -> addIfPresent(handlerIds, entry.getHandledBy()));
+        Map<Integer, Employee> handlers = byId(employeeRepository.findAllById(handlerIds), Employee::getId);
+        return entries.stream().map(entry -> {
+            Employee handler = handlers.get(entry.getHandledBy());
+            Map<String, Object> row = new HashMap<>();
+            row.put("historyId", entry.getHistoryId());
+            row.put("fromStatus", entry.getFromStatus());
+            row.put("toStatus", entry.getToStatus());
+            row.put("note", entry.getNote());
+            row.put("handledBy", entry.getHandledBy());
+            row.put("handlerName", handler != null ? handler.getFullName() : null);
+            row.put("handlerRole", entry.getHandlerRole());
+            row.put("createdAt", entry.getCreatedAt());
+            return row;
+        }).collect(Collectors.toList());
     }
 
     /** Dữ liệu cũ: PROCESSING → REVIEWED, REJECTED → CLOSED. */
@@ -402,6 +447,10 @@ public class FeedbackService {
             view.put("attachmentIdList", splitIds(item.getAttachmentIds()));
             view.put("mine", isSender(item, viewer));
             view.put("canReply", canHandle(item, viewer));
+            // Quản lý / admin xử lý phản hồi gửi tới trưởng cửa hàng = phản hồi thay
+            view.put("handledOnBehalf", item.getHandlerRole() != null
+                    && STORE_MANAGER.equals(targetOf(item))
+                    && !STORE_MANAGER.equals(item.getHandlerRole()));
             return view;
         }).collect(Collectors.toList());
     }

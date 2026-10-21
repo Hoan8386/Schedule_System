@@ -90,31 +90,77 @@ public class ShiftAssignmentService {
             throw new ApiException(HttpStatus.FORBIDDEN, "Bạn chỉ được đăng ký ca cho mình");
         }
         requireAccess(entity);
-        requireGroupMembershipForSelfRegistration(entity);
+        requireGroupMembership(entity);
+        requireNotAssigned(entity);
+        requireBelowMax(entity);
         return repository.save(entity);
     }
 
     /**
-     * Tự đăng ký ca (nhân viên / trưởng cửa hàng đăng ký cho chính mình): ca thuộc nhóm ca nào
-     * thì phải là thành viên nhóm đó. Quản lý xếp ca cho người khác không bị giới hạn.
+     * Ca thuộc nhóm ca nào thì nhân viên được phân / đăng ký phải là thành viên nhóm đó
+     * (áp dụng cả khi quản lý / trưởng cửa hàng phân bổ nhân viên vào ca theo ngày).
      */
-    private void requireGroupMembershipForSelfRegistration(ShiftAssignment entity) {
+    private void requireGroupMembership(ShiftAssignment entity) {
         if (entity.getEmployee() == null || entity.getShiftByDate() == null) return;
-        Integer me = currentEmployeeIdOrNull();
-        if (me == null || !me.equals(entity.getEmployee().getId())) return;
+        Integer employeeId = entity.getEmployee().getId();
         var shift = entity.getShiftByDate().getShift();
         if (shift == null || shift.getShiftGroup() == null) return;
-        if (!shiftGroupMemberService.isMember(shift.getShiftGroup().getId(), me)) {
-            throw new ApiException(HttpStatus.FORBIDDEN,
-                    "Bạn không thuộc nhóm ca \"" + shift.getShiftGroup().getShiftGroupName() + "\" nên không thể đăng ký ca này");
+        if (!shiftGroupMemberService.isMember(shift.getShiftGroup().getId(), employeeId)) {
+            Integer me = currentEmployeeIdOrNull();
+            String who = employeeId.equals(me) ? "Bạn" : "Nhân viên này";
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    who + " không thuộc nhóm ca \"" + shift.getShiftGroup().getShiftGroupName() + "\" nên không thể phân vào ca này");
+        }
+    }
+
+    /**
+     * Quản lý / trưởng cửa hàng được thêm nhân viên vượt ngưỡng tối thiểu (min) bất kể các khung giờ khác,
+     * chỉ không vượt số người tối đa (max) của ca.
+     */
+    private void requireBelowMax(ShiftAssignment entity) {
+        if (entity.getShiftByDate() == null || "CANCELLED".equalsIgnoreCase(entity.getStatus())
+                || "REJECTED".equalsIgnoreCase(entity.getStatus())) return;
+        ShiftByDate shiftByDate = shiftByDateRepository.findById(entity.getShiftByDate().getId()).orElse(null);
+        if (shiftByDate == null) return;
+        Integer max = shiftByDate.getMaxCapacity() != null ? shiftByDate.getMaxCapacity()
+                : shiftByDate.getShift() != null ? shiftByDate.getShift().getMaxCapacity() : null;
+        if (max == null || max <= 0) return;
+        long active = repository.findByShiftByDateId(shiftByDate.getId()).stream()
+                .filter(other -> !"CANCELLED".equalsIgnoreCase(other.getStatus()) && !"REJECTED".equalsIgnoreCase(other.getStatus()))
+                .count();
+        if (active >= max) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Ca đã đủ số người tối đa (" + max + ")");
+        }
+    }
+
+    /** Mỗi nhân viên chỉ có một phân ca còn hiệu lực trong một ca theo ngày. */
+    private void requireNotAssigned(ShiftAssignment entity) {
+        if (entity.getEmployee() == null || entity.getShiftByDate() == null) return;
+        Integer employeeId = entity.getEmployee().getId();
+        boolean exists = repository.findByShiftByDateId(entity.getShiftByDate().getId()).stream()
+                .anyMatch(other -> !java.util.Objects.equals(other.getId(), entity.getId())
+                        && other.getEmployee() != null
+                        && employeeId.equals(other.getEmployee().getId())
+                        && !"CANCELLED".equalsIgnoreCase(other.getStatus())
+                        && !"REJECTED".equalsIgnoreCase(other.getStatus()));
+        if (exists) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Nhân viên đã có trong ca này");
         }
     }
 
     @Transactional
     public ShiftAssignment update(Integer id, ShiftAssignmentRequest body) {
         ShiftAssignment current = findById(id);
+        Integer oldEmployee = current.getEmployee() != null ? current.getEmployee().getId() : null;
+        Integer oldShift = current.getShiftByDate() != null ? current.getShiftByDate().getId() : null;
         applyFields(current, body);
         requireAccess(current);
+        // Đổi người / đổi ca thì kiểm tra lại nhóm ca
+        if (!java.util.Objects.equals(oldEmployee, current.getEmployee() != null ? current.getEmployee().getId() : null)
+                || !java.util.Objects.equals(oldShift, current.getShiftByDate() != null ? current.getShiftByDate().getId() : null)) {
+            requireGroupMembership(current);
+            requireNotAssigned(current);
+        }
         return repository.save(current);
     }
 

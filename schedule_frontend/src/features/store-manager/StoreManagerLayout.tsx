@@ -1,40 +1,37 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   BookOpen,
   Calendar,
-  CalendarPlus,
   CheckSquare,
   FileCheck,
   FileText,
-  Inbox,
   LayoutDashboard,
   ListTodo,
   MessageSquare,
   ShieldAlert,
+  Users,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { AppShell, initialsOf, usePageNavigation, type NavSection } from "@/components/layout";
 import StoreManagerDashboard from "@/features/store-manager/StoreManagerDashboard";
-import StoreManagerShiftRequestsPage from "@/features/store-manager/yeu-cau/StoreManagerShiftRequestsPage";
 import StoreManagerViolationPage from "@/features/store-manager/vi-pham/StoreManagerViolationPage";
 import StoreManagerTodoListPage from "@/features/store-manager/todo/StoreManagerTodoListPage";
 import StoreManagerTestManagementPage from "@/features/store-manager/bai-test/StoreManagerTestManagementPage";
 import FeedbackPage from "@/features/feedback/FeedbackPage";
-import StoreManagerMyShiftPage from "@/features/store-manager/StoreManagerMyShiftPage";
-import StoreManagerSchedulePage from "@/features/store-manager/lich/StoreManagerSchedulePage";
-import StoreManagerRegisterShiftPage from "@/features/store-manager/dang-ky-ca/StoreManagerRegisterShiftPage";
+import StoreManagerShiftHubPage, { type ShiftHubTab } from "@/features/store-manager/quan-ly-ca/StoreManagerShiftHubPage";
+import NhanSuPage from "@/features/management/nhan-su/NhanSuPage";
 
 const SECTIONS: NavSection[] = [
   {
     items: [
       { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
-      { id: "yeucau", label: "Xử lý yêu cầu ca", icon: Inbox, badge: "6 chờ duyệt" },
-      { id: "lichcuatoi", label: "Lịch làm việc", icon: Calendar },
-      { id: "dangkyca", label: "Đăng ký ca", icon: CalendarPlus },
+      // Đăng ký ca + xử lý yêu cầu ca + lịch làm việc gộp vào Quản lý ca (giống UI trang Quản lý);
+      // Xuất danh sách ca nằm trong Lịch làm việc ở chế độ Danh sách
+      { id: "quanlyca", label: "Quản lý ca", icon: Calendar },
+      { id: "nhansu", label: "Quản lý nhân sự", icon: Users },
       { id: "vipham", label: "Xử lý vi phạm", icon: ShieldAlert, badge: "2" },
-      { id: "xuatca", label: "Xuất danh sách ca", icon: CalendarPlus },
       { id: "phanhoi", label: "Quản lý phản hồi", icon: MessageSquare },
       { id: "lapbienban", label: "Lập biên bản", icon: FileText },
       { id: "ketquatest", label: "Kết quả bài test", icon: CheckSquare },
@@ -48,25 +45,27 @@ const SECTIONS: NavSection[] = [
 export default function StoreManagerLayout() {
   const { user, logout } = useAuth();
   const { activePage: activeTab, navigate: setActiveTab, navigating } = usePageNavigation("dashboard");
+  // Mở Quản lý ca ở đúng tab con (từ Tổng quan)
+  const [shiftTab, setShiftTab] = useState<{ tab: ShiftHubTab; version: number }>({ tab: "lich", version: 0 });
+  const openShifts = (tab: ShiftHubTab) => {
+    setShiftTab((current) => ({ tab, version: current.version + 1 }));
+    setActiveTab("quanlyca");
+  };
 
   const renderPage = () => {
     switch (activeTab) {
       case "dashboard":
         return (
           <StoreManagerDashboard
-            onGoToRequests={() => setActiveTab("yeucau")}
-            onGoToMyShift={() => setActiveTab("dangkyca")}
+            onGoToRequests={() => openShifts("yeucau")}
+            onGoToMyShift={() => openShifts("dangky")}
             onGoToTodos={() => setActiveTab("todo")}
           />
         );
-      case "yeucau":
-        return <StoreManagerShiftRequestsPage />;
-      case "lichcuatoi":
-        return <StoreManagerSchedulePage onGoToRequests={() => setActiveTab("yeucau")} />;
-      case "dangkyca":
-        return <StoreManagerRegisterShiftPage />;
-      case "xuatca":
-        return <StoreManagerMyShiftPage exportOnly />;
+      case "quanlyca":
+        return <StoreManagerShiftHubPage key={shiftTab.version} initialTab={shiftTab.tab} />;
+      case "nhansu":
+        return <NhanSuPage readOnly />;
       case "vipham":
         return <StoreManagerViolationPage />;
       case "lapbienban":

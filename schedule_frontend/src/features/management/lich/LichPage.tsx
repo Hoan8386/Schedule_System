@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { AlertCircle, AlertTriangle, Award, Calendar, CalendarRange, Clock3, RefreshCw, Users } from "lucide-react";
+import { AlertTriangle, Award, Calendar, CalendarRange, Clock3, RefreshCw, SlidersHorizontal, Users } from "lucide-react";
 import { Alert, Button, PageHeader, Tabs, type TabItem } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { TabKey } from "./constants";
@@ -14,9 +14,11 @@ import { CalendarTab }  from "./tabs/calendar/CalendarTab";
 import { ShiftTab } from "./tabs/ShiftTab";
 import { RoundTab } from "./tabs/RoundTab";
 import { SessionTab } from "./tabs/SessionTab";
-import { EmergencyTab, EventTab, GroupTab } from "./tabs/CatalogTabs";
+import { EventTab, GroupTab } from "./tabs/CatalogTabs";
+import { CapacityConfigTab } from "./tabs/CapacityConfigTab";
 
-type GroupKey = "period" | "calendar" | "group" | "event" | "emergency";
+/** Thứ tự tab: Kỳ → Nhóm ca → Thời khóa biểu → Sự kiện (yêu cầu khẩn của nhân viên xử lý trong Danh sách yêu cầu của TKB). */
+export type GroupKey = "period" | "group" | "calendar" | "event" | "config";
 
 /** Tab chính; nhóm có nhiều tab con thì hiện thêm thanh chọn tab con bên dưới. */
 const GROUPS: (TabItem<GroupKey> & { tabs: TabItem<TabKey>[] })[] = [
@@ -30,7 +32,6 @@ const GROUPS: (TabItem<GroupKey> & { tabs: TabItem<TabKey>[] })[] = [
       { key: "session", label: "Phiên", icon: Users },
     ],
   },
-  { key: "calendar", label: "Thời khóa biểu", icon: Calendar, tabs: [{ key: "calendar", label: "Thời khóa biểu" }] },
   {
     key: "group",
     label: "Nhóm ca",
@@ -40,8 +41,9 @@ const GROUPS: (TabItem<GroupKey> & { tabs: TabItem<TabKey>[] })[] = [
       { key: "shift", label: "Ca", icon: Clock3 },
     ],
   },
+  { key: "calendar", label: "Thời khóa biểu", icon: Calendar, tabs: [{ key: "calendar", label: "Thời khóa biểu" }] },
   { key: "event", label: "Sự kiện", icon: AlertTriangle, tabs: [{ key: "event", label: "Sự kiện" }] },
-  { key: "emergency", label: "Khẩn cấp", icon: AlertCircle, tabs: [{ key: "emergency", label: "Khẩn cấp" }] },
+  { key: "config", label: "Cấu hình", icon: SlidersHorizontal, tabs: [{ key: "config", label: "Cấu hình" }] },
 ];
 
 const TAB_CONTENT: Record<TabKey, React.ComponentType> = {
@@ -52,24 +54,36 @@ const TAB_CONTENT: Record<TabKey, React.ComponentType> = {
   session: SessionTab,
   group: GroupTab,
   event: EventTab,
-  emergency: EmergencyTab,
+  config: CapacityConfigTab,
 };
 
+interface LichPageProps {
+  /** Các tab chính được hiện (trưởng cửa hàng chỉ dùng Thời khóa biểu); mặc định tất cả */
+  groups?: GroupKey[];
+  title?: string;
+  subtitle?: string;
+}
+
 /** Quản lý lịch & ca làm việc: kỳ → đợt → phiên, ca mẫu, thời khóa biểu và phân bổ. */
-export default function LichPage() {
+export default function LichPage(props: LichPageProps) {
   return (
     <ScheduleProvider>
-      <LichPageContent />
+      <LichPageContent {...props} />
     </ScheduleProvider>
   );
 }
 
-function LichPageContent() {
+function LichPageContent({
+  groups: visible,
+  title = "Quản lý lịch & ca làm việc",
+  subtitle = "Phân quyền theo role, xem theo cửa hàng và ca làm",
+}: LichPageProps) {
   const { loading, error, reload } = useSchedule();
+  const groups = visible ? GROUPS.filter((item) => visible.includes(item.key)) : GROUPS;
   const [activeGroup, setActiveGroup] = useState<GroupKey>("calendar");
   // Tab con đang chọn của từng nhóm (giữ nguyên khi chuyển qua lại giữa các nhóm)
   const [subTab, setSubTab] = useState<Partial<Record<GroupKey, TabKey>>>({});
-  const group = GROUPS.find((item) => item.key === activeGroup) ?? GROUPS[0];
+  const group = groups.find((item) => item.key === activeGroup) ?? groups[0];
   const activeTab = subTab[group.key] ?? group.tabs[0].key;
   const Content = TAB_CONTENT[activeTab];
 
@@ -80,8 +94,8 @@ function LichPageContent() {
       <DeleteConfirmModal />
 
       <PageHeader
-        title="Quản lý lịch & ca làm việc"
-        subtitle="Phân quyền theo role, xem theo cửa hàng và ca làm"
+        title={title}
+        subtitle={subtitle}
         actions={
           <Button variant="secondary" onClick={() => void reload()} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -92,7 +106,7 @@ function LichPageContent() {
 
       {error && <Alert>{error}</Alert>}
 
-      <Tabs items={GROUPS} active={activeGroup} onChange={setActiveGroup} />
+      {groups.length > 1 && <Tabs items={groups} active={group.key} onChange={setActiveGroup} />}
 
       {group.tabs.length > 1 && (
         <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-surface p-1 sm:w-fit" role="tablist">

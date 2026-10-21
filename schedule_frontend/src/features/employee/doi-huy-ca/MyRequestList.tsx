@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
 import { useKeyedLoad } from "@/features/statistics/useStatistics";
 import { shiftLabel, statusMeta, useGroupShifts, useMyShifts } from "./model";
 
-/** Cùng loại yêu cầu như danh sách yêu cầu của quản lý. */
+/** Cùng loại yêu cầu như danh sách yêu cầu của quản lý; Thêm / Đổi / Hủy ca gọi chung là Đặt lịch khẩn. */
 const REQUEST_TYPES = {
   REGISTER: { label: "Đăng ký ca", badge: "bg-blue-100 text-blue-700" },
   ADD: { label: "Thêm ca", badge: "bg-emerald-100 text-emerald-700" },
@@ -16,12 +16,16 @@ const REQUEST_TYPES = {
   CHANGE: { label: "Đổi ca", badge: "bg-violet-100 text-violet-700" },
 } as const;
 type RequestType = keyof typeof REQUEST_TYPES;
+const URGENT_TYPES: RequestType[] = ["ADD", "CHANGE", "CANCEL"];
 
 interface Row {
   key: string;
   type: RequestType;
   shift: string;
   target: string;
+  /** Đổi ca: nhân viên đổi chỗ cùng */
+  swapWith: string;
+  storeName: string;
   workDate: string;
   status: string;
   sentAt: string;
@@ -30,7 +34,10 @@ interface Row {
 }
 
 const EMPTY_FILTERS = {
+  group: "",
   type: "",
+  store: "",
+  swapWith: "",
   status: "",
   workFrom: "",
   workTo: "",
@@ -40,7 +47,8 @@ const EMPTY_FILTERS = {
 };
 
 /**
- * Danh sách yêu cầu của nhân viên (đăng ký ca + thêm / đổi / hủy ca), lọc theo từng cột
+ * Danh sách yêu cầu của nhân viên – một danh sách chung phân loại theo loại yêu cầu
+ * (Đăng ký ca · Đặt lịch khẩn: Thêm / Đổi / Hủy ca), lọc theo từng cột
  * giống danh sách yêu cầu bên trang quản lý (chỉ xem, không duyệt).
  */
 export default function MyRequestList() {
@@ -67,6 +75,12 @@ export default function MyRequestList() {
     const byShiftDate = new Map(
       groupShifts.map((shift) => [shift.shiftByDateId, shift]),
     );
+    // Phân ca của đồng nghiệp (người đổi ca cùng) → tên
+    const memberByAssignment = new Map(
+      groupShifts.flatMap((shift) =>
+        shift.members.map((member) => [member.assignmentId, member] as const),
+      ),
+    );
 
     const registrations = (assignments.data ?? []).map((item): Row => {
       const id = Number(item.id ?? item.shiftAssignmentId);
@@ -76,6 +90,8 @@ export default function MyRequestList() {
         type: "REGISTER",
         shift: shift ? shiftLabel(shift) : `Phân ca #${id}`,
         target: "",
+        swapWith: "",
+        storeName: shift?.storeName ?? "",
         workDate: shift?.workDate ?? "",
         status: String(item.status ?? "").toUpperCase(),
         sentAt: String(item.registeredAt ?? ""),
@@ -83,6 +99,14 @@ export default function MyRequestList() {
         note: String(item.cancellationReason ?? ""),
       };
     });
+
+    const swapName = (id: unknown) => {
+      if (!id) return "";
+      const member = memberByAssignment.get(Number(id));
+      return member
+        ? `${member.fullName ?? "Nhân viên"}${member.employeeCode ? ` (${member.employeeCode})` : ""}`
+        : `Phân ca #${String(id)}`;
+    };
 
     const emergencies = (requests.data ?? []).map((item): Row => {
       const id = Number(item.emergencyRequestId ?? item.id);
@@ -98,6 +122,8 @@ export default function MyRequestList() {
             ? shiftLabel(target)
             : "—",
         target: type === "CHANGE" && target ? shiftLabel(target) : "",
+        swapWith: swapName(item.swapAssignmentId),
+        storeName: source?.storeName ?? target?.storeName ?? "",
         workDate: source?.workDate ?? target?.workDate ?? "",
         status: String(item.status ?? "").toUpperCase(),
         sentAt: String(item.requestedAt ?? item.createdAt ?? ""),
@@ -114,7 +140,16 @@ export default function MyRequestList() {
   const filtered = useMemo(() => {
     const q = filters.q.trim().toLowerCase();
     return rows.filter((row) => {
+      if (filters.group === "URGENT" && !URGENT_TYPES.includes(row.type))
+        return false;
+      if (filters.group === "REGISTER" && row.type !== "REGISTER") return false;
       if (filters.type && row.type !== filters.type) return false;
+      if (filters.store && row.storeName !== filters.store) return false;
+      if (
+        filters.swapWith &&
+        !row.swapWith.toLowerCase().includes(filters.swapWith.trim().toLowerCase())
+      )
+        return false;
       if (filters.status && row.status !== filters.status) return false;
       if (
         filters.workFrom &&
@@ -128,13 +163,19 @@ export default function MyRequestList() {
       if (filters.sentTo && (!sent || sent > filters.sentTo)) return false;
       if (
         q &&
-        !`${row.shift} ${row.target} ${row.reason}`.toLowerCase().includes(q)
+        !`${row.shift} ${row.target} ${row.swapWith} ${row.reason} ${row.note}`
+          .toLowerCase()
+          .includes(q)
       )
         return false;
       return true;
     });
   }, [rows, filters]);
 
+  const stores = useMemo(
+    () => [...new Set(rows.map((row) => row.storeName).filter(Boolean))].sort(),
+    [rows],
+  );
   const statuses = useMemo(
     () => [...new Set(rows.map((row) => row.status).filter(Boolean))].sort(),
     [rows],
@@ -157,9 +198,27 @@ export default function MyRequestList() {
           <input
             value={filters.q}
             onChange={(event) => setFilter("q", event.target.value)}
-            placeholder="Ca, lý do..."
+            placeholder="Ca, lý do, ghi chú..."
             className={controlClass}
           />
+        </label>
+        <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-500">
+          Phân loại
+          <select
+            value={filters.group}
+            onChange={(event) => {
+              setFilters((current) => ({
+                ...current,
+                group: event.target.value,
+                type: "",
+              }));
+            }}
+            className={controlClass}
+          >
+            <option value="">Tất cả</option>
+            <option value="REGISTER">Đăng ký ca</option>
+            <option value="URGENT">Đặt lịch khẩn</option>
+          </select>
         </label>
         <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-500">
           Loại yêu cầu
@@ -169,12 +228,46 @@ export default function MyRequestList() {
             className={controlClass}
           >
             <option value="">Tất cả</option>
-            {(Object.keys(REQUEST_TYPES) as RequestType[]).map((key) => (
-              <option key={key} value={key}>
-                {REQUEST_TYPES[key].label}
-              </option>
-            ))}
+            {(Object.keys(REQUEST_TYPES) as RequestType[])
+              .filter(
+                (key) =>
+                  !filters.group ||
+                  (filters.group === "URGENT"
+                    ? URGENT_TYPES.includes(key)
+                    : key === "REGISTER"),
+              )
+              .map((key) => (
+                <option key={key} value={key}>
+                  {REQUEST_TYPES[key].label}
+                </option>
+              ))}
           </select>
+        </label>
+        {stores.length > 1 && (
+          <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-500">
+            Cửa hàng
+            <select
+              value={filters.store}
+              onChange={(event) => setFilter("store", event.target.value)}
+              className={controlClass}
+            >
+              <option value="">Tất cả</option>
+              {stores.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-500">
+          Đổi với
+          <input
+            value={filters.swapWith}
+            onChange={(event) => setFilter("swapWith", event.target.value)}
+            placeholder="Tên nhân viên..."
+            className={controlClass}
+          />
         </label>
         <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-500">
           Trạng thái
@@ -196,6 +289,7 @@ export default function MyRequestList() {
           <input
             type="date"
             value={filters.workFrom}
+            max={filters.workTo || undefined}
             onChange={(event) => setFilter("workFrom", event.target.value)}
             className={controlClass}
           />
@@ -205,6 +299,7 @@ export default function MyRequestList() {
           <input
             type="date"
             value={filters.workTo}
+            min={filters.workFrom || undefined}
             onChange={(event) => setFilter("workTo", event.target.value)}
             className={controlClass}
           />
@@ -214,6 +309,7 @@ export default function MyRequestList() {
           <input
             type="date"
             value={filters.sentFrom}
+            max={filters.sentTo || undefined}
             onChange={(event) => setFilter("sentFrom", event.target.value)}
             className={controlClass}
           />
@@ -223,6 +319,7 @@ export default function MyRequestList() {
           <input
             type="date"
             value={filters.sentTo}
+            min={filters.sentFrom || undefined}
             onChange={(event) => setFilter("sentTo", event.target.value)}
             className={controlClass}
           />
@@ -248,6 +345,7 @@ export default function MyRequestList() {
               <th className="px-3 py-2.5">Loại</th>
               <th className="px-3 py-2.5">Ca</th>
               <th className="px-3 py-2.5">Đổi sang</th>
+              <th className="px-3 py-2.5">Đổi với</th>
               <th className="px-3 py-2.5">Lý do / ghi chú</th>
               <th className="px-3 py-2.5">Gửi lúc</th>
               <th className="px-3 py-2.5">Trạng thái</th>
@@ -267,12 +365,20 @@ export default function MyRequestList() {
                     >
                       {REQUEST_TYPES[row.type].label}
                     </span>
+                    {URGENT_TYPES.includes(row.type) && (
+                      <span className="mt-0.5 block text-[9px] font-semibold text-slate-400">
+                        Đặt lịch khẩn
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2.5 font-semibold text-slate-800">
                     {row.shift}
                   </td>
                   <td className="px-3 py-2.5 text-slate-600">
                     {row.target || "—"}
+                  </td>
+                  <td className="px-3 py-2.5 text-slate-600">
+                    {row.swapWith || "—"}
                   </td>
                   <td className="max-w-xs px-3 py-2.5 text-slate-600">
                     {row.reason || "—"}

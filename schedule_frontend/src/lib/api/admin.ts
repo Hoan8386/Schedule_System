@@ -34,7 +34,6 @@ export const adminUserApi = {
   getUser: users.get,
   createUser: users.create,
   updateUser: users.update,
-  deleteUser: users.remove,
 
   getRoles: roles.list,
   getRole: roles.get,

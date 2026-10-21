@@ -7,30 +7,36 @@ import {
 } from "@/lib/api";
 import { localKey } from "@/lib/format";
 
-/** Yêu cầu sau khi hết thời gian đăng ký: thêm / đổi / hủy ca (gửi quản lý duyệt). */
+/**
+ * Đặt lịch khẩn: thêm / đổi / hủy ca trên lịch làm việc đang dùng (kỳ đã kết thúc đăng ký),
+ * chỉ cho ca bắt đầu sau thời điểm hiện tại; gửi quản lý duyệt.
+ */
 export type ShiftRequestType = "ADD" | "CHANGE" | "CANCEL";
 
 export const REQUEST_META: Record<
   ShiftRequestType,
-  { title: string; description: string; submit: string }
+  { title: string; description: string; submit: string; applied: string }
 > = {
   ADD: {
     title: "Thêm ca",
     description:
-      "Đăng ký thêm một ca của nhóm khi đã hết thời gian đăng ký. Ca chỉ được tính khi quản lý duyệt.",
+      "Làm thêm một ca của nhóm trên lịch đang dùng. Ca chỉ được tính khi quản lý duyệt.",
     submit: "Gửi yêu cầu thêm ca",
+    applied: "ca mới được thêm vào lịch của bạn",
   },
   CHANGE: {
     title: "Đổi ca",
     description:
-      "Đổi ca đã được duyệt sang ca khác cùng cửa hàng. Bạn vẫn làm ca cũ cho đến khi yêu cầu được duyệt.",
+      "Đổi ca đã duyệt với một nhân viên đang làm ca khác – số người mỗi ca giữ nguyên, chỉ đổi người. Bạn vẫn làm ca cũ cho đến khi được duyệt.",
     submit: "Gửi yêu cầu đổi ca",
+    applied: "bạn sang ca mới, nhân viên được chọn sang ca cũ của bạn",
   },
   CANCEL: {
     title: "Hủy ca",
     description:
       "Hủy ca đã được duyệt. Bạn vẫn phải làm ca nếu yêu cầu chưa được duyệt.",
     submit: "Gửi yêu cầu hủy ca",
+    applied: "ca bị gỡ khỏi lịch của bạn",
   },
 };
 
@@ -83,6 +89,17 @@ export function shiftLabel(shift: {
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+/** Ca bắt đầu sau thời điểm hiện tại (khớp EmergencyRequestService.requireUpcomingReleased). */
+export function startsAfter(
+  shift: { workDate?: string | null; startTime?: string | null },
+  now: Date,
+) {
+  if (!shift.workDate) return false;
+  const [y, mo, d] = shift.workDate.split("-").map(Number);
+  const [h, m] = (shift.startTime ?? "00:00").split(":").map(Number);
+  return new Date(y, mo - 1, d, h || 0, m || 0) > now;
 }
 
 /** Ca đã được phân của chính mình quanh hôm nay (60 ngày trước → 60 ngày tới). */

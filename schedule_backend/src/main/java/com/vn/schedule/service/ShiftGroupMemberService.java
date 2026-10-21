@@ -86,7 +86,7 @@ public class ShiftGroupMemberService {
 
     /** Ca mẫu của nhóm; maxCapacity là sức chứa mặc định khi chưa có ca theo ngày. */
     public record MyShift(Integer shiftId, String shiftCode, String shiftName, String startTime, String endTime, BigDecimal payRate,
-                          Integer maxCapacity) {
+                          Integer maxCapacity, Integer minCapacity) {
     }
 
     public record MyGroup(Integer shiftGroupId, String shiftGroupCode, String shiftGroupName, String description,
@@ -97,11 +97,27 @@ public class ShiftGroupMemberService {
      * Ca theo ngày của nhóm (mọi trạng thái; chỉ status = OPEN mới đăng ký được).
      * myAssignmentStatus = trạng thái đăng ký của chính nhân viên (null nếu chưa).
      */
+    /**
+     * released: kỳ đăng ký của ca đã kết thúc → ca thuộc lịch làm việc đang dùng (được Đặt lịch khẩn).
+     * members: nhân viên đã được duyệt vào ca (để chọn người đổi ca).
+     */
     public record OpenShift(Integer shiftByDateId, Integer shiftId, Integer shiftGroupId, String shiftGroupName,
-                            String workDate, String shiftName, String startTime, String endTime, String storeName,
-                            long registeredCount, Integer maxCapacity, BigDecimal payRate, String myAssignmentStatus,
-                            String status) {
+                            String workDate, String shiftName, String startTime, String endTime, Integer storeId,
+                            String storeName, long registeredCount, Integer maxCapacity, BigDecimal payRate,
+                            String myAssignmentStatus, String status, boolean released, List<ShiftMember> members) {
     }
+
+    /** Nhân viên đã được duyệt vào một ca theo ngày. */
+    public record ShiftMember(Integer assignmentId, Integer employeeId, String employeeCode, String fullName) {
+    }
+
+    /** Điều kiện SQL: ca thuộc kỳ đã kết thúc đăng ký (cùng điều kiện với lịch làm việc của nhân viên). */
+    public static final String RELEASED_SQL = """
+            CASE WHEN sp.schedule_period_id IS NULL
+                      OR sp.status IN ('CLOSED', 'FINALIZED', 'PUBLISHED', 'COMPLETED', 'LOCKED')
+                      OR sp.finalized_at IS NOT NULL
+                      OR (sp.registration_close_at IS NOT NULL AND sp.registration_close_at < NOW())
+                 THEN 1 ELSE 0 END""";
 
     /** Phiên đăng ký của một nhóm ca trong đợt. */
     public record RegistrationSession(Integer sessionId, String sessionName, Integer shiftGroupId, String shiftGroupName,
@@ -133,7 +149,7 @@ public class ShiftGroupMemberService {
         Map<Integer, List<MyShift>> shiftsByGroup = new LinkedHashMap<>();
         for (Object[] row : rows(entityManager, """
                 SELECT sh.shift_group_id, sh.shift_id, sh.shift_code, sh.shift_name, sh.start_time, sh.end_time,
-                       COALESCE(sh.pay_rate, sg.pay_rate, 0), sh.max_capacity
+                       COALESCE(sh.pay_rate, sg.pay_rate, 0), sh.max_capacity, sh.min_capacity
                 FROM shift sh
                 JOIN shift_group sg ON sg.shift_group_id = sh.shift_group_id
                 JOIN shift_group_employee m ON m.shift_group_id = sh.shift_group_id AND m.employee_id = :employeeId
@@ -142,7 +158,7 @@ public class ShiftGroupMemberService {
                 """, Map.of("employeeId", employeeId))) {
             shiftsByGroup.computeIfAbsent(toInt(row[0]), key -> new ArrayList<>()).add(new MyShift(
                     toInt(row[1]), text(row[2]), text(row[3]), formatTime(toTime(row[4])), formatTime(toTime(row[5])),
-                    money(toDecimal(row[6])), toInt(row[7])));
+                    money(toDecimal(row[6])), toInt(row[7]), toInt(row[8])));
         }
 
         List<MyGroup> groups = rows(entityManager, """
@@ -175,7 +191,7 @@ public class ShiftGroupMemberService {
             only = " AND sbd.shift_by_date_id = :onlyId";
             params.put("onlyId", onlyId);
         }
-        return rows(entityManager, """
+        List<Object[]> shiftRows = rows(entityManager, """
                 SELECT sbd.shift_by_date_id, sh.shift_id, sg.shift_group_id, sg.shift_group_name, sbd.work_date,
                        COALESCE(sbd.shift_name, sh.shift_name),
                        COALESCE(sbd.start_time, sh.start_time), COALESCE(sbd.end_time, sh.end_time),
@@ -187,17 +203,43 @@ public class ShiftGroupMemberService {
                        (SELECT a.status FROM shift_assignment a
                         WHERE a.shift_by_date_id = sbd.shift_by_date_id AND a.employee_id = :employeeId
                         ORDER BY a.assignment_id DESC LIMIT 1),
-                       sbd.status
+                       sbd.status, st.store_id,
+                       """ + RELEASED_SQL + """
+
                 FROM shift_by_date sbd
                 JOIN shift sh ON sh.shift_id = sbd.shift_id
                 JOIN shift_group sg ON sg.shift_group_id = sh.shift_group_id
                 JOIN shift_group_employee m ON m.shift_group_id = sg.shift_group_id AND m.employee_id = :employeeId
                 JOIN store st ON st.store_id = sh.store_id
+                LEFT JOIN schedule_period sp ON sp.schedule_period_id = sbd.schedule_period_id
                 WHERE sbd.work_date BETWEEN :from AND :to
-                """ + only + " ORDER BY sbd.work_date, COALESCE(sbd.start_time, sh.start_time)", params).stream()
+                """ + only + " ORDER BY sbd.work_date, COALESCE(sbd.start_time, sh.start_time)", params);
+
+        // Nhân viên đã duyệt của từng ca (chỉ ca thuộc lịch đang dùng – để chọn người đổi ca)
+        List<Integer> releasedIds = shiftRows.stream()
+                .filter(row -> toInt(row[15]) != null && toInt(row[15]) == 1)
+                .map(row -> toInt(row[0]))
+                .toList();
+        Map<Integer, List<ShiftMember>> membersByShift = new HashMap<>();
+        if (!releasedIds.isEmpty()) {
+            for (Object[] row : rows(entityManager, """
+                    SELECT a.shift_by_date_id, a.assignment_id, e.employee_id, e.employee_code, e.full_name
+                    FROM shift_assignment a
+                    JOIN employee e ON e.employee_id = a.employee_id
+                    WHERE a.shift_by_date_id IN (:ids) AND a.status = 'APPROVED'
+                    ORDER BY e.full_name
+                    """, Map.of("ids", releasedIds))) {
+                membersByShift.computeIfAbsent(toInt(row[0]), key -> new ArrayList<>())
+                        .add(new ShiftMember(toInt(row[1]), toInt(row[2]), text(row[3]), text(row[4])));
+            }
+        }
+
+        return shiftRows.stream()
                 .map(row -> new OpenShift(toInt(row[0]), toInt(row[1]), toInt(row[2]), text(row[3]),
                         toDate(row[4]).toString(), text(row[5]), formatTime(toTime(row[6])), formatTime(toTime(row[7])),
-                        text(row[8]), toLong(row[9]), toInt(row[10]), money(toDecimal(row[11])), text(row[12]), text(row[13])))
+                        toInt(row[14]), text(row[8]), toLong(row[9]), toInt(row[10]), money(toDecimal(row[11])),
+                        text(row[12]), text(row[13]), toInt(row[15]) != null && toInt(row[15]) == 1,
+                        membersByShift.getOrDefault(toInt(row[0]), List.of())))
                 .toList();
     }
 
@@ -255,6 +297,19 @@ public class ShiftGroupMemberService {
     private static String dateText(Object value) {
         LocalDate date = toDate(value);
         return date == null ? null : date.toString();
+    }
+
+    /** Ca theo ngày thuộc kỳ đã kết thúc đăng ký (lịch làm việc đang dùng) chưa. */
+    @Transactional(readOnly = true)
+    public boolean isReleased(Integer shiftByDateId) {
+        List<Object[]> result = rows(entityManager, """
+                SELECT sbd.shift_by_date_id, """ + RELEASED_SQL + """
+
+                FROM shift_by_date sbd
+                LEFT JOIN schedule_period sp ON sp.schedule_period_id = sbd.schedule_period_id
+                WHERE sbd.shift_by_date_id = :id
+                """, Map.of("id", shiftByDateId));
+        return !result.isEmpty() && toInt(result.get(0)[1]) != null && toInt(result.get(0)[1]) == 1;
     }
 
     /** Nhân viên có thuộc nhóm ca không. */

@@ -24,7 +24,6 @@ export const hrApi = {
   getStores: (status?: string) => http.get<StoreResponse[]>(withQuery("/api/v1/stores", { status })),
   createStore: stores.create,
   updateStore: stores.update,
-  deleteStore: stores.remove,
   getStoreManagers: () => http.get<StoreManagerResponse[]>("/api/v1/store_manager"),
 
   getEmployeeStores: (filters?: { storeId?: number; role?: "MANAGER" | "EMPLOYEE"; status?: string; primary?: boolean }) =>

@@ -74,7 +74,7 @@ public class DashboardService {
 
         return new DashboardResponse.Manager(
                 monthStart.toString(), monthEnd.toString(),
-                count(entityManager, "SELECT COUNT(*) FROM store WHERE status = 'ACTIVE'", Map.of()),
+                count(entityManager, "SELECT COUNT(*) FROM store WHERE status IN ('OPENING', 'ACTIVE')", Map.of()),
                 count(entityManager, "SELECT COUNT(*) FROM store", Map.of()),
                 count(entityManager, "SELECT COUNT(*) FROM employee WHERE status = 'ACTIVE'", Map.of()),
                 todayShifts(today, null),

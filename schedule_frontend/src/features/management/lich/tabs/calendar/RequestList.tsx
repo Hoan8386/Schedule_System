@@ -42,6 +42,8 @@ interface RequestRow {
   shift?: ShiftByDateResponse;
   /** Ca đích của yêu cầu đổi ca */
   targetShift?: ShiftByDateResponse;
+  /** Đổi ca: nhân viên đổi chỗ cùng (đang ở ca đích) */
+  swapWith?: string;
   shiftCode: string;
   workDate: string;
   status: string;
@@ -110,6 +112,11 @@ export function RequestList({ periodId, storeId, onClose }: Props) {
         ? shiftDateById.get(relId(assignment, "shiftByDate"))
         : undefined;
     };
+    // Đổi ca với đồng nghiệp: swapAssignmentId là phân ca của người đổi cùng
+    const swapPartner = (id: unknown) => {
+      const assignment = id ? assignmentById.get(Number(id)) : undefined;
+      return assignment ? lookups.employeeName(relId(assignment, "employee")) : undefined;
+    };
     const employeeOf = (id: number) => ({
       employeeId: id,
       employeeName: lookups.employeeName(id),
@@ -166,6 +173,7 @@ export function RequestList({ periodId, storeId, onClose }: Props) {
           ...employeeOf(Number(request.employeeId ?? 0)),
           ...shiftInfo(shift),
           targetShift: type === "CHANGE" ? targetShift : undefined,
+          swapWith: swapPartner(record.swapAssignmentId),
           status: upper(request.status),
           sentAt: String(record.requestedAt ?? request.createdAt ?? ""),
           reason: text(request.reason, ""),
@@ -312,7 +320,7 @@ export function RequestList({ periodId, storeId, onClose }: Props) {
   return (
     <Modal
       open
-      title="Danh sách yêu cầu đăng ký"
+      title="Danh sách yêu cầu (đăng ký ca + đặt lịch khẩn)"
       onClose={onClose}
       size="max-w-6xl"
     >
@@ -538,6 +546,7 @@ export function RequestList({ periodId, storeId, onClose }: Props) {
                           row.targetShift.startTime,
                           row.targetShift.endTime,
                         )}
+                        {row.swapWith && <> · đổi với {row.swapWith}</>}
                       </p>
                     )}
                   </td>

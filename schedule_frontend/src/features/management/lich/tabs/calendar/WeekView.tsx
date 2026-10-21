@@ -22,17 +22,6 @@ interface TimelineRow {
   end: number;
 }
 
-/** Mỗi ngày trong tuần một màu (Thứ Hai → Chủ Nhật), giống mẫu lịch ca in. */
-const DAY_COLORS = [
-  "bg-blue-200 border-blue-300",
-  "bg-rose-200 border-rose-300",
-  "bg-orange-200 border-orange-300",
-  "bg-stone-300 border-stone-400",
-  "bg-lime-200 border-lime-300",
-  "bg-violet-200 border-violet-300",
-  "bg-slate-300 border-slate-400",
-];
-
 const DEFAULT_FROM = 5;
 const DEFAULT_TO = 22;
 
@@ -98,7 +87,6 @@ export function WeekView({ days, shiftsOn, eventsOn, highlight, onOpen }: Props)
 
         {week.map(({ day, rows }, dayIndex) => {
           const isToday = localKey(day) === todayKey;
-          const color = DAY_COLORS[(day.getDay() + 6) % 7];
           const events = eventsOn(day);
           return (
             <div key={localKey(day)} className={`flex ${dayIndex < week.length - 1 ? "border-b border-slate-300" : ""}`}>
@@ -155,20 +143,20 @@ export function WeekView({ days, shiftsOn, eventsOn, highlight, onOpen }: Props)
                             type="button"
                             onClick={() => onOpen(day, [row.item])}
                             title={title}
-                            className={`absolute top-1 bottom-1 flex items-center justify-between gap-2 overflow-hidden rounded border px-2 text-[10px] font-semibold text-slate-700 transition hover:brightness-95 ${
-                              empty ? "border-dashed border-rose-300 bg-rose-50 text-rose-500" : color
+                            className={`absolute top-1 bottom-1 flex items-center justify-between gap-2 overflow-hidden rounded border px-2 text-[10px] font-semibold transition hover:brightness-95 ${
+                              empty ? "border-dashed border-rose-300 bg-rose-50 text-rose-500" : lookups.colorOf(row.item)
                             } ${cancelled ? "line-through opacity-50" : ""} ${marked ? "ring-2 ring-accent" : ""}`}
                             style={{ left: position(row.start), width: `calc(${position(row.end)} - ${position(row.start)})` }}
                           >
                             <span className="truncate">
                               {duration(row.end - row.start)}
-                              <span className="font-normal text-slate-500"> · {timeRange(row.item.startTime, row.item.endTime)}</span>
+                              <span className="font-normal opacity-75"> · {timeRange(row.item.startTime, row.item.endTime)}</span>
                             </span>
                             <span className="flex shrink-0 items-center gap-1">
                               {pending > 0 && <span className="rounded bg-white/70 px-1 text-[9px] font-bold text-brand-700">{pending} chờ</span>}
-                              <span className={`font-bold ${cap > 0 && count >= cap ? "text-blue-700" : empty ? "text-rose-500" : "text-slate-700"}`}>
+                              <span className={`font-bold ${empty ? "text-rose-500" : ""}`} title={cap > 0 && count >= cap ? "Đã đủ người" : undefined}>
                                 {count}
-                                {cap > 0 ? `/${cap}` : ""} NV
+                                {cap > 0 ? `/${cap}` : ""} NV{cap > 0 && count >= cap ? " ✓" : ""}
                               </span>
                             </span>
                           </button>

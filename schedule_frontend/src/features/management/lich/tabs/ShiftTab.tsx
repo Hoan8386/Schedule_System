@@ -40,7 +40,7 @@ export function ShiftTab() {
             <EntityActions kind="shift" item={item} />
           </div>
           <div className="mt-4 flex items-center justify-between text-[11px] text-slate-600">
-            <span className="rounded-full bg-white px-2 py-1">{text(item.maxCapacity, "0")} người</span>
+            <span className="rounded-full bg-white px-2 py-1">{item.minCapacity != null ? `${item.minCapacity}–` : ""}{text(item.maxCapacity, "0")} người</span>
             <span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">{text(item.status)}</span>
           </div>
         </div>

@@ -24,6 +24,8 @@ export function EditAccountModal({ account, roles, stores, onClose, onSaved }: P
   const [status, setStatus] = useState(account.status);
   const [submitting, setSubmitting] = useState(false);
 
+  // Admin: không chỉnh quyền, không khóa, luôn hoạt động
+  const isAdmin = account.roleCode === "ADMIN";
   const roleOptions = roles.length ? roles : FALLBACK_ROLES;
   const description = ROLE_DESCRIPTION[Math.min(roleId, 4)];
 
@@ -31,14 +33,14 @@ export function EditAccountModal({ account, roles, stores, onClose, onSaved }: P
     event.preventDefault();
     setSubmitting(true);
     try {
-      await adminUserApi.updateUser(account.id, { email: email.trim() || undefined, phone: phone.trim() || undefined, status });
-      if (roleId !== account.roleId) {
-        // Đổi vai trò = gỡ vai trò cũ (nếu có) rồi gán vai trò mới
-        try {
-          await adminUserApi.removeRole({ userId: account.id, roleId: account.roleId });
-        } catch (cause) {
-          console.warn("Xóa quyền cũ không thành công hoặc chưa từng có:", cause);
-        }
+      await adminUserApi.updateUser(account.id, {
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        status: isAdmin ? "ACTIVE" : status,
+      });
+      if (!isAdmin && roleId !== account.roleId) {
+        // Đổi vai trò = gỡ vai trò cũ rồi gán vai trò mới; gỡ thất bại (vd. quản lý hoạt động cuối cùng) thì dừng
+        await adminUserApi.removeRole({ userId: account.id, roleId: account.roleId });
         await adminUserApi.assignRole({ userId: account.id, roleId });
       }
       onSaved();
@@ -88,7 +90,13 @@ export function EditAccountModal({ account, roles, stores, onClose, onSaved }: P
             </div>
             <div>
               <label className="mb-1 block font-bold text-slate-700">Trạng thái tài khoản</label>
-              <select value={status} onChange={(event) => setStatus(event.target.value as AccountItem["status"])} className={`${field} px-3`}>
+              <select
+                value={isAdmin ? "ACTIVE" : status}
+                disabled={isAdmin}
+                title={isAdmin ? "Tài khoản admin luôn hoạt động" : undefined}
+                onChange={(event) => setStatus(event.target.value as AccountItem["status"])}
+                className={`${field} px-3 disabled:bg-slate-100`}
+              >
                 <option value="ACTIVE">Hoạt động (Bình thường)</option>
                 <option value="LOCKED">Đã khóa (Tạm ngưng)</option>
               </select>
@@ -100,11 +108,17 @@ export function EditAccountModal({ account, roles, stores, onClose, onSaved }: P
               <ShieldCheck className="h-4 w-4 text-brand-600" />
               <span>Vai trò tài khoản *</span>
             </label>
-            <select value={roleId} onChange={(event) => setRoleId(Number(event.target.value))} className={`${field} px-3 font-bold`}>
+            <select
+              value={roleId}
+              disabled={isAdmin}
+              onChange={(event) => setRoleId(Number(event.target.value))}
+              className={`${field} px-3 font-bold disabled:bg-slate-100`}
+            >
               {roleOptions.map((role) => (
                 <option key={role.roleId} value={role.roleId}>{roleLabel(role.roleCode)}</option>
               ))}
             </select>
+            {isAdmin && <p className="mt-1 text-[11px] font-semibold text-rose-600">Tài khoản admin: không chỉnh được quyền, không khóa, luôn hoạt động.</p>}
             {description && (
               <div className="mt-2 rounded-xl border border-brand-200/80 bg-brand-50/70 p-3 text-[11px] leading-relaxed text-brand-900">
                 <p>

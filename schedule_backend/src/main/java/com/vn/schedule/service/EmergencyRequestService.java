@@ -9,8 +9,8 @@ import com.vn.schedule.repository.ShiftAssignmentRepository;
 import com.vn.schedule.repository.ShiftByDateRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.dto.request.EmergencyRequestRequest;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,13 +21,15 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Yêu cầu khẩn của nhân viên sau khi kỳ đăng ký đã kết thúc:
+ * Đặt lịch khẩn của nhân viên – chỉ áp dụng cho lịch đang dùng (kỳ đã kết thúc đăng ký)
+ * và chỉ cho ca bắt đầu sau thời điểm hiện tại:
  * - CANCEL: hủy ca đã được duyệt.
- * - CHANGE: đổi ca đã được duyệt sang ca khác.
+ * - CHANGE: đổi ca đã được duyệt với một đồng nghiệp đang ở ca đích (đổi người, giữ nguyên số lượng mỗi ca).
  * - ADD: đăng ký thêm một ca.
  * Cột theo khóa ngoại của bảng emergency_request:
  *   assignment_id → shift_assignment (phân ca nguồn),
- *   from_shift_assignment_id → shift_by_date (ca nguồn), to_assignment_id → shift_by_date (ca đích).
+ *   from_shift_assignment_id → shift_by_date (ca nguồn), to_assignment_id → shift_by_date (ca đích),
+ *   swap_assignment_id → shift_assignment (phân ca của đồng nghiệp ở ca đích, chỉ với CHANGE).
  * Khi được duyệt, thay đổi được áp dụng ngay vào bảng phân ca.
  */
 @Service
@@ -165,7 +167,6 @@ public class EmergencyRequestService {
             throw bad("Vui lòng nhập lý do");
         }
         Integer me = item.getEmployeeId();
-        LocalDate today = LocalDate.now();
 
         ShiftAssignment source = null;
         if (!"ADD".equals(type)) {
@@ -178,9 +179,7 @@ public class EmergencyRequestService {
             if (!"APPROVED".equalsIgnoreCase(source.getStatus())) {
                 throw bad("Chỉ gửi yêu cầu cho ca đã được duyệt. Ca đang chờ duyệt có thể bỏ đăng ký trực tiếp");
             }
-            if (source.getShiftByDate().getWorkDate().isBefore(today)) {
-                throw bad("Ca đã qua, không thể gửi yêu cầu");
-            }
+            requireUpcomingReleased(source.getShiftByDate(), "Ca hiện tại");
             Integer sourceId = source.getId();
             boolean pending = repository.findAll().stream()
                     .anyMatch(other -> "PENDING".equalsIgnoreCase(other.getStatus())
@@ -192,6 +191,9 @@ public class EmergencyRequestService {
             item.setFromShiftAssignmentId(null);
         }
 
+        if (!"CHANGE".equals(type)) {
+            item.setSwapAssignmentId(null);
+        }
         if ("CANCEL".equals(type)) {
             item.setToAssignmentId(null);
             return;
@@ -202,7 +204,7 @@ public class EmergencyRequestService {
         }
         ShiftByDate target = shiftByDateRepository.findById(item.getToAssignmentId())
                 .orElseThrow(() -> bad("Không tìm thấy ca muốn chọn"));
-        if (target.getWorkDate().isBefore(today)) throw bad("Ca được chọn đã qua");
+        requireUpcomingReleased(target, "Ca được chọn");
         if (target.getShift() == null || target.getShift().getShiftGroup() == null
                 || !memberService.isMember(target.getShift().getShiftGroup().getId(), me)) {
             throw bad("Bạn không thuộc nhóm ca của ca được chọn");
@@ -225,6 +227,54 @@ public class EmergencyRequestService {
                         && Objects.equals(other.getEmployeeId(), me)
                         && Objects.equals(other.getToAssignmentId(), targetId));
         if (pendingAdd) throw bad("Bạn đã gửi yêu cầu thêm ca này, đang chờ duyệt");
+
+        if ("CHANGE".equals(type)) {
+            validateSwap(item, source, target);
+        }
+    }
+
+    /** Đổi ca: bắt buộc chọn đồng nghiệp đang ở ca đích; đồng nghiệp phải làm được ca hiện tại của mình. */
+    private void validateSwap(EmergencyRequest item, ShiftAssignment source, ShiftByDate target) {
+        if (item.getSwapAssignmentId() == null) throw bad("Vui lòng chọn nhân viên muốn đổi ca cùng");
+        ShiftAssignment partner = assignmentRepository.findById(item.getSwapAssignmentId())
+                .orElseThrow(() -> bad("Không tìm thấy phân ca của nhân viên được chọn"));
+        if (partner.getShiftByDate() == null || !Objects.equals(partner.getShiftByDate().getId(), target.getId())) {
+            throw bad("Nhân viên được chọn không làm ca muốn đổi sang");
+        }
+        if (!"APPROVED".equalsIgnoreCase(partner.getStatus()) || partner.getEmployee() == null) {
+            throw bad("Nhân viên được chọn chưa được duyệt vào ca này");
+        }
+        Integer partnerId = partner.getEmployee().getId();
+        if (Objects.equals(partnerId, item.getEmployeeId())) throw bad("Không thể đổi ca với chính mình");
+        ShiftByDate sourceShift = source.getShiftByDate();
+        if (sourceShift.getShift() == null || sourceShift.getShift().getShiftGroup() == null
+                || !memberService.isMember(sourceShift.getShift().getShiftGroup().getId(), partnerId)) {
+            throw bad("Nhân viên được chọn không thuộc nhóm ca của ca hiện tại của bạn");
+        }
+        boolean partnerInSource = assignmentRepository.findByShiftByDateId(sourceShift.getId()).stream()
+                .anyMatch(assignment -> assignment.getEmployee() != null
+                        && Objects.equals(assignment.getEmployee().getId(), partnerId)
+                        && !INACTIVE.contains(String.valueOf(assignment.getStatus()).toUpperCase()));
+        if (partnerInSource) throw bad("Nhân viên được chọn đã có trong ca hiện tại của bạn");
+        Integer partnerAssignmentId = partner.getId();
+        boolean partnerBusy = repository.findAll().stream()
+                .anyMatch(other -> "PENDING".equalsIgnoreCase(other.getStatus())
+                        && (Objects.equals(other.getAssignmentId(), partnerAssignmentId)
+                        || Objects.equals(other.getSwapAssignmentId(), partnerAssignmentId)));
+        if (partnerBusy) throw bad("Ca của nhân viên được chọn đang có yêu cầu chờ duyệt");
+    }
+
+    /** Chỉ Đặt lịch khẩn cho ca thuộc lịch đang dùng (kỳ đã kết thúc đăng ký) và bắt đầu sau thời điểm hiện tại. */
+    private void requireUpcomingReleased(ShiftByDate shift, String label) {
+        LocalTime start = shift.getStartTime() != null ? shift.getStartTime()
+                : shift.getShift() != null ? shift.getShift().getStartTime() : null;
+        LocalDateTime startAt = shift.getWorkDate().atTime(start != null ? start : LocalTime.MIN);
+        if (!startAt.isAfter(LocalDateTime.now())) {
+            throw bad(label + " đã bắt đầu hoặc đã qua – chỉ chọn được ca sau thời điểm hiện tại");
+        }
+        if (!memberService.isReleased(shift.getId())) {
+            throw bad(label + " thuộc kỳ đang đăng ký – hãy đăng ký / bỏ đăng ký ở trang Đăng ký ca");
+        }
     }
 
     /** Áp dụng yêu cầu đã duyệt vào bảng phân ca. */
@@ -232,6 +282,10 @@ public class EmergencyRequestService {
         String type = request.getRequestType() == null ? "" : request.getRequestType().toUpperCase();
         Integer processor = request.getProcessedBy();
         LocalDateTime now = LocalDateTime.now();
+        if ("CHANGE".equals(type) && request.getSwapAssignmentId() != null) {
+            applySwap(request, processor, now);
+            return;
+        }
         if ("CANCEL".equals(type) || "CHANGE".equals(type)) {
             Integer sourceId = request.getAssignmentId();
             if (sourceId != null) {
@@ -268,6 +322,54 @@ public class EmergencyRequestService {
             assignment.setNote(("ADD".equals(type) ? "Thêm ca" : "Đổi ca") + " theo yêu cầu #" + request.getEmergencyRequestId());
             assignmentRepository.save(assignment);
         }
+    }
+
+    /** Đổi ca với đồng nghiệp: mình sang ca đích, đồng nghiệp sang ca hiện tại của mình – số lượng mỗi ca giữ nguyên. */
+    private void applySwap(EmergencyRequest request, Integer processor, LocalDateTime now) {
+        ShiftAssignment mine = assignmentRepository.findById(request.getAssignmentId())
+                .orElseThrow(() -> bad("Không tìm thấy ca hiện tại của người gửi"));
+        ShiftAssignment partner = assignmentRepository.findById(request.getSwapAssignmentId())
+                .orElseThrow(() -> bad("Không tìm thấy phân ca của nhân viên đổi cùng"));
+        if (!"APPROVED".equalsIgnoreCase(mine.getStatus()) || !"APPROVED".equalsIgnoreCase(partner.getStatus())
+                || mine.getEmployee() == null || partner.getEmployee() == null) {
+            throw bad("Một trong hai ca đã thay đổi, không thể đổi ca");
+        }
+        ShiftByDate sourceShift = mine.getShiftByDate();
+        ShiftByDate targetShift = partner.getShiftByDate();
+        Integer me = mine.getEmployee().getId();
+        Integer partnerId = partner.getEmployee().getId();
+        String reason = "Đổi ca theo yêu cầu #" + request.getEmergencyRequestId();
+        for (ShiftAssignment old : List.of(mine, partner)) {
+            old.setStatus("CANCELLED");
+            old.setCancelledAt(now);
+            old.setCancelledBy(processor);
+            old.setCancellationReason("Đổi ca: " + request.getReason());
+            assignmentRepository.save(old);
+        }
+        approveInto(targetShift, me, processor, now, reason);
+        approveInto(sourceShift, partnerId, processor, now, reason);
+    }
+
+    /** Phân nhân viên vào ca theo ngày (dùng lại bản ghi cũ nếu có, vì mỗi nhân viên chỉ có 1 bản ghi / ca theo ngày). */
+    private void approveInto(ShiftByDate shift, Integer employeeId, Integer processor, LocalDateTime now, String note) {
+        ShiftAssignment assignment = assignmentRepository.findByShiftByDateId(shift.getId()).stream()
+                .filter(item -> item.getEmployee() != null && Objects.equals(item.getEmployee().getId(), employeeId))
+                .findFirst()
+                .orElseGet(() -> {
+                    ShiftAssignment created = new ShiftAssignment();
+                    created.setShiftByDate(shift);
+                    created.setEmployee(employeeRepository.getReferenceById(employeeId));
+                    created.setRegisteredAt(now);
+                    return created;
+                });
+        assignment.setStatus("APPROVED");
+        assignment.setApprovedBy(processor);
+        assignment.setApprovedAt(now);
+        assignment.setCancelledAt(null);
+        assignment.setCancelledBy(null);
+        assignment.setCancellationReason(null);
+        assignment.setNote(note);
+        assignmentRepository.save(assignment);
     }
 
     // ------------------------------------------------------------------ Chuyển đổi dữ liệu
@@ -317,6 +419,7 @@ public class EmergencyRequestService {
         entity.setRequestType((String) body.get("requestType"));
         entity.setFromShiftAssignmentId(toInt(body.get("fromShiftAssignmentId")));
         entity.setToAssignmentId(toInt(body.get("toAssignmentId")));
+        entity.setSwapAssignmentId(toInt(body.get("swapAssignmentId")));
         entity.setReason((String) body.get("reason"));
         entity.setStatus((String) body.get("status"));
         entity.setRequestedAt(dateTime(body.get("requestedAt")));
@@ -334,6 +437,7 @@ public class EmergencyRequestService {
         if (values.containsKey("requestType")) entity.setRequestType((String) body.get("requestType"));
         if (values.containsKey("fromShiftAssignmentId")) entity.setFromShiftAssignmentId(toInt(body.get("fromShiftAssignmentId")));
         if (values.containsKey("toAssignmentId")) entity.setToAssignmentId(toInt(body.get("toAssignmentId")));
+        if (values.containsKey("swapAssignmentId")) entity.setSwapAssignmentId(toInt(body.get("swapAssignmentId")));
         if (values.containsKey("reason")) entity.setReason((String) body.get("reason"));
         if (values.containsKey("status")) entity.setStatus((String) body.get("status"));
         if (values.containsKey("requestedAt")) entity.setRequestedAt(dateTime(body.get("requestedAt")));

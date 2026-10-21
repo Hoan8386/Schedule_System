@@ -11,8 +11,11 @@ import { EmployeeTable } from "./components/EmployeeTable";
 import { EmployeeFormModal } from "./form/EmployeeFormModal";
 import { EmployeeProfileModal } from "./profile/EmployeeProfileModal";
 
-/** Quản lý nhân sự: hồ sơ, phân bổ cửa hàng, tự cấp tài khoản qua email. */
-export default function NhanSuPage() {
+/**
+ * Quản lý nhân sự: hồ sơ, phân bổ cửa hàng, tự cấp tài khoản qua email.
+ * readOnly (trưởng cửa hàng): cùng danh sách nhưng chỉ xem thông tin + lọc / tìm kiếm (backend giới hạn theo cửa hàng).
+ */
+export default function NhanSuPage({ readOnly = false }: { readOnly?: boolean }) {
   const data = useEmployees();
   const { filtered, assignmentsByEmployee, storeMap, managerIds, loading, error, setError, reload } = data;
   const [successMsg, setSuccessMsg] = useState("");
@@ -49,10 +52,14 @@ export default function NhanSuPage() {
     <div className="page">
       <PageHeader
         title="Quản lý nhân sự"
-        subtitle="Hồ sơ nhân viên, phân bổ cửa hàng và tự động cấp tài khoản đăng nhập qua Email."
+        subtitle={
+          readOnly
+            ? "Nhân viên tại cửa hàng của bạn – chỉ xem thông tin, lọc và tìm kiếm."
+            : "Hồ sơ nhân viên, phân bổ cửa hàng và tự động cấp tài khoản đăng nhập qua Email."
+        }
         actions={
           <>
-            <Button icon={Plus} onClick={() => openForm(null)}>Thêm nhân viên</Button>
+            {!readOnly && <Button icon={Plus} onClick={() => openForm(null)}>Thêm nhân viên</Button>}
             <Button variant="secondary" onClick={() => void reload()}>
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Làm mới
             </Button>
@@ -90,8 +97,8 @@ export default function NhanSuPage() {
             storeMap={storeMap}
             managerIds={managerIds}
             onView={setViewing}
-            onEdit={openForm}
-            onDelete={(employee) => void remove(employee)}
+            onEdit={readOnly ? undefined : openForm}
+            onDelete={readOnly ? undefined : (employee) => void remove(employee)}
           />
         )}
       </div>
@@ -117,10 +124,14 @@ export default function NhanSuPage() {
           assignments={assignmentsByEmployee.get(viewing.id) ?? []}
           storeMap={storeMap}
           onClose={() => setViewing(null)}
-          onEdit={(employee) => {
-            setViewing(null);
-            openForm(employee);
-          }}
+          onEdit={
+            readOnly
+              ? undefined
+              : (employee) => {
+                  setViewing(null);
+                  openForm(employee);
+                }
+          }
         />
       )}
     </div>

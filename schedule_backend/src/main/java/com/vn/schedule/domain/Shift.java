@@ -34,6 +34,9 @@ public class Shift {
     private LocalTime startTime;
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
+    /** Ngưỡng tối thiểu của khung giờ: khi nhân viên tự đăng ký, ca chỉ nhận tới min cho tới khi mọi khung giờ của nhóm trong ngày đạt min */
+    @Column(name = "min_capacity")
+    private Integer minCapacity;
     @Column(name = "max_capacity")
     private Integer maxCapacity;
     @Column(name = "pay_rate", precision = 15, scale = 2)

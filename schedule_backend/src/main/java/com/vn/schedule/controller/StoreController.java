@@ -20,11 +20,20 @@ import com.vn.schedule.util.anotation.ApiMessage;
 @RestController
 @RequestMapping("/api/v1/stores")
 public class StoreController {
+    /** Trạng thái cửa hàng: OPENING (đang hoạt động) / CLOSED (đã đóng). */
+    public static final String OPENING = "OPENING";
+    public static final String CLOSED = "CLOSED";
+    private static final java.util.Set<String> STATUSES = java.util.Set.of(OPENING, CLOSED);
+
     private final StoreRepository stores;
     private final AttachmentRepository attachments;
     private final R2StorageService storage;
 
-    public StoreController(StoreRepository stores, AttachmentRepository attachments, R2StorageService storage) {
+    private final com.vn.schedule.service.StoreScopeService storeScopeService;
+
+    public StoreController(StoreRepository stores, AttachmentRepository attachments, R2StorageService storage,
+                           com.vn.schedule.service.StoreScopeService storeScopeService) {
+        this.storeScopeService = storeScopeService;
         this.stores = stores;
         this.attachments = attachments;
         this.storage = storage;
@@ -33,7 +42,15 @@ public class StoreController {
     @GetMapping
     @ApiMessage("Lấy dữ liệu")
     public ResponseEntity<List<StoreResponse>> list(@RequestParam(required = false) String status) {
-        return ResponseEntity.ok(responses(status == null ? stores.findAll() : stores.findByStatusOrderByStoreName(status)));
+        // Lọc theo trạng thái đã chuẩn hóa (dữ liệu cũ ACTIVE / INACTIVE vẫn khớp OPENING / CLOSED)
+        String wanted = status == null || status.isBlank() ? null : normalizeStatus(status);
+        // Trưởng cửa hàng / nhân viên chỉ thấy cửa hàng của mình
+        java.util.Set<Integer> visible = storeScopeService.visibleStoreIds();
+        return ResponseEntity.ok(responses(stores.findAll().stream()
+                .filter(store -> visible == null || visible.contains(store.getId()))
+                .filter(store -> wanted == null || wanted.equals(normalizeStatus(store.getStatus())))
+                .sorted(java.util.Comparator.comparing(Store::getStoreName, java.util.Comparator.nullsLast(String::compareTo)))
+                .toList()));
     }
 
     @GetMapping("/{id}")
@@ -50,6 +67,8 @@ public class StoreController {
         Store store = new Store();
         apply(store, request);
         store.setId(null);
+        // Tạo mới luôn ở trạng thái OPENING, chỉ chọn trạng thái khi chỉnh sửa
+        store.setStatus(OPENING);
         return ResponseEntity.status(HttpStatus.CREATED).body(response(stores.save(store)));
     }
 
@@ -59,6 +78,11 @@ public class StoreController {
         Store store = stores.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
         apply(store, request);
+        String status = request.status() == null ? null : request.status().trim().toUpperCase();
+        if (status != null && !STATUSES.contains(status)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trạng thái cửa hàng chỉ là OPENING hoặc CLOSED");
+        }
+        store.setStatus(status != null ? status : normalizeStatus(store.getStatus()));
         return ResponseEntity.ok(response(stores.save(store)));
     }
 
@@ -76,9 +100,19 @@ public class StoreController {
 
     @ApiMessage("Xóa dữ liệu")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        stores.delete(stores.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found")));
-        return ResponseEntity.noContent().build();
+        // Không cho xóa cửa hàng – chuyển sang CLOSED nếu ngừng hoạt động
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Không thể xóa cửa hàng – hãy chuyển trạng thái sang CLOSED nếu cửa hàng ngừng hoạt động");
+    }
+
+    /** Dữ liệu cũ: ACTIVE → OPENING, INACTIVE → CLOSED. */
+    private static String normalizeStatus(String status) {
+        String value = status == null ? OPENING : status.trim().toUpperCase();
+        return switch (value) {
+            case "ACTIVE" -> OPENING;
+            case "INACTIVE" -> CLOSED;
+            default -> STATUSES.contains(value) ? value : OPENING;
+        };
     }
 
     private List<StoreResponse> responses(java.util.Collection<?> values) {
@@ -93,7 +127,7 @@ public class StoreController {
         response.setStoreName(store.getStoreName());
         response.setAddress(store.getAddress());
         response.setPhone(store.getPhone());
-        response.setStatus(store.getStatus());
+        response.setStatus(normalizeStatus(store.getStatus()));
         response.setNote(store.getNote());
         response.setCreatedAt(store.getCreatedAt());
         response.setUpdatedAt(store.getUpdatedAt());

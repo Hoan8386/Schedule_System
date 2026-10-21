@@ -93,6 +93,12 @@ public class ShiftRegistrationService {
         }
         Integer capacity = shiftByDate.getMaxCapacity() != null ? shiftByDate.getMaxCapacity() : shift.getMaxCapacity();
         if (capacity != null && active >= capacity) throw bad("Ca này đã đủ " + capacity + " người");
+        // Ngưỡng ban đầu là min: chỉ nâng lên max khi mọi khung giờ của nhóm trong ngày đã đạt min
+        Integer min = shift.getMinCapacity();
+        if (min != null && min > 0 && active >= min && !allSlotsReachedMin(shift.getShiftGroup().getId(), workDate)) {
+            throw bad("Ca này đã đạt số lượng tối thiểu (" + min + " người). Các khung giờ khác của nhóm trong ngày "
+                    + workDate.format(DATE) + " chưa đủ người tối thiểu – hãy đăng ký khung giờ khác trước");
+        }
 
         // Bảng phân ca chỉ cho một bản ghi / nhân viên / ca theo ngày: đăng ký lại thì dùng lại bản ghi đã hủy
         ShiftAssignment assignment = mine != null
@@ -145,6 +151,20 @@ public class ShiftRegistrationService {
         assignmentRepository.flush();
 
         return memberService.shiftsByDate(employeeId, workDate, workDate, shiftByDate.getId()).get(0);
+    }
+
+    /** Mọi khung giờ (ca mẫu đang hoạt động có min) của nhóm ca trong ngày đã đủ số lượng tối thiểu chưa. */
+    public boolean allSlotsReachedMin(Integer shiftGroupId, LocalDate workDate) {
+        return rows(entityManager, """
+                SELECT sh.shift_id, sh.min_capacity,
+                       (SELECT COUNT(*) FROM shift_assignment a
+                        JOIN shift_by_date sbd ON sbd.shift_by_date_id = a.shift_by_date_id
+                        WHERE sbd.shift_id = sh.shift_id AND sbd.work_date = :workDate
+                          AND a.status NOT IN ('CANCELLED', 'REJECTED'))
+                FROM shift sh
+                WHERE sh.shift_group_id = :groupId AND sh.status = 'ACTIVE' AND COALESCE(sh.min_capacity, 0) > 0
+                """, Map.of("groupId", shiftGroupId, "workDate", workDate)).stream()
+                .allMatch(row -> toLong(row[2]) >= toInt(row[1]));
     }
 
     /**

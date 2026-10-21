@@ -10,8 +10,9 @@ interface Props {
   storeMap: Map<number, StoreResponse>;
   managerIds: Set<number>;
   onView: (employee: EmployeeResponse) => void;
-  onEdit: (employee: EmployeeResponse) => void;
-  onDelete: (employee: EmployeeResponse) => void;
+  /** Bỏ trống = chế độ chỉ xem (trưởng cửa hàng) */
+  onEdit?: (employee: EmployeeResponse) => void;
+  onDelete?: (employee: EmployeeResponse) => void;
 }
 
 const HEADERS = ["Nhân viên", "Email / điện thoại", "Cửa hàng phụ trách", "Ngày bắt đầu", "Trạng thái"];
@@ -83,12 +84,16 @@ export function EmployeeTable({ employees, assignmentsByEmployee, storeMap, mana
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => onEdit(employee)} className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-100" title="Sửa">
-                      <Edit className="h-3.5 w-3.5" />
-                    </button>
-                    <button onClick={() => onDelete(employee)} className="rounded-lg border border-rose-200 p-2 text-rose-700 transition-colors hover:bg-rose-50" title="Xóa">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    {onEdit && (
+                      <button onClick={() => onEdit(employee)} className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-100" title="Sửa">
+                        <Edit className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button onClick={() => onDelete(employee)} className="rounded-lg border border-rose-200 p-2 text-rose-700 transition-colors hover:bg-rose-50" title="Xóa">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

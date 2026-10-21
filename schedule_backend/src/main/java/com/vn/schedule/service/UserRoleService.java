@@ -16,8 +16,10 @@ import java.util.List;
 @Service
 public class UserRoleService {
     private final UserRoleRepository repository;
-    public UserRoleService(UserRoleRepository repository) {
+    private final AccountGuardService guard;
+    public UserRoleService(UserRoleRepository repository, AccountGuardService guard) {
         this.repository = repository;
+        this.guard = guard;
     }
 
     public List<UserRole> findAll() {
@@ -25,34 +27,43 @@ public class UserRoleService {
     }
 
     public UserRole findById(UserRoleId id) {
-        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Kh�f´ng t�f¬m tháº¥y báº£n ghi"));
+        return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bản ghi"));
     }
 
     @Transactional
     public UserRole create(UserRoleRequest body) {
-        return repository.save(toEntity(body));
+        UserRole entity = toEntity(body);
+        guard.checkAssignRole(entity.getUserId());
+        return repository.save(entity);
     }
 
     @Transactional
     public UserRole update(UserRoleId id, UserRoleRequest body) {
         UserRole current = findById(id);
+        guard.checkAssignRole(current.getUserId());
         applyFields(current, body);
         return repository.save(current);
     }
 
     @Transactional
     public void delete(UserRoleId id) {
-        repository.delete(findById(id));
+        UserRole current = findById(id);
+        guard.checkRemoveRole(current.getUserId(), current.getRoleId());
+        repository.delete(current);
     }
 
     @Transactional
     public UserRole save(UserRoleRequest body) {
-        return repository.save(toEntity(body));
+        UserRole entity = toEntity(body);
+        guard.checkAssignRole(entity.getUserId());
+        return repository.save(entity);
     }
 
     @Transactional
     public void deleteBody(UserRoleRequest body) {
-        repository.delete(toEntity(body));
+        UserRole entity = toEntity(body);
+        guard.checkRemoveRole(entity.getUserId(), entity.getRoleId());
+        repository.delete(entity);
     }
     private UserRole toEntity(UserRoleRequest body) {
         UserRole entity = new UserRole();

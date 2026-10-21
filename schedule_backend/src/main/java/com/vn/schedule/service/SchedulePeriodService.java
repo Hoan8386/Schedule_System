@@ -171,7 +171,7 @@ public class SchedulePeriodService {
 
         Integer createdBy = currentEmployeeIdOrNull();
         for (Object row : entityManager.createNativeQuery(
-                "SELECT store_id, store_name FROM store WHERE status = 'ACTIVE' ORDER BY store_name").getResultList()) {
+                "SELECT store_id, store_name FROM store WHERE status IN ('OPENING', 'ACTIVE') ORDER BY store_name").getResultList()) {
             Object[] store = (Object[]) row;
             Integer storeId = ((Number) store[0]).intValue();
             String roundName = "ĐK " + period.getPeriodName() + " · " + store[1];

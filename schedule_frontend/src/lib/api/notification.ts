@@ -6,11 +6,24 @@ export const NOTIFICATION_PAGE_SIZE = 20;
 
 export type NotificationStatus = "all" | "unread" | "read";
 
+/** Việc cần xử lý / thông báo cần quan tâm (tính trực tiếp theo vai trò). page: id menu để mở. */
+export interface NotificationTask {
+  key: string;
+  title: string;
+  detail: string;
+  count: number;
+  page: string;
+  /** warning: việc cần xử lý · info: thông tin cần quan tâm */
+  tone: "warning" | "info";
+}
+
 /** Thông báo của người dùng đang đăng nhập (chuông thông báo). */
 export const notificationApi = {
   getMine: (status: NotificationStatus, page = 0) =>
     http.get<NotificationPage>(withQuery("/api/v1/notification/me", { status, page, size: NOTIFICATION_PAGE_SIZE })),
   getUnreadCount: () => http.get<{ unreadCount: number }>("/api/v1/notification/me/unread-count"),
+  // Gọi ngầm theo chu kỳ nên không hiện toast khi lỗi
+  getTasks: () => http.get<NotificationTask[]>("/api/v1/notification/me/tasks", { notify: false }),
   // Đánh dấu đã đọc diễn ra ngầm khi mở thông báo nên không hiện toast
   markRead: (id: number) => http.patch<NotificationResponse>(`/api/v1/notification/me/${id}/read`, undefined, { notify: false }),
   markAllRead: () => http.patch<{ updated: number }>("/api/v1/notification/me/read-all", undefined, { notify: false }),

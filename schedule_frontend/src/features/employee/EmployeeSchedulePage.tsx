@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import {
   ArrowLeftRight,
+  CalendarPlus,
   CalendarRange,
   Calendar as CalendarIcon,
   CalendarX,
@@ -12,6 +13,7 @@ import {
   Layers,
   MessageSquarePlus,
   Plus,
+  Siren,
 } from "lucide-react";
 import {
   Alert,
@@ -41,11 +43,19 @@ import FeedbackComposer, {
 } from "@/features/feedback/FeedbackComposer";
 import { isShiftFeedbackOpen, useNow } from "@/features/feedback/model";
 import MyRequestList from "./doi-huy-ca/MyRequestList";
+import UrgentRequestModal from "./doi-huy-ca/UrgentRequestModal";
+import { startsAfter, type ShiftRequestType } from "./doi-huy-ca/model";
 
 interface EmployeeSchedulePageProps {
   onOpenRegister: () => void;
-  onOpenSwap: () => void;
-  onOpenCancel: () => void;
+  /** Mở sẵn popup Đặt lịch khẩn với loại này (từ trang Tổng quan) */
+  initialUrgentType?: ShiftRequestType;
+}
+
+/** Popup Đặt lịch khẩn đang mở: loại + ca hiện tại chọn sẵn (khi bấm Đổi / Hủy trên thẻ ca) */
+interface UrgentState {
+  type: ShiftRequestType;
+  assignmentId?: number;
 }
 
 /** "requests": danh sách yêu cầu của nhân viên (giống trang quản lý) */
@@ -132,13 +142,17 @@ function rangeTitle(start: Date, end: Date, view: ViewMode, anchor: Date) {
 /**
  * Lịch làm việc của nhân viên theo tuần / tháng (cùng kiểu thời khóa biểu của quản lý).
  * Chỉ hiển thị ca thuộc kỳ đã kết thúc đăng ký; ca của kỳ đang đăng ký xem ở trang Đăng ký ca.
+ * Đặt lịch khẩn (Thêm / Đổi / Hủy ca) chỉ áp dụng cho lịch đang dùng nên đặt tại đây (popup chung).
  */
 export default function EmployeeSchedulePage({
   onOpenRegister,
-  onOpenSwap,
-  onOpenCancel,
+  initialUrgentType,
 }: EmployeeSchedulePageProps) {
   const [view, setView] = useState<ViewMode>("week");
+  const [urgent, setUrgent] = useState<UrgentState | null>(
+    initialUrgentType ? { type: initialUrgentType } : null,
+  );
+  const [requestVersion, setRequestVersion] = useState(0);
   const [anchor, setAnchor] = useState(() => new Date());
   const [storeId, setStoreId] = useState<number | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -155,11 +169,20 @@ export default function EmployeeSchedulePage({
   // Chỉ ca đã duyệt và đang trong giờ làm mới có nút phản hồi
   const feedbackFor = (shift: StatShift) =>
     isShiftFeedbackOpen(shift, now) ? openFeedback : undefined;
+  // Đổi / Hủy ngay trên thẻ ca: ca đã duyệt, chưa bắt đầu, chưa có yêu cầu chờ duyệt
+  const urgentFor = (shift: StatShift) =>
+    shift.scheduleReleased &&
+    String(shift.assignmentStatus ?? "").toUpperCase() === "APPROVED" &&
+    !shift.pendingRequestType &&
+    startsAfter(shift, now)
+      ? (type: ShiftRequestType) =>
+          setUrgent({ type, assignmentId: shift.assignmentId })
+      : undefined;
 
   const { start, end } = visibleRange(anchor, view);
   const from = localKey(start);
   const to = localKey(end);
-  const { data, loading, error } = useStatData(statisticsApi.getMine, {
+  const { data, loading, error, reload } = useStatData(statisticsApi.getMine, {
     from,
     to,
     storeId,
@@ -279,9 +302,19 @@ export default function EmployeeSchedulePage({
                 Lịch chính thức: ca đã được phân của các kỳ đã kết thúc đăng ký.
               </p>
             </div>
-            <Button icon={Plus} onClick={onOpenRegister}>
-              Đăng ký ca
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                icon={Siren}
+                onClick={() => setUrgent({ type: "ADD" })}
+                title="Thêm / Đổi / Hủy ca trên lịch đang dùng (ca sau thời điểm hiện tại)"
+              >
+                Đặt lịch khẩn
+              </Button>
+              <Button icon={Plus} onClick={onOpenRegister}>
+                Đăng ký ca
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
@@ -347,7 +380,7 @@ export default function EmployeeSchedulePage({
         </div>
 
         {view === "requests" ? (
-          <MyRequestList />
+          <MyRequestList key={requestVersion} />
         ) : (
           <>
             <div className="flex flex-col justify-between gap-3 border-b border-slate-100 py-4 sm:flex-row sm:items-center">
@@ -425,6 +458,7 @@ export default function EmployeeSchedulePage({
                 shiftsByDate={shiftsByDate}
                 todayKey={todayKey}
                 feedbackFor={feedbackFor}
+                urgentFor={urgentFor}
               />
             ) : (
               <MonthView
@@ -462,8 +496,8 @@ export default function EmployeeSchedulePage({
               )}
               <span className="ml-auto inline-flex items-center gap-1">
                 <MessageSquarePlus className="h-3 w-3" /> Phản hồi được ca đã
-                duyệt khi đang trong giờ làm · Ca vẫn có hiệu lực cho đến khi
-                yêu cầu đổi / hủy được duyệt
+                duyệt khi đang trong giờ làm · Đổi / hủy ca sắp tới ngay trên
+                thẻ ca · Ca vẫn có hiệu lực cho đến khi yêu cầu được duyệt
               </span>
             </div>
           </>
@@ -561,19 +595,52 @@ export default function EmployeeSchedulePage({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="secondary"
+            icon={CalendarPlus}
+            onClick={() => setUrgent({ type: "ADD" })}
+          >
+            Thêm ca
+          </Button>
           <Button
             variant="secondary"
             icon={ArrowLeftRight}
-            onClick={onOpenSwap}
+            onClick={() =>
+              setUrgent({
+                type: "CHANGE",
+                assignmentId: spotlight && urgentFor(spotlight) ? spotlight.assignmentId : undefined,
+              })
+            }
           >
-            Yêu cầu đổi ca
+            Đổi ca
           </Button>
-          <Button variant="secondary" icon={CalendarX} onClick={onOpenCancel}>
-            Yêu cầu hủy ca
+          <Button
+            variant="secondary"
+            icon={CalendarX}
+            onClick={() =>
+              setUrgent({
+                type: "CANCEL",
+                assignmentId: spotlight && urgentFor(spotlight) ? spotlight.assignmentId : undefined,
+              })
+            }
+          >
+            Hủy ca
           </Button>
         </div>
       </Card>
+
+      <UrgentRequestModal
+        open={Boolean(urgent)}
+        initialType={urgent?.type}
+        initialAssignmentId={urgent?.assignmentId}
+        onClose={() => setUrgent(null)}
+        onSent={() => {
+          setUrgent(null);
+          reload();
+          setRequestVersion((value) => value + 1);
+        }}
+      />
 
       <Modal
         open={Boolean(feedbackShift)}
@@ -652,10 +719,13 @@ function ShiftCard({
   shift,
   compact = false,
   onFeedback,
+  onUrgent,
 }: {
   shift: StatShift;
   compact?: boolean;
   onFeedback?: (shift: StatShift) => void;
+  /** Đặt lịch khẩn cho ca này (chỉ ca đã duyệt, chưa bắt đầu) */
+  onUrgent?: (type: ShiftRequestType) => void;
 }) {
   const meta = WORK_STATUS[shift.workStatus] ?? WORK_STATUS.UPCOMING;
   const label = shift.pendingRequestType
@@ -723,6 +793,24 @@ function ShiftCard({
           Phản hồi ca đang làm
         </button>
       )}
+      {onUrgent && (
+        <div className="mt-1.5 grid grid-cols-2 gap-1">
+          <button
+            type="button"
+            onClick={() => onUrgent("CHANGE")}
+            className="rounded-md border border-violet-200 bg-white/80 py-0.5 text-[9px] font-bold text-violet-700 transition hover:bg-violet-50"
+          >
+            Đổi ca
+          </button>
+          <button
+            type="button"
+            onClick={() => onUrgent("CANCEL")}
+            className="rounded-md border border-rose-200 bg-white/80 py-0.5 text-[9px] font-bold text-rose-700 transition hover:bg-rose-50"
+          >
+            Hủy ca
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -737,12 +825,14 @@ function WeekView({
   shiftsByDate,
   todayKey,
   feedbackFor,
+  urgentFor,
 }: {
   days: Date[];
   templates: ShiftTemplate[];
   shiftsByDate: Map<string, StatShift[]>;
   todayKey: string;
   feedbackFor: (shift: StatShift) => ((shift: StatShift) => void) | undefined;
+  urgentFor: (shift: StatShift) => ((type: ShiftRequestType) => void) | undefined;
 }) {
   // Mỗi hàng là một khung ca: luôn có các ca mẫu của nhóm, cộng thêm ca thực tế khác xuất hiện trong tuần
   const slots = useMemo(() => {
@@ -848,6 +938,7 @@ function WeekView({
                       key={shift.assignmentId}
                       shift={shift}
                       onFeedback={feedbackFor(shift)}
+                      onUrgent={urgentFor(shift)}
                     />
                   ))}
                 </div>

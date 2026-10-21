@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { CalendarRange, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { dayKey, fromDayKey, localKey } from "@/lib/format";
-import { shiftDateStyle, SHIFT_DATE_STATUS, STATUS_OPTIONS, type CalendarView } from "../../constants";
+import { shiftDateStyle, STATUS_OPTIONS, type CalendarView } from "../../constants";
+import { DAY_PART_LABEL } from "../../groupColors";
 import { useSchedule } from "../../ScheduleContext";
 import { shiftDateId } from "../../useScheduleLookups";
 import { AddButton } from "../../components/EntityActions";
@@ -12,6 +13,9 @@ import { EMPTY_CALENDAR_FILTERS, useCalendar } from "./useCalendar";
 import { MonthView } from "./MonthView";
 import { WeekView } from "./WeekView";
 import { RequestList } from "./RequestList";
+import { ListView } from "./ListView";
+
+const VIEW_LABEL: Record<CalendarView, string> = { week: "Tuần", month: "Tháng", list: "Danh sách" };
 
 export function CalendarTab() {
   const { shiftDates, loading, lookups, openShiftDetail, storeFilter } = useSchedule();
@@ -20,6 +24,8 @@ export function CalendarTab() {
   const calendar = useCalendar(storeId);
   const { filters, setFilters, view, stats } = calendar;
   const [showRequests, setShowRequests] = useState(false);
+  // Nhóm ca của cửa hàng đang xem – để chú thích màu
+  const legendGroups = calendar.groupOptions.map((option) => ({ id: Number(option.value), name: option.label }));
 
   const openDetail = (day: Date, items: typeof shiftDates) => openShiftDetail(localKey(day), items.map(shiftDateId));
 
@@ -45,19 +51,19 @@ export function CalendarTab() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 rounded-xl border border-slate-200 p-1">
-              {(["week", "month"] as CalendarView[]).map((option) => (
+              {(["week", "month", "list"] as CalendarView[]).map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => calendar.setView(option)}
                   className={`rounded-lg px-4 py-2 text-xs font-bold transition ${view === option ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"}`}
                 >
-                  {option === "week" ? "Tuần" : "Tháng"}
+                  {VIEW_LABEL[option]}
                 </button>
               ))}
             </div>
             <button type="button" onClick={() => setShowRequests(true)} className="btn btn-secondary btn-sm">
-              <ClipboardList className="h-4 w-4" /> Danh sách yêu cầu ĐK
+              <ClipboardList className="h-4 w-4" /> Danh sách yêu cầu
             </button>
             <AddButton kind="shiftDate" />
           </div>
@@ -116,42 +122,51 @@ export function CalendarTab() {
         </div>
       </div>
 
-      <div className="flex flex-col justify-between gap-3 border-b border-slate-100 py-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => calendar.move(-1)}
-            aria-label={view === "month" ? "Tháng trước" : "Tuần trước"}
-            className="btn-icon border border-slate-200 text-slate-600 hover:bg-slate-50"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => calendar.move(1)}
-            aria-label={view === "month" ? "Tháng sau" : "Tuần sau"}
-            className="btn-icon border border-slate-200 text-slate-600 hover:bg-slate-50"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <h3 className="ml-1 text-base font-black text-slate-800">{calendar.title}</h3>
-          <button type="button" onClick={() => calendar.setCursor(new Date())} className="btn btn-secondary btn-sm">
-            Hôm nay
-          </button>
+      {view !== "list" && (
+        <div className="flex flex-col justify-between gap-3 border-b border-slate-100 py-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => calendar.move(-1)}
+              aria-label={view === "month" ? "Tháng trước" : "Tuần trước"}
+              className="btn-icon border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => calendar.move(1)}
+              aria-label={view === "month" ? "Tháng sau" : "Tuần sau"}
+              className="btn-icon border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <h3 className="ml-1 text-base font-black text-slate-800">{calendar.title}</h3>
+            <button type="button" onClick={() => calendar.setCursor(new Date())} className="btn btn-secondary btn-sm">
+              Hôm nay
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">{stats.total} ca</span>
+            <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700">
+              {stats.assigned}
+              {stats.capacity > 0 ? `/${stats.capacity}` : ""} lượt phân bổ
+            </span>
+            {stats.pending > 0 && <span className="rounded-full bg-brand-50 px-2.5 py-1 font-bold text-brand-700">{stats.pending} chờ duyệt</span>}
+            {stats.missing > 0 && <span className="rounded-full bg-rose-50 px-2.5 py-1 font-bold text-rose-700">{stats.missing} ca thiếu người</span>}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px]">
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">{stats.total} ca</span>
-          <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700">
-            {stats.assigned}
-            {stats.capacity > 0 ? `/${stats.capacity}` : ""} lượt phân bổ
-          </span>
-          {stats.pending > 0 && <span className="rounded-full bg-brand-50 px-2.5 py-1 font-bold text-brand-700">{stats.pending} chờ duyệt</span>}
-          {stats.missing > 0 && <span className="rounded-full bg-rose-50 px-2.5 py-1 font-bold text-rose-700">{stats.missing} ca thiếu người</span>}
-        </div>
-      </div>
+      )}
 
       {loading && shiftDates.length === 0 ? (
         <Spinner label="Đang tải lịch..." className="mt-4 h-64 rounded-xl border border-dashed border-slate-200" />
+      ) : view === "list" ? (
+        <ListView
+          shifts={calendar.filtered}
+          employeeId={filters.employeeId}
+          storeName={lookups.maps.store.get(Number(storeId))?.storeName ?? ""}
+          onOpen={openDetail}
+        />
       ) : view === "month" ? (
         <MonthView
           days={calendar.days}
@@ -171,7 +186,7 @@ export function CalendarTab() {
         />
       )}
 
-      {!loading && stats.total === 0 && (
+      {view !== "list" && !loading && stats.total === 0 && (
         <p className="mt-3 text-center text-xs text-slate-400">
           Không có ca nào trong {view === "month" ? "tháng" : "tuần"} này
           {calendar.hasFilters ? " với bộ lọc hiện tại" : ""}.
@@ -179,20 +194,19 @@ export function CalendarTab() {
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-500">
-        {view === "month" ? (
-          <>
-            {Object.entries(SHIFT_DATE_STATUS).map(([key, style]) => (
-              <span key={key} className={`rounded-md border px-2 py-1 ${style.card}`}>
-                {style.label}
+        {/* Chú thích màu: mỗi nhóm ca một họ màu, Sáng nhạt → Trưa vừa → Tối đậm */}
+        {legendGroups.map((group) => (
+          <span key={group.id} className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-1.5 py-1">
+            <span className="text-slate-600">{group.name}</span>
+            {(["07:00", "12:00", "18:00"] as const).map((time, index) => (
+              <span key={time} className={`rounded border px-1.5 py-0.5 ${lookups.groupColor(group.id, time)}`}>
+                {DAY_PART_LABEL[(["morning", "noon", "evening"] as const)[index]]}
               </span>
             ))}
-          </>
-        ) : (
-          <>
-            <span className="rounded-md border border-blue-300 bg-blue-200 px-2 py-1 text-slate-700">Ca có nhân viên</span>
-            <span className="rounded-md border border-dashed border-rose-300 bg-rose-50 px-2 py-1 text-rose-500">Ca chưa có nhân viên</span>
-          </>
-        )}
+          </span>
+        ))}
+        <span className="rounded-md border border-dashed border-rose-300 bg-rose-50 px-2 py-1 text-rose-500">Ca chưa có nhân viên</span>
+        <span className="rounded-md border border-slate-200 px-2 py-1 line-through">Ca đã hủy</span>
         <span className="rounded-md bg-rose-50 px-2 py-1 text-rose-600">★ Sự kiện đặc biệt</span>
         {calendar.highlight && <span className="rounded-md px-2 py-1 ring-2 ring-accent">Ca có nhân viên đang chọn</span>}
         <span className="ml-auto">

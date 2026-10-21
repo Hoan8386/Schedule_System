@@ -27,9 +27,9 @@ const periodRange = (period: RegistrationPeriod) => ({
 
 /**
  * Đăng ký ca trên thời khóa biểu của kỳ: mỗi ô là ca mẫu của nhóm × ngày, bấm để đăng ký.
- * `toolbar`: bộ chọn loại (Đăng ký / Thêm / Đổi / Hủy ca) hiển thị ngay dưới tiêu đề trang.
+ * Thêm / Đổi / Hủy ca (Đặt lịch khẩn) chỉ áp dụng cho lịch đang dùng nên nằm ở trang Lịch làm việc.
  */
-export default function EmployeeRegisterShiftPage({ toolbar }: { toolbar?: React.ReactNode }) {
+export default function EmployeeRegisterShiftPage() {
   const [version, setVersion] = useState(0);
   const [pickedPeriodId, setPickedPeriodId] = useState<number | null>(null);
   const [view, setView] = useState<ViewMode>("period");
@@ -130,8 +130,6 @@ export default function EmployeeRegisterShiftPage({ toolbar }: { toolbar?: React
           </Button>
         }
       />
-
-      {toolbar}
 
       {base.error && <Alert>{base.error}</Alert>}
 

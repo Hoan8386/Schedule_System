@@ -12,7 +12,8 @@ interface Props {
   assignments: EmployeeStoreResponse[];
   storeMap: Map<number, StoreResponse>;
   onClose: () => void;
-  onEdit: (employee: EmployeeResponse) => void;
+  /** Bỏ trống = chỉ xem */
+  onEdit?: (employee: EmployeeResponse) => void;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -127,9 +128,11 @@ export function EmployeeProfileModal({ employee, isManager, assignments, storeMa
           <button type="button" onClick={onClose} className="btn btn-secondary btn-sm">
             Đóng
           </button>
-          <button type="button" onClick={() => onEdit(profile)} className="btn btn-primary btn-sm">
-            <Edit className="h-3.5 w-3.5" /> Chỉnh sửa hồ sơ
-          </button>
+          {onEdit && (
+            <button type="button" onClick={() => onEdit(profile)} className="btn btn-primary btn-sm">
+              <Edit className="h-3.5 w-3.5" /> Chỉnh sửa hồ sơ
+            </button>
+          )}
         </div>
       </div>
     </div>
