@@ -7,6 +7,9 @@ import { EMPTY_ACCOUNT_FILTERS } from "./useAccounts";
 interface Props {
   accounts: AccountItem[];
   totalCount: number;
+  loading?: boolean;
+  /** Thanh phân trang hiển thị cuối bảng */
+  footer?: React.ReactNode;
   filters: typeof EMPTY_ACCOUNT_FILTERS;
   onFiltersChange: (filters: typeof EMPTY_ACCOUNT_FILTERS) => void;
   onEdit: (account: AccountItem) => void;
@@ -16,7 +19,7 @@ interface Props {
 const control = "rounded-xl border border-slate-300 bg-white font-bold text-slate-800 outline-hidden hover:border-slate-400";
 
 /** Không có chức năng xóa tài khoản; tài khoản admin luôn hoạt động, không khóa / không chỉnh quyền. */
-export function AccountTable({ accounts, totalCount, filters, onFiltersChange, onEdit, onToggleStatus }: Props) {
+export function AccountTable({ accounts, totalCount, loading, footer, filters, onFiltersChange, onEdit, onToggleStatus }: Props) {
   const [menuFor, setMenuFor] = useState<number | null>(null);
   const set = (key: keyof typeof filters, next: string) => onFiltersChange({ ...filters, [key]: next });
 
@@ -52,7 +55,7 @@ export function AccountTable({ accounts, totalCount, filters, onFiltersChange, o
         </div>
       </div>
 
-      <div className="min-h-[300px] overflow-x-auto">
+      <div className={`min-h-[300px] overflow-x-auto ${loading ? "opacity-60 transition-opacity" : ""}`}>
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="whitespace-nowrap border-b border-slate-200 bg-slate-100 text-xs font-black uppercase tracking-wider text-slate-700">
@@ -140,7 +143,13 @@ export function AccountTable({ accounts, totalCount, filters, onFiltersChange, o
               );
             })}
 
-            {accounts.length === 0 && (
+            {accounts.length === 0 && loading && (
+              <tr>
+                <td colSpan={5} className="px-5 py-12 text-center text-sm font-semibold text-slate-500">Đang tải danh sách tài khoản...</td>
+              </tr>
+            )}
+
+            {accounts.length === 0 && !loading && (
               <tr>
                 <td colSpan={5} className="px-5 py-12 text-center text-slate-400">
                   <Users className="mx-auto mb-2 h-8 w-8 stroke-[1.5] text-slate-300" />
@@ -154,6 +163,7 @@ export function AccountTable({ accounts, totalCount, filters, onFiltersChange, o
           </tbody>
         </table>
       </div>
+      {footer}
     </div>
   );
 }

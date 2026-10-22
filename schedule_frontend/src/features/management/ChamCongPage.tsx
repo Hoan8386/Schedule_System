@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { useInitialLoad } from "@/lib/hooks";
+import React, { useCallback, useState } from "react";
+import { useDebouncedValue, useInitialLoad, usePagedList } from "@/lib/hooks";
 import { AlertCircle, CheckCircle2, Clock, LogIn, Pencil, Plus, RefreshCw, Search, Trash2, UserX, X } from "lucide-react";
 import { AttendanceResponse, EmployeeResponse, managerApi } from "@/lib/api";
+import { Pagination } from "@/components/ui";
+
+/** Số bản ghi chấm công mỗi trang. */
+const PAGE_SIZE = 10;
 
 const text = (value: unknown, fallback = "—") =>
   value === null || value === undefined || value === "" ? fallback : String(value);
@@ -21,42 +25,33 @@ const formatDate = (value: unknown) =>
   value ? new Date(String(value)).toLocaleDateString("vi-VN") : "—";
 
 export default function ChamCongPage() {
-  const [items, setItems] = useState<AttendanceResponse[]>([]);
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
   const [employeeId, setEmployeeId] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
-  const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
-  const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [modal, setModal] = useState<AttendanceResponse | "create" | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    setError("");
+  // Tìm kiếm / lọc / phân trang tại backend, mới nhất trước
+  const keyword = useDebouncedValue(search.trim());
+  const fetchPage = useCallback(
+    (page: number, signal: AbortSignal) =>
+      managerApi.getAttendancePage({ page, size: PAGE_SIZE, q: keyword || undefined, status: status === "ALL" ? undefined : status }, signal),
+    [keyword, status]
+  );
+  const { items: filtered, meta, summary, setPage, loading, error, setError, reload } = usePagedList(fetchPage);
+
+  // Danh sách nhân viên cho ô chọn check-in / form – chỉ tải một lần
+  useInitialLoad(async () => {
     try {
-      const [attendanceResponse, employeeResponse] = await Promise.all([
-        managerApi.getAttendances(),
-        managerApi.getEmployees("ACTIVE"),
-      ]);
-      setItems(attendanceResponse.data ?? []);
-      setEmployees(employeeResponse.data ?? []);
+      const { data } = await managerApi.getEmployees("ACTIVE");
+      setEmployees(data ?? []);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu chấm công");
-    } finally {
-      setLoading(false);
+      setError(cause instanceof Error ? cause.message : "Không thể tải danh sách nhân viên");
     }
-  };
-
-  useInitialLoad(load);
-
-  const filtered = useMemo(() => items.filter((item) => {
-    const searchable = `${employeeNameOf(item)} ${employeeIdOf(item) ?? ""} ${item.note ?? ""}`.toLowerCase();
-    return searchable.includes(search.toLowerCase()) &&
-      (status === "ALL" || item.attendanceStatus === status);
-  }), [items, search, status]);
+  });
 
   const checkIn = async () => {
     if (!employeeId) {
@@ -69,7 +64,7 @@ export default function ChamCongPage() {
     try {
       await managerApi.checkIn({ employeeId: Number(employeeId) });
       setMessage("Check-in thành công");
-      await load();
+      reload();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể check-in");
     } finally {
@@ -83,14 +78,14 @@ export default function ChamCongPage() {
     setError("");
     setMessage("");
     try {
-      const response = await managerApi.updateAttendance(item.id, {
+      await managerApi.updateAttendance(item.id, {
         checkOutAt: new Date().toISOString(),
         attendanceStatus: item.attendanceStatus ?? "PRESENT",
         approvalStatus: item.approvalStatus ?? "PENDING",
         note: item.note ?? null,
       });
-      setItems((current) => current.map((entry) => entry.id === item.id ? response.data : entry));
       setMessage("Check-out thành công");
+      reload();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể check-out");
     } finally {
@@ -110,14 +105,13 @@ export default function ChamCongPage() {
     };
     try {
       if (modal && modal !== "create" && modal.id) {
-        const response = await managerApi.updateAttendance(modal.id, body);
-        setItems((current) => current.map((item) => item.id === modal.id ? response.data : item));
+        await managerApi.updateAttendance(modal.id, body);
       } else {
-        const response = await managerApi.createAttendance(body);
-        setItems((current) => [response.data, ...current]);
+        await managerApi.createAttendance(body);
       }
       setModal(null);
       setMessage("Lưu chấm công thành công");
+      reload();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể lưu chấm công");
     }
@@ -127,8 +121,8 @@ export default function ChamCongPage() {
     if (!item.id || !window.confirm("Bạn có chắc muốn xóa bản ghi chấm công này?")) return;
     try {
       await managerApi.deleteAttendance(item.id);
-      setItems((current) => current.filter((entry) => entry.id !== item.id));
       setMessage("Đã xóa bản ghi chấm công");
+      reload();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể xóa chấm công");
     }
@@ -168,9 +162,10 @@ export default function ChamCongPage() {
     </div>
   );
 
-  const pending = items.filter((item) => !item.checkOutAt).length;
-  const absent = items.filter((item) => item.attendanceStatus === "ABSENT").length;
-  const violations = items.filter((item) => item.attendanceStatus === "LATE" || item.approvalStatus === "REJECTED").length;
+  // Thống kê toàn bộ phạm vi do backend đếm (không phụ thuộc trang đang xem)
+  const pending = summary?.pendingCheckout ?? 0;
+  const absent = summary?.absent ?? 0;
+  const violations = summary?.violations ?? 0;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">{attendanceForm}
@@ -188,7 +183,7 @@ export default function ChamCongPage() {
             <LogIn className="w-4 h-4" /> {checkingIn ? "Đang ghi nhận..." : "Check-in"}
           </button>
           <button onClick={() => setModal("create")} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-brand-300 bg-brand-50 text-brand-800 text-xs font-bold"><Plus className="w-4 h-4" /> Thêm thủ công</button>
-          <button onClick={() => void load()} disabled={loading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold disabled:opacity-50">
+          <button onClick={reload} disabled={loading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold disabled:opacity-50">
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Làm mới
           </button>
         </div>
@@ -198,7 +193,7 @@ export default function ChamCongPage() {
       {message && <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-700"><CheckCircle2 className="w-4 h-4 shrink-0" />{message}</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between"><div><p className="text-xs text-slate-500">Tổng bản ghi</p><p className="text-2xl font-black text-slate-800">{items.length}</p></div><Clock className="w-5 h-5 text-brand-600" /></div>
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between"><div><p className="text-xs text-slate-500">Tổng bản ghi</p><p className="text-2xl font-black text-slate-800">{summary?.total ?? 0}</p></div><Clock className="w-5 h-5 text-brand-600" /></div>
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between"><div><p className="text-xs text-slate-500">Chờ check-out</p><p className="text-2xl font-black text-slate-800">{pending}</p></div><Clock className="w-5 h-5 text-blue-600" /></div>
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between"><div><p className="text-xs text-slate-500">Vắng / vi phạm</p><p className="text-2xl font-black text-slate-800">{absent + violations}</p></div><UserX className="w-5 h-5 text-rose-600" /></div>
       </div>
@@ -209,8 +204,9 @@ export default function ChamCongPage() {
           <select value={status} onChange={(event) => setStatus(event.target.value)} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium"><option value="ALL">Tất cả trạng thái</option><option value="PRESENT">Có mặt</option><option value="ABSENT">Vắng</option><option value="LATE">Đi muộn</option></select>
         </div>
         <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-slate-50 text-[11px] text-slate-400 uppercase"><tr><th className="px-4 py-3">Nhân viên</th><th className="px-4 py-3">Ngày</th><th className="px-4 py-3">Ca</th><th className="px-4 py-3">Check-in</th><th className="px-4 py-3">Check-out</th><th className="px-4 py-3">Trạng thái</th><th className="px-4 py-3">Thao tác</th></tr></thead>
-          <tbody className="divide-y divide-slate-100">{!loading && filtered.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">Không có dữ liệu chấm công từ API</td></tr>}{filtered.map((item, index) => <tr key={String(item.id ?? index)}><td className="px-4 py-4"><p className="font-bold text-slate-800">{employeeNameOf(item)}</p><p className="text-[11px] text-slate-400">#{text(employeeIdOf(item))}</p></td><td className="px-4 py-4 text-slate-600">{formatDate(shiftDateOf(item) ?? item.checkInAt ?? item.checkOutAt)}</td><td className="px-4 py-4 text-slate-600">#{text(typeof item.shiftByDate === "object" && item.shiftByDate ? item.shiftByDate.id : item.shiftByDateId)}</td><td className="px-4 py-4 font-bold text-slate-700">{formatTime(item.checkInAt)}</td><td className="px-4 py-4 text-slate-600">{formatTime(item.checkOutAt)}</td><td className="px-4 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">{text(item.attendanceStatus)}</span></td><td className="px-4 py-4"><div className="flex items-center gap-1">{!item.checkOutAt && <button onClick={() => void checkOut(item)} disabled={updatingId === item.id} className="rounded-xl bg-brand-500 px-3 py-1.5 font-bold text-slate-900 disabled:opacity-50">{updatingId === item.id ? "Đang lưu..." : "Check-out"}</button>}<button onClick={() => setModal(item)} className="rounded-lg p-2 text-blue-600 hover:bg-blue-50" aria-label="Chỉnh sửa"><Pencil className="h-4 w-4" /></button><button onClick={() => void deleteAttendance(item)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50" aria-label="Xóa"><Trash2 className="h-4 w-4" /></button></div></td></tr>)}</tbody>
+          <tbody className="divide-y divide-slate-100">{loading && filtered.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">Đang tải dữ liệu chấm công...</td></tr>}{!loading && filtered.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">{summary?.total ? "Không có bản ghi phù hợp bộ lọc" : "Chưa có dữ liệu chấm công"}</td></tr>}{filtered.map((item, index) => <tr key={String(item.id ?? index)}><td className="px-4 py-4"><p className="font-bold text-slate-800">{employeeNameOf(item)}</p><p className="text-[11px] text-slate-400">#{text(employeeIdOf(item))}</p></td><td className="px-4 py-4 text-slate-600">{formatDate(shiftDateOf(item) ?? item.checkInAt ?? item.checkOutAt)}</td><td className="px-4 py-4 text-slate-600">#{text(typeof item.shiftByDate === "object" && item.shiftByDate ? item.shiftByDate.id : item.shiftByDateId)}</td><td className="px-4 py-4 font-bold text-slate-700">{formatTime(item.checkInAt)}</td><td className="px-4 py-4 text-slate-600">{formatTime(item.checkOutAt)}</td><td className="px-4 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700">{text(item.attendanceStatus)}</span></td><td className="px-4 py-4"><div className="flex items-center gap-1">{!item.checkOutAt && <button onClick={() => void checkOut(item)} disabled={updatingId === item.id} className="rounded-xl bg-brand-500 px-3 py-1.5 font-bold text-slate-900 disabled:opacity-50">{updatingId === item.id ? "Đang lưu..." : "Check-out"}</button>}<button onClick={() => setModal(item)} className="rounded-lg p-2 text-blue-600 hover:bg-blue-50" aria-label="Chỉnh sửa"><Pencil className="h-4 w-4" /></button><button onClick={() => void deleteAttendance(item)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50" aria-label="Xóa"><Trash2 className="h-4 w-4" /></button></div></td></tr>)}</tbody>
         </table></div>
+        <Pagination meta={meta} onPageChange={setPage} disabled={loading} />
       </section>
     </div>
   );

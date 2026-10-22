@@ -1,17 +1,24 @@
 package com.vn.schedule.service;
 
+import com.vn.schedule.domain.Role;
 import com.vn.schedule.domain.User;
+import com.vn.schedule.dto.response.AccountPageResponse;
 import com.vn.schedule.repository.UserRepository;
 import com.vn.schedule.util.ApiException;
+import com.vn.schedule.util.PageSupport;
 import com.vn.schedule.dto.request.UserRequest;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserService {
@@ -24,6 +31,37 @@ public class UserService {
 
     public List<User> findAll() {
         return repository.findAll();
+    }
+
+    private static final Map<String, Sort> ACCOUNT_SORTS = Map.of(
+            "newest", Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")),
+            "username", Sort.by(Sort.Order.asc("username"), Sort.Order.asc("id")),
+            "lastLogin", Sort.by(Sort.Order.desc("lastLoginAt"), Sort.Order.desc("id")));
+
+    /** Trang tài khoản: tìm kiếm, lọc vai trò / trạng thái, phân trang và đếm tổng tại DB trong 3 truy vấn. */
+    @Transactional(readOnly = true)
+    public AccountPageResponse accounts(Integer page, Integer size, String sort, String query, String role, String status) {
+        Pageable pageable = PageSupport.pageable(page, size, sort, ACCOUNT_SORTS, "newest");
+        String roleCode = role == null || role.isBlank() || "ALL".equalsIgnoreCase(role) ? null : role.trim().toUpperCase();
+        Boolean locked = status == null || status.isBlank() || "ALL".equalsIgnoreCase(status) ? null
+                : !"ACTIVE".equalsIgnoreCase(status.trim());
+        Page<Object[]> rows = repository.searchAccounts(PageSupport.keyword(query), locked, roleCode, pageable);
+        List<AccountPageResponse.Item> items = rows.getContent().stream().map(row -> {
+            User user = (User) row[0];
+            Role userRole = (Role) row[1];
+            return new AccountPageResponse.Item(user.getId(), user.getUsername(), user.getEmail(), user.getPhone(),
+                    user.getStatus(), user.getLastLoginAt(), user.getCreatedAt(),
+                    userRole == null ? null : userRole.getRoleId(),
+                    userRole == null ? null : userRole.getRoleCode(),
+                    userRole == null ? null : userRole.getRoleName());
+        }).toList();
+        Object[] counts = repository.accountSummary().get(0);
+        return new AccountPageResponse(PageSupport.meta(rows), items, new AccountPageResponse.Summary(
+                number(counts[0]), number(counts[1]), number(counts[2]), number(counts[3]), number(counts[4])));
+    }
+
+    private static long number(Object value) {
+        return value instanceof Number number ? number.longValue() : 0;
     }
 
     public User findById(Integer id) {

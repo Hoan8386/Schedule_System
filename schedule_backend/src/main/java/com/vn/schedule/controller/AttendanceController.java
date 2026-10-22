@@ -27,6 +27,21 @@ public class AttendanceController {
         return ResponseEntity.ok(attendance.findAll(employeeId));
     }
 
+    /** Trang chấm công: phân trang (mặc định 10, mới nhất trước), tìm kiếm, lọc và số liệu thống kê. */
+    @GetMapping("/page")
+    @ApiMessage("Lấy danh sách chấm công")
+    public ResponseEntity<AttendancePageResponse> page(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer employeeId,
+            @RequestParam(required = false) java.time.LocalDate from,
+            @RequestParam(required = false) java.time.LocalDate to) {
+        return ResponseEntity.ok(attendance.page(page, size, sort, q, status, employeeId, from, to));
+    }
+
     @PostMapping("/check-in")
 
     @ApiMessage("Tạo mới dữ liệu")

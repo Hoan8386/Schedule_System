@@ -59,10 +59,13 @@ public class EmergencyRequestService {
     }
 
     public List<EmergencyRequest> findAll() {
-        return repository.findAll().stream()
-                .filter(item -> !storeScopeService.isCurrentUserRole("EMPLOYEE")
-                        || item.getEmployeeId().equals(storeScopeService.currentEmployeeId()))
-                .toList();
+        // Nhân viên chỉ thấy yêu cầu của mình: lọc tại DB thay vì tải toàn bảng rồi kiểm tra vai trò cho từng dòng.
+        // Mới gửi trước (requestedAt giảm dần, trùng thì id giảm dần).
+        return storeScopeService.isCurrentUserRole("EMPLOYEE")
+                ? repository.findByEmployeeIdOrderByRequestedAtDescEmergencyRequestIdDesc(storeScopeService.currentEmployeeId())
+                : repository.findAll(org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Order.desc("requestedAt"),
+                        org.springframework.data.domain.Sort.Order.desc("emergencyRequestId")));
     }
 
     public EmergencyRequest findById(Integer id) {
@@ -186,13 +189,8 @@ public class EmergencyRequestService {
                 throw bad("Chỉ gửi yêu cầu cho ca đã được duyệt. Ca đang chờ duyệt có thể bỏ đăng ký trực tiếp");
             }
             requireUpcomingReleased(source.getShiftByDate(), "Ca hiện tại");
-            Integer sourceId = source.getId();
             // Kể cả khi ca này là ca đối tác trong yêu cầu đổi ca của người khác
-            boolean pending = repository.findAll().stream()
-                    .anyMatch(other -> "PENDING".equalsIgnoreCase(other.getStatus())
-                            && (Objects.equals(other.getAssignmentId(), sourceId)
-                            || Objects.equals(other.getSwapAssignmentId(), sourceId)));
-            if (pending) throw bad("Ca này đã có yêu cầu đang chờ duyệt");
+            if (repository.existsPendingForAssignment(source.getId())) throw bad("Ca này đã có yêu cầu đang chờ duyệt");
             item.setFromShiftAssignmentId(source.getShiftByDate().getId());
         } else {
             item.setAssignmentId(null);
@@ -229,11 +227,7 @@ public class EmergencyRequestService {
                         && Objects.equals(assignment.getEmployee().getId(), me)
                         && !INACTIVE.contains(String.valueOf(assignment.getStatus()).toUpperCase()));
         if (alreadyIn) throw bad("Bạn đã có ca được chọn rồi");
-        Integer targetId = target.getId();
-        boolean pendingAdd = "ADD".equals(type) && repository.findAll().stream()
-                .anyMatch(other -> "PENDING".equalsIgnoreCase(other.getStatus())
-                        && Objects.equals(other.getEmployeeId(), me)
-                        && Objects.equals(other.getToAssignmentId(), targetId));
+        boolean pendingAdd = "ADD".equals(type) && repository.existsPendingAdd(me, target.getId());
         if (pendingAdd) throw bad("Bạn đã gửi yêu cầu thêm ca này, đang chờ duyệt");
 
         if ("CHANGE".equals(type)) {
@@ -264,12 +258,7 @@ public class EmergencyRequestService {
                         && Objects.equals(assignment.getEmployee().getId(), partnerId)
                         && !INACTIVE.contains(String.valueOf(assignment.getStatus()).toUpperCase()));
         if (partnerInSource) throw bad("Nhân viên được chọn đã có trong ca hiện tại của bạn");
-        Integer partnerAssignmentId = partner.getId();
-        boolean partnerBusy = repository.findAll().stream()
-                .anyMatch(other -> "PENDING".equalsIgnoreCase(other.getStatus())
-                        && (Objects.equals(other.getAssignmentId(), partnerAssignmentId)
-                        || Objects.equals(other.getSwapAssignmentId(), partnerAssignmentId)));
-        if (partnerBusy) throw bad("Ca của nhân viên được chọn đang có yêu cầu chờ duyệt");
+        if (repository.existsPendingForAssignment(partner.getId())) throw bad("Ca của nhân viên được chọn đang có yêu cầu chờ duyệt");
     }
 
     /** Chỉ Đặt lịch khẩn cho ca thuộc lịch đang dùng (kỳ đã kết thúc đăng ký) và bắt đầu sau thời điểm hiện tại. */

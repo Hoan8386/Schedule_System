@@ -22,7 +22,8 @@ public class TestAssignmentService {
     }
 
     public List<TestAssignment> findAll() {
-        return repository.findAll().stream()
+        // Bài giao gần nhất trước
+        return repository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("assignedAt"), org.springframework.data.domain.Sort.Order.desc("testAssignmentId"))).stream()
                 .filter(item -> !storeScopeService.isCurrentUserRole("EMPLOYEE")
                         || item.getEmployeeId().equals(storeScopeService.currentEmployeeId()))
                 .toList();

@@ -41,16 +41,19 @@ public class StoreController {
 
     @GetMapping
     @ApiMessage("Lấy dữ liệu")
-    public ResponseEntity<List<StoreResponse>> list(@RequestParam(required = false) String status) {
+    public ResponseEntity<List<StoreResponse>> list(@RequestParam(required = false) String status,
+                                                    @RequestParam(defaultValue = "true") boolean includeLogo) {
         // Lọc theo trạng thái đã chuẩn hóa (dữ liệu cũ ACTIVE / INACTIVE vẫn khớp OPENING / CLOSED)
         String wanted = status == null || status.isBlank() ? null : normalizeStatus(status);
-        // Trưởng cửa hàng / nhân viên chỉ thấy cửa hàng của mình
+        // Trưởng cửa hàng / nhân viên chỉ thấy cửa hàng của mình (lọc ngay tại DB)
         java.util.Set<Integer> visible = storeScopeService.visibleStoreIds();
-        return ResponseEntity.ok(responses(stores.findAll().stream()
-                .filter(store -> visible == null || visible.contains(store.getId()))
+        List<Store> scoped = visible == null ? stores.findAll() : visible.isEmpty() ? List.of() : stores.findAllById(visible);
+        // includeLogo=false: bỏ tải ảnh từ R2 + base64 (vài trăm KB / cửa hàng) cho các màn hình chỉ cần id / tên
+        return ResponseEntity.ok(scoped.stream()
                 .filter(store -> wanted == null || wanted.equals(normalizeStatus(store.getStatus())))
                 .sorted(java.util.Comparator.comparing(Store::getStoreName, java.util.Comparator.nullsLast(String::compareTo)))
-                .toList()));
+                .map(store -> response(store, includeLogo))
+                .toList());
     }
 
     @GetMapping("/{id}")
@@ -115,12 +118,11 @@ public class StoreController {
         };
     }
 
-    private List<StoreResponse> responses(java.util.Collection<?> values) {
-        return values.stream().map(this::response).toList();
+    private StoreResponse response(Object value) {
+        return response((Store) value, true);
     }
 
-    private StoreResponse response(Object value) {
-        Store store = (Store) value;
+    private StoreResponse response(Store store, boolean includeLogo) {
         StoreResponse response = new StoreResponse();
         response.setId(store.getId());
         response.setStoreCode(store.getStoreCode());
@@ -133,7 +135,7 @@ public class StoreController {
         response.setUpdatedAt(store.getUpdatedAt());
         response.setStoreImageId(store.getStoreImageId());
 
-        if (store.getStoreImageId() != null) {
+        if (includeLogo && store.getStoreImageId() != null) {
             attachments.findById(store.getStoreImageId()).ifPresent(attachment -> {
                 byte[] image = storage.download(attachment.getFilePath());
                 response.setLogoContentType(attachment.getFileType());

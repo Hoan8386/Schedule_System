@@ -8,3 +8,4 @@ export { Badge, Alert, EmptyState, Spinner, FullPageLoader } from "./Feedback";
 export { PageHeader } from "./PageHeader";
 export { Tabs } from "./Tabs";
 export type { TabItem } from "./Tabs";
+export { Pagination } from "./Pagination";

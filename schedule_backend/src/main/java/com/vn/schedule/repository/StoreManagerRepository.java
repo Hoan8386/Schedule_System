@@ -6,4 +6,6 @@ import com.vn.schedule.domain.StoreManager;
 
 public interface StoreManagerRepository extends JpaRepository<StoreManager, Integer> {
     java.util.List<StoreManager> findByEmployeeIdAndStatus(Integer employeeId, String status);
+
+    java.util.List<StoreManager> findByStoreIdInOrderByStoreManagerId(java.util.Collection<Integer> storeIds);
 }

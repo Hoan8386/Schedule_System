@@ -8,6 +8,7 @@ import type {
   StoreRequest,
   StoreResponse,
 } from "../types/hr.types";
+import type { EmployeeListItem, EmployeePageParams, EmployeePageSummary, PageResult } from "../types/page.types";
 
 const employees = crud<EmployeeResponse, EmployeeRequest>("/api/v1/employees");
 const stores = crud<StoreResponse, StoreRequest>("/api/v1/stores");
@@ -16,12 +17,17 @@ const employeeStores = crud<EmployeeStoreResponse, Body>("/api/v1/employee_store
 /** Nhân sự, cửa hàng, phân công cửa hàng, tệp đính kèm. */
 export const hrApi = {
   getEmployees: (status?: string) => http.get<EmployeeResponse[]>(withQuery("/api/v1/employees", { status })),
+  /** Trang nhân sự: phân trang + lọc + tìm kiếm tại backend, kèm cửa hàng phân bổ và số liệu tổng */
+  getEmployeesPage: (params: EmployeePageParams, signal?: AbortSignal) =>
+    http.get<PageResult<EmployeeListItem, EmployeePageSummary>>(withQuery("/api/v1/employees/page", { ...params }), { signal }),
   getEmployee: employees.get,
   createEmployee: employees.create,
   updateEmployee: employees.update,
   deleteEmployee: employees.remove,
 
-  getStores: (status?: string) => http.get<StoreResponse[]>(withQuery("/api/v1/stores", { status })),
+  /** includeLogo: chỉ bật khi cần ảnh cửa hàng (backend tải ảnh và nhúng base64 – nặng) */
+  getStores: (status?: string, includeLogo = false) =>
+    http.get<StoreResponse[]>(withQuery("/api/v1/stores", { status, includeLogo })),
   createStore: stores.create,
   updateStore: stores.update,
   getStoreManagers: () => http.get<StoreManagerResponse[]>("/api/v1/store_manager"),

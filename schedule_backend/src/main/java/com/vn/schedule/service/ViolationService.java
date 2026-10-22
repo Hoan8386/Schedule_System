@@ -20,8 +20,9 @@ public class ViolationService {
         this.repository = repository;
     }
 
+    /** Mới nhất trước theo thời điểm vi phạm (id giảm dần khi trùng thời điểm). */
     public List<Violation> findAll() {
-        return repository.findAll();
+        return repository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("violationTime"), org.springframework.data.domain.Sort.Order.desc("violationId")));
     }
 
     public Violation findById(Integer id) {

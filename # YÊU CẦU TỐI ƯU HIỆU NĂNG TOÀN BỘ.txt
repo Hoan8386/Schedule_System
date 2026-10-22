@@ -1,0 +1,215 @@
+# YÊU CẦU TỐI ƯU HIỆU NĂNG TOÀN BỘ DỰ ÁN SCHEDULE SYSTEM
+
+## 1. Tối ưu thiết kế API và DTO, tập trung xử lý dữ liệu tại backend
+
+Hiện tại, nhiều trang frontend phải gọi nhiều API riêng biệt để lấy dữ liệu liên quan, sau đó tự mapping, ghép dữ liệu theo ID, lọc và xử lý các quan hệ giữa nhiều đối tượng. Điều này làm tăng số request, khối lượng dữ liệu truyền tải và thời gian hiển thị giao diện.
+
+Yêu cầu rà soát toàn bộ frontend, backend và database để thiết kế lại API theo nhu cầu thực tế của từng màn hình.
+
+- Xác định các trang đang gọi nhiều API để hiển thị cùng một bảng, danh sách hoặc nhóm dữ liệu liên quan.
+- Thiết kế lại hoặc bổ sung API tổng hợp phù hợp để một request trả về đầy đủ thông tin mà màn hình cần.
+- Sử dụng DTO riêng cho từng màn hình hoặc nghiệp vụ khi phù hợp. DTO cần chứa các trường cần thiết như tên nhân viên, cửa hàng, ca làm việc, trạng thái, thời gian và thông tin liên quan.
+- Thực hiện mapping và tổng hợp dữ liệu tại backend, sử dụng SQL, JPQL, DTO Projection hoặc phương pháp phù hợp, thay vì để frontend tự ghép nhiều nguồn dữ liệu.
+- Chuyển các thao tác lọc, tìm kiếm, sắp xếp và phân trang dữ liệu lớn xuống backend và database.
+- Tránh tạo API tổng hợp bằng cách gọi tuần tự nhiều service hoặc truy vấn riêng lẻ nếu có thể lấy dữ liệu hiệu quả hơn bằng truy vấn phù hợp.
+- Không gộp mọi dữ liệu vào một API quá lớn. Chỉ trả về dữ liệu cần thiết cho từng màn hình và tải dữ liệu chi tiết khi thực sự cần.
+- Giữ nguyên các API đang được sử dụng hoặc có phương án tương thích khi thay đổi response.
+
+Mục tiêu là để frontend chủ yếu nhận DTO hoàn chỉnh và hiển thị dữ liệu, không phải tự mapping, ghép nhiều danh sách hoặc xử lý tập dữ liệu lớn.
+
+## 2. Phân trang dữ liệu tại backend, mặc định 10 bản ghi mỗi trang
+
+Hiện tại, một số API lấy toàn bộ dữ liệu từ database rồi mới lọc hoặc cắt danh sách tại frontend, gây tốn RAM, tăng thời gian phản hồi và làm giao diện bị lag khi dữ liệu lớn.
+
+Yêu cầu triển khai phân trang tại backend đối với các API danh sách có khả năng trả về nhiều dữ liệu.
+
+- Sử dụng `Pageable`, `Page<T>`, `Slice<T>` hoặc giải pháp phù hợp trong Spring Data JPA.
+- Mặc định 10 bản ghi mỗi trang.
+- Hỗ trợ các tham số `page`, `size`, `sort` và bộ lọc cần thiết.
+- Giới hạn kích thước trang tối đa ở backend.
+- Thực hiện lọc, tìm kiếm và sắp xếp tại database trước khi phân trang.
+- Không sử dụng `findAll()` rồi mới cắt dữ liệu bằng Java, JavaScript, Stream hoặc `subList()`.
+- Chỉ trả về tổng số bản ghi khi giao diện thực sự cần; cân nhắc `Slice<T` hoặc cơ chế tương đương khi không cần tổng số chính xác.
+- Cập nhật frontend để hỗ trợ chuyển trang, tìm kiếm, lọc, sắp xếp, loading, lỗi và dữ liệu rỗng.
+- Không áp dụng máy móc phân trang cho enum, danh mục nhỏ, dữ liệu cấu hình nhỏ hoặc các chức năng cần dữ liệu đầy đủ theo nghiệp vụ.
+
+## 3. Chuẩn hóa thứ tự hiển thị dữ liệu mới nhất trước
+
+Hiện tại, một số danh sách hiển thị dữ liệu từ cũ đến mới hoặc dựa vào thứ tự mặc định của database. Người dùng phải chuyển đến cuối danh sách mới thấy dữ liệu vừa tạo.
+
+Yêu cầu rà soát các API và thiết lập thứ tự mặc định phù hợp để dữ liệu mới nhất xuất hiện trước.
+
+- Với dữ liệu có thời điểm tạo, ưu tiên `createdAt DESC` nếu phù hợp với nghiệp vụ.
+- Với dữ liệu cần ưu tiên thời điểm cập nhật, sử dụng `updatedAt DESC`.
+- Với thông báo, yêu cầu khẩn cấp, phản hồi đánh giá, lịch sử chấm công và phân công, chọn trường thời gian đúng với ý nghĩa nghiệp vụ.
+- Khi nhiều bản ghi có cùng thời gian, bổ sung trường sắp xếp phụ ổn định như `id DESC` nếu phù hợp.
+- Kết hợp sắp xếp với phân trang để trang đầu tiên chứa các bản ghi mới nhất.
+- Sắp xếp tại database trước khi áp dụng giới hạn số bản ghi.
+- Không tự ý đảo thứ tự các dữ liệu cần tuân thủ trình tự nghiệp vụ, chẳng hạn lịch làm việc theo ngày.
+- Giữ nguyên khả năng sắp xếp do người dùng lựa chọn.
+
+## 4. Loại bỏ lỗi N+1 SQL và tối ưu truy vấn database
+
+Rà soát toàn bộ backend để phát hiện các trường hợp một truy vấn chính kéo theo nhiều truy vấn bổ sung cho từng bản ghi.
+
+- Kiểm tra các quan hệ JPA như `@OneToMany`, `@ManyToOne`, `@OneToOne` và `@ManyToMany`.
+- Tìm các vòng lặp gọi repository hoặc service để truy vấn riêng từng bản ghi.
+- Sử dụng DTO Projection, `JOIN FETCH`, `@EntityGraph` hoặc batch fetching khi phù hợp.
+- Tránh truy vấn lại thông tin nhân viên, cửa hàng, ca làm việc hoặc vai trò cho từng dòng dữ liệu nếu có thể lấy bằng một truy vấn hợp lý.
+- Nếu chỉ cần đếm, sử dụng truy vấn `COUNT`; nếu chỉ cần kiểm tra tồn tại, cân nhắc `EXISTS`.
+- Kiểm tra các truy vấn phát sinh trong quá trình mapping DTO và serialize entity.
+- Đo số lượng SQL thực tế trước và sau khi sửa để xác nhận hiệu quả.
+
+Không áp dụng `JOIN FETCH` hoặc tải quan hệ hàng loạt một cách máy móc, đặc biệt khi kết hợp phân trang và các collection lớn.
+
+## 5. Tối ưu dữ liệu trả về từ API
+
+Rà soát các response đang trả về quá nhiều trường, entity hoặc quan hệ mà giao diện không sử dụng.
+
+- Sử dụng DTO phù hợp với từng màn hình.
+- Chỉ trả về các trường cần thiết cho danh sách, trang chi tiết hoặc biểu mẫu.
+- Tránh trả về toàn bộ entity nếu việc này khiến Hibernate tải thêm quan hệ không cần thiết.
+- Không gửi lặp lại cùng một nhóm dữ liệu trong nhiều cấu trúc response.
+- Đảm bảo dữ liệu được trả về có kiểu dữ liệu nhất quán và tương thích với frontend.
+- Phân biệt DTO danh sách và DTO chi tiết nếu hai màn hình có nhu cầu dữ liệu khác nhau.
+- Không loại bỏ trường đang được các module khác sử dụng khi chưa kiểm tra tác động.
+
+## 6. Tối ưu frontend và cơ chế tải dữ liệu
+
+Rà soát các component React và Next.js để tránh việc tải dữ liệu không cần thiết hoặc xử lý dư thừa trên trình duyệt.
+
+- Kiểm tra `useEffect`, dependency array và các luồng gọi API khi component render.
+- Kiểm tra request bị lặp khi mở modal, chuyển tab, thay đổi state hoặc điều hướng.
+- Không tắt React Strict Mode chỉ để che giấu các request lặp trong môi trường phát triển.
+- Sử dụng cơ chế cache hoặc chia sẻ request khi nhiều component cần cùng một dữ liệu.
+- Hủy hoặc bỏ qua request cũ khi người dùng chuyển trang hoặc thay đổi điều kiện tìm kiếm liên tục.
+- Tránh mapping và lọc các tập dữ liệu lớn tại frontend khi backend có thể thực hiện hiệu quả hơn.
+- Duy trì trạng thái loading, lỗi, dữ liệu rỗng, bộ lọc và trang hiện tại.
+- Đối với lịch làm việc, tải dữ liệu theo ngày, tuần, tháng, cửa hàng hoặc phạm vi người dùng yêu cầu thay vì tải toàn bộ lịch sử.
+- Chỉ tải dữ liệu chi tiết của modal khi người dùng thực sự mở hoặc cần sử dụng.
+
+## 7. Tối ưu tìm kiếm, lọc và sắp xếp
+
+Hiện tại, nếu frontend phải tải toàn bộ dữ liệu về rồi mới tìm kiếm, lọc hoặc sắp xếp, thời gian xử lý sẽ tăng theo kích thước dữ liệu.
+
+Yêu cầu chuyển các thao tác này sang backend đối với danh sách lớn.
+
+- Hỗ trợ các bộ lọc phù hợp với từng module như cửa hàng, nhân viên, trạng thái, loại ca và khoảng thời gian.
+- Xử lý điều kiện lọc trực tiếp trong truy vấn database.
+- Xây dựng DTO hoặc tham số truy vấn rõ ràng, có kiểm tra và chuẩn hóa dữ liệu đầu vào.
+- Kết hợp lọc, sắp xếp và phân trang trong cùng luồng truy vấn.
+- Hỗ trợ tìm kiếm có dấu hoặc không dấu nếu nghiệp vụ yêu cầu và có giải pháp phù hợp.
+- Tránh truy vấn quá rộng khi người dùng chưa nhập điều kiện tìm kiếm.
+- Không cho phép client truyền tên cột hoặc biểu thức SQL tùy ý để sắp xếp.
+- Giữ nguyên quyền truy cập và phạm vi dữ liệu khi áp dụng bộ lọc.
+
+## 8. Tối ưu index và hiệu năng truy vấn MySQL
+
+Rà soát các truy vấn có thời gian thực thi cao hoặc được gọi thường xuyên để xác định điểm nghẽn tại database.
+
+- Kiểm tra execution plan bằng `EXPLAIN` hoặc công cụ phù hợp.
+- Đánh giá index trên các trường thường xuyên dùng trong `WHERE`, `JOIN`, `ORDER BY` và phân trang.
+- Ưu tiên kiểm tra các khóa ngoại và trường lọc như `storeId`, `employeeId`, `status`, ngày làm việc và thời gian tạo.
+- Xem xét index kết hợp khi truy vấn thường xuyên lọc theo nhiều trường.
+- Tránh tạo index trùng lặp hoặc không có tác dụng.
+- Kiểm tra truy vấn có sử dụng index thực tế hay không.
+- Đánh giá tác động của index đến thao tác thêm, sửa và xóa dữ liệu.
+- Không thay đổi schema hoặc dữ liệu production một cách tự động khi chưa có kế hoạch migration và phương án khôi phục.
+
+## 9. Tối ưu truy vấn tổng hợp, thông báo và dữ liệu dùng chung
+
+Kiểm tra các module thường xuyên lấy dữ liệu tổng hợp hoặc thực hiện truy vấn lặp lại, đặc biệt là thông báo, phản hồi đánh giá, tài khoản, phân quyền và thống kê.
+
+- Thay việc tải toàn bộ danh sách chỉ để đếm bằng truy vấn tổng hợp phù hợp.
+- Tránh tải toàn bộ `user_role` rồi gọi `findById` riêng cho từng bản ghi.
+- Tối ưu các API được gọi định kỳ hoặc mỗi lần người dùng mở chuông thông báo.
+- Chỉ lấy dữ liệu thuộc phạm vi người dùng được phép xem hoặc xử lý.
+- Cân nhắc cache với dữ liệu ít thay đổi, có quy tắc hết hạn và vô hiệu hóa cache rõ ràng.
+- Không cache tùy tiện dữ liệu phân công, chấm công, quyền truy cập hoặc thông tin nhạy cảm có thể thay đổi liên tục.
+- Nếu cần dữ liệu tổng hợp cho nhiều widget trên một trang, cân nhắc endpoint tổng hợp trả về các số liệu cần thiết thay vì tải nhiều danh sách đầy đủ.
+- Tránh tạo endpoint tổng hợp thực hiện nhiều truy vấn không giới hạn ở phía sau.
+
+## 10. Đảm bảo nghiệp vụ, bảo mật và tương thích sau tối ưu
+
+Trong toàn bộ quá trình thay đổi, phải giữ nguyên hành vi nghiệp vụ của hệ thống.
+
+Các module cần kiểm thử gồm:
+
+- Quản lý tài khoản và phân quyền.
+- Nhân viên và cửa hàng.
+- Lịch làm việc và phân ca.
+- Đăng ký ca, duyệt ca và đổi ca.
+- Chấm công, vi phạm và xử lý kỷ luật.
+- Yêu cầu khẩn cấp.
+- Thông báo và phản hồi đánh giá.
+- Khen thưởng và các chức năng quản lý liên quan.
+
+Yêu cầu:
+
+- Giữ nguyên quy tắc RBAC và xác thực quyền tại backend.
+- Không để người dùng truy cập dữ liệu ngoài phạm vi cửa hàng hoặc vai trò được phép.
+- Kiểm tra quyền trước khi truy vấn hoặc trả về dữ liệu.
+- Không thay đổi tùy tiện endpoint, tên field, kiểu dữ liệu hoặc cấu trúc response.
+- Khi thay đổi API đang được sử dụng, kiểm tra toàn bộ nơi gọi API và cung cấp phương án tương thích phù hợp.
+- Không làm hỏng các luồng tạo, sửa, xóa, duyệt, hủy hoặc cập nhật trạng thái.
+- Không tự ý sửa dữ liệu production hoặc thay đổi nghiệp vụ để làm cho test vượt qua.
+- Xử lý rõ các trường hợp dữ liệu rỗng, bản ghi không tồn tại và tham số phân trang không hợp lệ.
+
+## 11. Kiểm thử, đo lường và bàn giao kết quả
+
+Trước và sau khi tối ưu, thu thập số liệu thực tế khi môi trường cho phép.
+
+Các chỉ số cần đánh giá:
+
+- Số request API khi mở từng trang.
+- Số request trùng lặp.
+- Thời gian phản hồi của từng API.
+- Số câu SQL được thực thi.
+- Số truy vấn N+1 được loại bỏ.
+- Số bản ghi được đọc và trả về.
+- Kích thước response.
+- Thời gian tải và hiển thị giao diện.
+- Mức sử dụng CPU và RAM nếu có công cụ đo.
+
+Các trường hợp kiểm thử bắt buộc:
+
+1. Danh sách rỗng, dưới 10 bản ghi và hàng nghìn bản ghi.
+2. Chuyển trang, tìm kiếm, lọc và sắp xếp.
+3. Kiểm tra bản ghi mới nhất xuất hiện đúng thứ tự.
+4. Tạo, sửa, xóa và cập nhật trạng thái.
+5. Tài khoản thuộc các vai trò `ADMIN`, `MANAGER`, `STORE_MANAGER` và `EMPLOYEE`.
+6. Dữ liệu thuộc nhiều cửa hàng khác nhau.
+7. Các luồng đăng ký ca, đổi ca, duyệt hàng loạt, chấm công và thông báo.
+8. Các API được sử dụng chung bởi nhiều trang hoặc module.
+9. Kiểm tra build frontend, backend và các bài test hiện có.
+
+### Quy trình thực hiện
+
+**Giai đoạn 1:** Đọc toàn bộ cấu trúc dự án, truy vết luồng dữ liệu và lập báo cáo các điểm nghẽn có bằng chứng.
+
+**Giai đoạn 2:** Ưu tiên các trang chậm nhất; thiết kế lại API, DTO và truy vấn để backend trả về dữ liệu tổng hợp đúng nhu cầu.
+
+**Giai đoạn 3:** Triển khai phân trang 10 bản ghi mặc định, sắp xếp mới nhất trước và chuyển lọc, tìm kiếm xuống backend.
+
+**Giai đoạn 4:** Sửa N+1 SQL, truy vấn lặp, truy vấn đếm không cần thiết và các index thực sự cần thiết.
+
+**Giai đoạn 5:** Tối ưu frontend, cache và các luồng tải dữ liệu dựa trên kết quả đo lường.
+
+**Giai đoạn 6:** Chạy regression test, kiểm tra phân quyền, build và so sánh hiệu năng trước với sau.
+
+### Kết quả bàn giao
+
+Sau khi hoàn thành, cung cấp:
+
+- Danh sách điểm nghẽn đã phát hiện và nguyên nhân.
+- Danh sách API đã thiết kế lại hoặc bổ sung.
+- Danh sách DTO đã tạo hoặc chỉnh sửa.
+- Danh sách trang đã tích hợp phân trang.
+- Danh sách truy vấn N+1 và SQL đã tối ưu.
+- Danh sách index được bổ sung cùng lý do.
+- Danh sách file đã thay đổi.
+- Kết quả test và build thực tế.
+- Bảng so sánh hiệu năng trước và sau.
+- Các vấn đề chưa xử lý được cùng nguyên nhân.
+
+**Nguyên tắc bắt buộc:** Trước khi sửa phải kiểm tra mã nguồn thực tế. Thực hiện theo từng giai đoạn, ưu tiên các điểm nghẽn lớn nhất, không sửa máy móc toàn bộ dự án, không chỉ tối ưu ở giao diện và không tuyên bố thành công nếu chưa kiểm chứng. Mọi thay đổi phải giữ nguyên nghiệp vụ và phân quyền hiện có.

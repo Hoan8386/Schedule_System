@@ -3,21 +3,30 @@ package com.vn.schedule.service;
 import com.vn.schedule.domain.Attendance;
 import com.vn.schedule.domain.Employee;
 import com.vn.schedule.domain.ShiftByDate;
+import com.vn.schedule.dto.response.AttendancePageResponse;
 import com.vn.schedule.dto.response.AttendanceResponse;
 import com.vn.schedule.repository.AttendanceRepository;
 import com.vn.schedule.repository.EmployeeRepository;
 import com.vn.schedule.repository.ShiftByDateRepository;
 import com.vn.schedule.util.ApiException;
+import com.vn.schedule.util.PageSupport;
 import com.vn.schedule.dto.request.AttendanceRequest;
 import com.vn.schedule.dto.request.CheckInRequest;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class AttendanceService {
@@ -40,9 +49,40 @@ public class AttendanceService {
             employeeId = storeScopeService.currentEmployeeId();
         }
         List<Attendance> values = employeeId == null
-                ? repository.findAll()
-                : repository.findByEmployeeIdOrderByCheckInAtDesc(employeeId);
+                ? repository.findAllWithRefs()
+                : repository.findByEmployeeWithRefs(employeeId);
         return values.stream().map(this::toResponse).toList();
+    }
+
+    private static final Map<String, Sort> PAGE_SORTS = Map.of(
+            "newest", Sort.by(Sort.Order.desc("checkInAt"), Sort.Order.desc("id")),
+            "oldest", Sort.by(Sort.Order.asc("checkInAt"), Sort.Order.asc("id")));
+
+    /**
+     * Trang chấm công: mới nhất trước, mặc định 10 bản ghi; tìm kiếm / lọc / phân trang tại DB.
+     * Phạm vi: nhân viên chỉ thấy của mình, trưởng cửa hàng thấy nhân viên đang thuộc cửa hàng quản lý.
+     */
+    @Transactional(readOnly = true)
+    public AttendancePageResponse page(Integer page, Integer size, String sort, String query, String status,
+                                       Integer employeeId, LocalDate from, LocalDate to) {
+        Pageable pageable = PageSupport.pageable(page, size, sort, PAGE_SORTS, "newest");
+        Integer selfId = storeScopeService.isCurrentUserRole("EMPLOYEE") ? storeScopeService.currentEmployeeId() : null;
+        Set<Integer> visibleStoreIds = storeScopeService.visibleStoreIds();
+        Collection<Integer> scopeStoreIds = StoreScopeService.inParam(visibleStoreIds);
+        String statusFilter = status == null || status.isBlank() || "ALL".equalsIgnoreCase(status) ? null : status.trim();
+        Page<Attendance> items = repository.searchPage(selfId, visibleStoreIds == null, scopeStoreIds, employeeId,
+                statusFilter,
+                from == null ? null : from.atStartOfDay(),
+                to == null ? null : to.plusDays(1).atStartOfDay(),
+                PageSupport.keyword(query), pageable);
+        Object[] counts = repository.summary(selfId, visibleStoreIds == null, scopeStoreIds).get(0);
+        return new AttendancePageResponse(PageSupport.meta(items),
+                items.getContent().stream().map(this::toResponse).toList(),
+                new AttendancePageResponse.Summary(number(counts[0]), number(counts[1]), number(counts[2]), number(counts[3])));
+    }
+
+    private static long number(Object value) {
+        return value instanceof Number number ? number.longValue() : 0;
     }
 
     @Transactional(readOnly = true)

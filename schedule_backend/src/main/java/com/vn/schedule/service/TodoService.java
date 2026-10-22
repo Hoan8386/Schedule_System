@@ -23,7 +23,8 @@ public class TodoService {
 
     public List<Todo> findAll() {
         java.util.Set<Integer> visibleEmployeeIds = storeScopeService.employeeIdsInVisibleStores();
-        return repository.findAll().stream()
+        // Việc mới tạo trước
+        return repository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("createdAt"), org.springframework.data.domain.Sort.Order.desc("todoId"))).stream()
                 .filter(item -> visibleEmployeeIds == null
                         || visibleEmployeeIds.contains(item.getAssigneeId())
                         || visibleEmployeeIds.contains(item.getCreatedBy()))

@@ -22,7 +22,8 @@ public class BonusRecordService {
     }
 
     public List<BonusRecord> findAll() {
-        return repository.findAll();
+        // Bản ghi mới tạo trước (theo kỳ lương, cùng kỳ thì theo id)
+        return repository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("payrollMonth"), org.springframework.data.domain.Sort.Order.desc("bonusRecordId")));
     }
 
     public BonusRecord findById(Integer id) {

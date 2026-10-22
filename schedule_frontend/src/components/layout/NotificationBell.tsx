@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, Bell, CheckCheck, ChevronRight, Info, Loader2 } from "lucide-react";
 import { notificationApi, type NotificationResponse, type NotificationTask } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
@@ -8,6 +8,8 @@ import { cn } from "@/lib/cn";
 
 /** Chu kỳ làm mới số thông báo chưa đọc (chỉ gọi API đếm, rất nhẹ). */
 const POLL_INTERVAL_MS = 60_000;
+/** Khoảng tối thiểu giữa hai lần làm mới khi cửa sổ được focus lại. */
+const FOCUS_REFRESH_GAP_MS = 15_000;
 
 interface ListState {
   items: NotificationResponse[];
@@ -45,26 +47,26 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (page: string) =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const lastRefreshAt = useRef(0);
+
   const refreshCount = useCallback(async () => {
-    try {
-      const { data } = await notificationApi.getUnreadCount();
-      setUnreadCount(Number(data?.unreadCount ?? 0));
-    } catch {
-      // Giữ số cũ nếu lỗi mạng; không làm phiền người dùng
-    }
-    try {
-      const { data } = await notificationApi.getTasks();
-      setTasks(Array.isArray(data) ? data : []);
-    } catch {
-      // Chưa có quyền / lỗi mạng: giữ danh sách cũ
-    }
+    lastRefreshAt.current = Date.now();
+    // Hai API độc lập: gọi song song
+    const [count, taskList] = await Promise.allSettled([notificationApi.getUnreadCount(), notificationApi.getTasks()]);
+    // Lỗi mạng / chưa có quyền: giữ số và danh sách cũ, không làm phiền người dùng
+    if (count.status === "fulfilled") setUnreadCount(Number(count.value.data?.unreadCount ?? 0));
+    if (taskList.status === "fulfilled") setTasks(Array.isArray(taskList.value.data) ? taskList.value.data : []);
   }, []);
 
-  // Đếm chưa đọc khi mount, định kỳ và khi quay lại tab trình duyệt
+  // Đếm chưa đọc khi mount, định kỳ (bỏ qua khi tab đang ẩn) và khi quay lại tab trình duyệt (không gọi dồn)
   useEffect(() => {
     const first = window.setTimeout(() => void refreshCount(), 0);
-    const timer = window.setInterval(() => void refreshCount(), POLL_INTERVAL_MS);
-    const onFocus = () => void refreshCount();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshCount();
+    }, POLL_INTERVAL_MS);
+    const onFocus = () => {
+      if (Date.now() - lastRefreshAt.current >= FOCUS_REFRESH_GAP_MS) void refreshCount();
+    };
     window.addEventListener("focus", onFocus);
     return () => {
       window.clearTimeout(first);

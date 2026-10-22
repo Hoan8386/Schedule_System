@@ -24,7 +24,8 @@ public class DisciplinaryRecordService {
     }
 
     public List<DisciplinaryRecord> findAll() {
-        return repository.findAll().stream()
+        // Mới nhất trước
+        return repository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("createdAt"), org.springframework.data.domain.Sort.Order.desc("disciplinaryId"))).stream()
                 .filter(item -> storeScopeService.isGlobalUser()
                         || storeScopeService.canAccessStore(item.getStoreId()))
                 .toList();

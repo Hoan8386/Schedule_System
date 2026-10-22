@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Converts persistence objects to deliberately shallow response DTOs.
@@ -21,6 +22,8 @@ import java.util.HashSet;
 public final class DtoMapper {
     private static final Set<String> SENSITIVE = Set.of(
             "password", "passwordHash", "refreshToken", "token", "secret");
+    /** Getter đọc được của từng lớp – Introspector không cache khi có stopClass nên tự cache tại đây. */
+    private static final Map<Class<?>, List<Map.Entry<String, Method>>> GETTERS = new ConcurrentHashMap<>();
 
     private DtoMapper() {
     }
@@ -52,17 +55,11 @@ public final class DtoMapper {
             return result;
         }
         try {
-            for (var descriptor : Introspector.getBeanInfo(source.getClass(), Object.class).getPropertyDescriptors()) {
-                String name = descriptor.getName();
-                if (SENSITIVE.contains(name) || descriptor.getReadMethod() == null) {
-                    continue;
-                }
-                Method getter = descriptor.getReadMethod();
+            for (Map.Entry<String, Method> property : getters(source.getClass())) {
+                String name = property.getKey();
+                Method getter = property.getValue();
                 Object value;
                 try {
-                    if (!getter.canAccess(source)) {
-                        getter.setAccessible(true);
-                    }
                     value = getter.invoke(source);
                 } catch (ReflectiveOperationException | RuntimeException ignored) {
                     continue;
@@ -81,6 +78,29 @@ public final class DtoMapper {
             // A response must remain serializable even for an unusual proxy.
         }
         return result;
+    }
+
+    private static List<Map.Entry<String, Method>> getters(Class<?> type) {
+        return GETTERS.computeIfAbsent(type, key -> {
+            List<Map.Entry<String, Method>> getters = new ArrayList<>();
+            try {
+                for (var descriptor : Introspector.getBeanInfo(key, Object.class).getPropertyDescriptors()) {
+                    Method getter = descriptor.getReadMethod();
+                    if (SENSITIVE.contains(descriptor.getName()) || getter == null) {
+                        continue;
+                    }
+                    try {
+                        getter.setAccessible(true);
+                    } catch (RuntimeException ignored) {
+                        continue;
+                    }
+                    getters.add(Map.entry(descriptor.getName(), getter));
+                }
+            } catch (Exception ignored) {
+                // Lớp bất thường (proxy...) thì trả về rỗng như trước.
+            }
+            return List.copyOf(getters);
+        });
     }
 
     private static Object relationId(Object value) {

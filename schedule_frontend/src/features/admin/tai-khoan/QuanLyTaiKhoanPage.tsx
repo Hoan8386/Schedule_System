@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { AlertCircle, Info, RefreshCw, ShieldCheck, UserCheck, Users, UserX } from "lucide-react";
+import { Pagination } from "@/components/ui";
 import { useAccounts } from "./useAccounts";
 import { AccountTable } from "./AccountTable";
 import { EditAccountModal } from "./EditAccountModal";
@@ -11,19 +12,20 @@ export type { AccountItem } from "./roles";
 
 /** Quản lý tài khoản: danh sách, khóa/mở khóa, sửa và gán vai trò. */
 export default function QuanLyTaiKhoanPage() {
-  const { accounts, filtered, roles, stores, loading, error, filters, setFilters, reload, toggleStatus } = useAccounts();
+  const { accounts, summary, meta, setPage, roles, stores, loadEditOptions, loading, error, filters, setFilters, reload, toggleStatus } = useAccounts();
   const [editing, setEditing] = useState<AccountItem | null>(null);
 
+  const openEdit = (account: AccountItem) => {
+    void loadEditOptions();
+    setEditing(account);
+  };
+
+  // Số liệu tổng do backend đếm trên toàn bộ tài khoản (không phụ thuộc trang / bộ lọc)
   const stats = [
-    { label: "Tổng tài khoản", count: accounts.length, icon: Users, tone: "bg-brand-100 text-brand-800 border-brand-200" },
-    {
-      label: "Quản lý",
-      count: accounts.filter((account) => account.roleCode === "MANAGER" || account.roleCode === "STORE_MANAGER").length,
-      icon: ShieldCheck,
-      tone: "bg-blue-100 text-blue-800 border-blue-200",
-    },
-    { label: "Nhân viên", count: accounts.filter((account) => account.roleCode === "EMPLOYEE").length, icon: UserCheck, tone: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-    { label: "Tài khoản bị khóa", count: accounts.filter((account) => account.status === "LOCKED").length, icon: UserX, tone: "bg-rose-100 text-rose-800 border-rose-200" },
+    { label: "Tổng tài khoản", count: summary?.total ?? 0, icon: Users, tone: "bg-brand-100 text-brand-800 border-brand-200" },
+    { label: "Quản lý", count: summary?.managers ?? 0, icon: ShieldCheck, tone: "bg-blue-100 text-blue-800 border-blue-200" },
+    { label: "Nhân viên", count: summary?.employees ?? 0, icon: UserCheck, tone: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+    { label: "Tài khoản bị khóa", count: summary?.locked ?? 0, icon: UserX, tone: "bg-rose-100 text-rose-800 border-rose-200" },
   ];
 
   return (
@@ -50,7 +52,7 @@ export default function QuanLyTaiKhoanPage() {
             </div>
           </div>
         </div>
-        <button onClick={() => void reload()} disabled={loading} className="btn btn-secondary" title="Đồng bộ lại từ Backend Spring Boot">
+        <button onClick={reload} disabled={loading} className="btn btn-secondary" title="Đồng bộ lại từ Backend Spring Boot">
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-brand-600" : "text-slate-700"}`} />
           <span>{loading ? "Đang đồng bộ..." : "Tải lại dữ liệu"}</span>
         </button>
@@ -64,7 +66,7 @@ export default function QuanLyTaiKhoanPage() {
               Lỗi tải dữ liệu tài khoản từ backend: <strong className="font-bold">{error}</strong>
             </span>
           </div>
-          <button onClick={() => void reload()} className="ml-4 cursor-pointer font-bold text-rose-900 underline hover:text-black">
+          <button onClick={reload} className="ml-4 cursor-pointer font-bold text-rose-900 underline hover:text-black">
             Thử lại
           </button>
         </div>
@@ -85,12 +87,14 @@ export default function QuanLyTaiKhoanPage() {
       </div>
 
       <AccountTable
-        accounts={filtered}
-        totalCount={accounts.length}
+        accounts={accounts}
+        totalCount={summary?.total ?? 0}
+        loading={loading}
         filters={filters}
         onFiltersChange={setFilters}
-        onEdit={setEditing}
+        onEdit={openEdit}
         onToggleStatus={(account) => void toggleStatus(account)}
+        footer={<Pagination meta={meta} onPageChange={setPage} disabled={loading} />}
       />
 
       {editing && (
@@ -101,7 +105,7 @@ export default function QuanLyTaiKhoanPage() {
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
-            void reload();
+            reload();
           }}
         />
       )}

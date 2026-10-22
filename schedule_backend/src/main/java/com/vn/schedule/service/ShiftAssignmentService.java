@@ -37,16 +37,17 @@ public class ShiftAssignmentService {
     }
 
     public List<ShiftAssignmentResponse> findAll() {
-    return repository.findAll().stream()
-                .filter(item -> !storeScopeService.isCurrentUserRole("EMPLOYEE")
-                        || item.getEmployee() != null
-                        && item.getEmployee().getId().equals(storeScopeService.currentEmployeeId()))
-                .filter(item -> storeScopeService.isGlobalUser()
-                        || item.getShiftByDate() != null
-                        && item.getShiftByDate().getShift() != null
-                        && item.getShiftByDate().getShift().getStore() != null
-                        && storeScopeService.visibleStoreIds().contains(
-                                item.getShiftByDate().getShift().getStore().getId()))
+        return findAll(null, null, null, null);
+    }
+
+    /** Lọc theo phạm vi (nhân viên chỉ thấy của mình, cửa hàng được xem) và bộ lọc tùy chọn ngay trong một truy vấn. */
+    @Transactional(readOnly = true)
+    public List<ShiftAssignmentResponse> findAll(Integer storeId, java.time.LocalDate from, java.time.LocalDate to, String status) {
+        Integer employeeId = storeScopeService.isCurrentUserRole("EMPLOYEE") ? storeScopeService.currentEmployeeId() : null;
+        java.util.Set<Integer> storeIds = storeScopeService.visibleStoreIds();
+        return repository.search(storeIds == null, StoreScopeService.inParam(storeIds), employeeId, storeId, from, to,
+                        status == null || status.isBlank() ? null : status.trim())
+                .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }

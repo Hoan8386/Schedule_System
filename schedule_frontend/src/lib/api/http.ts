@@ -85,7 +85,7 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     }
     return response;
   } catch (cause) {
-    if (withToast) {
+    if (withToast && !init.signal?.aborted) {
       const error = cause instanceof ApiError ? cause : null;
       const message = error?.serverMessage ?? "Thao tác thất bại, vui lòng thử lại";
       notify.error(message, { id: `err:${message}`, description: error ? `HTTP ${error.statusCode}` : undefined });
@@ -98,7 +98,9 @@ async function send<T>(endpoint: string, init: RequestInit): Promise<ApiResponse
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}${endpoint}`, { ...init, headers: buildHeaders(init) });
-  } catch {
+  } catch (cause) {
+    // Request bị hủy chủ động (đổi trang / bộ lọc): giữ nguyên AbortError để nơi gọi bỏ qua
+    if (init.signal?.aborted) throw cause;
     throw new ApiError(
       `Không thể kết nối đến máy chủ backend (${API_BASE_URL}). Vui lòng kiểm tra backend đang chạy.`,
       503,
@@ -138,7 +140,10 @@ export function withQuery(path: string, params?: Record<string, QueryValue>) {
   return query ? `${path}?${query}` : path;
 }
 
-type CallOptions = Pick<RequestOptions, "notify">;
+type CallOptions = Pick<RequestOptions, "notify" | "signal">;
+
+/** Lỗi do request bị hủy bằng AbortController (không phải lỗi cần hiển thị). */
+export const isAbortError = (cause: unknown) => cause instanceof DOMException && cause.name === "AbortError";
 
 const jsonBody = (body?: unknown) => (body === undefined ? undefined : JSON.stringify(body));
 

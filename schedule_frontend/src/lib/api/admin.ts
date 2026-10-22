@@ -1,4 +1,5 @@
-import { API_BASE_URL, ACCESS_TOKEN_KEY, crud, http, request, type Body } from "./http";
+import { API_BASE_URL, ACCESS_TOKEN_KEY, crud, http, request, withQuery, type Body } from "./http";
+import type { AccountListItem, AccountPageParams, AccountPageSummary, PageResult } from "./types/page.types";
 import type {
   AuditLogResponse,
   NotificationResponse,
@@ -31,6 +32,9 @@ const deleteWithBody = (path: string, body: unknown, notify?: boolean) =>
 /** Tài khoản, vai trò, quyền và liên kết giữa chúng. */
 export const adminUserApi = {
   getUsers: users.list,
+  /** Trang quản lý tài khoản: tài khoản kèm vai trò, phân trang / lọc tại backend và số liệu tổng */
+  getAccounts: (params: AccountPageParams, signal?: AbortSignal) =>
+    http.get<PageResult<AccountListItem, AccountPageSummary>>(withQuery("/api/v1/user/accounts", { ...params }), { signal }),
   getUser: users.get,
   createUser: users.create,
   updateUser: users.update,
@@ -65,7 +69,7 @@ export const adminBrandApi = {
   getSettings: () => http.get<OrganizationSettingResponse[]>("/api/v1/organization_setting"),
   updateSetting: (id: number, body: Body) => http.put<OrganizationSettingResponse>(`/api/v1/organization_setting/${id}`, body),
   createSetting: (body: Body) => http.post<OrganizationSettingResponse>("/api/v1/organization_setting", body),
-  getStores: () => http.get<StoreItemResponse[]>("/api/v1/stores"),
+  getStores: () => http.get<StoreItemResponse[]>("/api/v1/stores?includeLogo=false"),
   getSystemConfigs: () => http.get<SystemConfigResponse[]>("/api/v1/system_config"),
   saveSystemConfig: (id: number, body: Body) => http.put<SystemConfigResponse>(`/api/v1/system_config/${id}`, body),
 };

@@ -40,13 +40,9 @@ public class ShiftService {
 
     @Transactional(readOnly = true)
     public List<Shift> findAll(Integer storeId, String status) {
-        return repository.findAll().stream()
-                .filter(shift -> storeScopeService.isGlobalUser()
-                        || shift.getStore() != null
-                        && storeScopeService.visibleStoreIds().contains(shift.getStore().getId()))
-                .filter(shift -> storeId == null || shift.getStore().getId().equals(storeId))
-                .filter(shift -> status == null || status.isBlank() || status.equalsIgnoreCase(shift.getStatus()))
-                .toList();
+        java.util.Set<Integer> storeIds = storeScopeService.visibleStoreIds();
+        return repository.search(storeIds == null, StoreScopeService.inParam(storeIds), storeId,
+                status == null || status.isBlank() ? null : status);
     }
 
     public Shift findById(Integer id) {

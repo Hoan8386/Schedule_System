@@ -1,23 +1,23 @@
 import React from "react";
 import { Edit, Eye, Trash2 } from "lucide-react";
-import type { EmployeeResponse, EmployeeStoreResponse, StoreResponse } from "@/lib/api";
+import type { EmployeeListItem, StoreResponse } from "@/lib/api";
 import { date, isActive, statusName, value } from "../utils";
 import { EmployeeAvatar } from "./EmployeeAvatar";
 
 interface Props {
-  employees: EmployeeResponse[];
-  assignmentsByEmployee: Map<number, EmployeeStoreResponse[]>;
+  /** Một trang nhân viên, đã kèm cửa hàng phân bổ (có tên) và cờ quản lý từ backend */
+  employees: EmployeeListItem[];
+  /** Dự phòng tên cửa hàng khi bản ghi phân bổ chưa có storeName */
   storeMap: Map<number, StoreResponse>;
-  managerIds: Set<number>;
-  onView: (employee: EmployeeResponse) => void;
+  onView: (employee: EmployeeListItem) => void;
   /** Bỏ trống = chế độ chỉ xem (trưởng cửa hàng) */
-  onEdit?: (employee: EmployeeResponse) => void;
-  onDelete?: (employee: EmployeeResponse) => void;
+  onEdit?: (employee: EmployeeListItem) => void;
+  onDelete?: (employee: EmployeeListItem) => void;
 }
 
 const HEADERS = ["Nhân viên", "Email / điện thoại", "Cửa hàng phụ trách", "Ngày bắt đầu", "Trạng thái"];
 
-export function EmployeeTable({ employees, assignmentsByEmployee, storeMap, managerIds, onView, onEdit, onDelete }: Props) {
+export function EmployeeTable({ employees, storeMap, onView, onEdit, onDelete }: Props) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-left">
@@ -31,7 +31,7 @@ export function EmployeeTable({ employees, assignmentsByEmployee, storeMap, mana
         </thead>
         <tbody className="divide-y divide-slate-100 text-xs">
           {employees.map((employee) => {
-            const employeeAssignments = assignmentsByEmployee.get(employee.id) ?? [];
+            const employeeAssignments = employee.assignments ?? [];
             return (
               <tr key={employee.id} className="transition-colors hover:bg-slate-50/50">
                 <td className="px-5 py-4">
@@ -43,7 +43,7 @@ export function EmployeeTable({ employees, assignmentsByEmployee, storeMap, mana
                       <b className="text-sm text-slate-800 transition-colors group-hover:text-brand-600">{value(employee.fullName)}</b>
                       <span className="block font-mono text-[11px] text-slate-400">
                         Mã: {value(employee.employeeCode)}
-                        {managerIds.has(employee.id) ? " · QUẢN LÝ" : ""}
+                        {employee.manager ? " · QUẢN LÝ" : ""}
                       </span>
                     </div>
                   </div>
@@ -57,7 +57,7 @@ export function EmployeeTable({ employees, assignmentsByEmployee, storeMap, mana
                     {employeeAssignments.length ? (
                       employeeAssignments.map((assignment) => (
                         <span key={assignment.employeeStoreId} className="rounded-lg border border-slate-200/60 bg-slate-100 px-2 py-0.5 text-slate-700">
-                          {value(storeMap.get(assignment.storeId)?.storeName, `Store #${assignment.storeId}`)}
+                          {value(assignment.storeName ?? storeMap.get(assignment.storeId)?.storeName, `Store #${assignment.storeId}`)}
                         </span>
                       ))
                     ) : (

@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import { Plus, RefreshCw, Users } from "lucide-react";
-import { Button, PageHeader } from "@/components/ui";
-import { managerApi, type EmployeeResponse } from "@/lib/api";
-import { isActive, value } from "./utils";
+import { Button, PageHeader, Pagination } from "@/components/ui";
+import { managerApi, type EmployeeListItem } from "@/lib/api";
+import { value } from "./utils";
 import { useEmployees } from "./useEmployees";
 import { EmployeeFiltersBar } from "./components/EmployeeFiltersBar";
 import { EmployeeTable } from "./components/EmployeeTable";
@@ -17,35 +17,36 @@ import { EmployeeProfileModal } from "./profile/EmployeeProfileModal";
  */
 export default function NhanSuPage({ readOnly = false }: { readOnly?: boolean }) {
   const data = useEmployees();
-  const { filtered, assignmentsByEmployee, storeMap, managerIds, loading, error, setError, reload } = data;
+  const { employees, storeMap, loading, error, setError, reload } = data;
   const [successMsg, setSuccessMsg] = useState("");
   /** undefined = đóng, null = tạo mới */
-  const [editing, setEditing] = useState<EmployeeResponse | null | undefined>(undefined);
-  const [viewing, setViewing] = useState<EmployeeResponse | null>(null);
+  const [editing, setEditing] = useState<EmployeeListItem | null | undefined>(undefined);
+  const [viewing, setViewing] = useState<EmployeeListItem | null>(null);
 
-  const openForm = (employee: EmployeeResponse | null) => {
+  const openForm = (employee: EmployeeListItem | null) => {
     setError("");
     setSuccessMsg("");
     setEditing(employee);
   };
 
-  const remove = async (employee: EmployeeResponse) => {
+  const remove = async (employee: EmployeeListItem) => {
     if (!window.confirm(`Xóa hồ sơ "${value(employee.fullName)}"?`)) return;
     setError("");
     setSuccessMsg("");
     try {
       await managerApi.deleteEmployee(employee.id);
       setSuccessMsg(`Đã xóa nhân viên "${value(employee.fullName)}" thành công.`);
-      await reload();
+      reload();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể xóa nhân viên");
     }
   };
 
+  // Số liệu tổng do backend đếm trong phạm vi được xem (không phụ thuộc trang hiện tại)
   const stats = [
-    { label: "Tổng nhân sự", count: data.employees.length },
-    { label: "Đang làm việc", count: data.employees.filter((employee) => isActive(employee.status)).length },
-    { label: "Đang giữ vai trò quản lý", count: managerIds.size },
+    { label: "Tổng nhân sự", count: data.summary?.total ?? 0 },
+    { label: "Đang làm việc", count: data.summary?.active ?? 0 },
+    { label: "Đang giữ vai trò quản lý", count: data.summary?.managers ?? 0 },
   ];
 
   return (
@@ -86,33 +87,36 @@ export default function NhanSuPage({ readOnly = false }: { readOnly?: boolean })
 
       <div className="card overflow-hidden">
         <EmployeeFiltersBar filters={data.filters} onChange={data.setFilters} stores={data.stores} />
-        {loading ? (
+        {loading && employees.length === 0 ? (
           <div className="p-10 text-center text-sm text-slate-500">Đang tải dữ liệu nhân sự...</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-500">Không có dữ liệu nhân sự từ API.</div>
+        ) : employees.length === 0 ? (
+          <div className="p-10 text-center text-sm text-slate-500">
+            {data.summary?.total ? "Không có nhân viên phù hợp bộ lọc." : "Chưa có dữ liệu nhân sự."}
+          </div>
         ) : (
-          <EmployeeTable
-            employees={filtered}
-            assignmentsByEmployee={assignmentsByEmployee}
-            storeMap={storeMap}
-            managerIds={managerIds}
-            onView={setViewing}
-            onEdit={readOnly ? undefined : openForm}
-            onDelete={readOnly ? undefined : (employee) => void remove(employee)}
-          />
+          <div className={loading ? "opacity-60 transition-opacity" : undefined}>
+            <EmployeeTable
+              employees={employees}
+              storeMap={storeMap}
+              onView={setViewing}
+              onEdit={readOnly ? undefined : openForm}
+              onDelete={readOnly ? undefined : (employee) => void remove(employee)}
+            />
+          </div>
         )}
+        <Pagination meta={data.meta} onPageChange={data.setPage} disabled={loading} />
       </div>
 
       {editing !== undefined && (
         <EmployeeFormModal
           employee={editing}
-          assignments={editing ? assignmentsByEmployee.get(editing.id) ?? [] : []}
+          assignments={editing?.assignments ?? []}
           stores={data.stores}
           onClose={() => setEditing(undefined)}
           onSaved={(message) => {
             setEditing(undefined);
             setSuccessMsg(message);
-            void reload();
+            reload();
           }}
         />
       )}
@@ -120,16 +124,16 @@ export default function NhanSuPage({ readOnly = false }: { readOnly?: boolean })
       {viewing && (
         <EmployeeProfileModal
           employee={viewing}
-          isManager={managerIds.has(viewing.id)}
-          assignments={assignmentsByEmployee.get(viewing.id) ?? []}
+          isManager={viewing.manager}
+          assignments={viewing.assignments}
           storeMap={storeMap}
           onClose={() => setViewing(null)}
           onEdit={
             readOnly
               ? undefined
-              : (employee) => {
+              : () => {
                   setViewing(null);
-                  openForm(employee);
+                  openForm(viewing);
                 }
           }
         />

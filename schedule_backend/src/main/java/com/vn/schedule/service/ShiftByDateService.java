@@ -10,12 +10,7 @@ import com.vn.schedule.repository.ScheduleSessionRepository;
 import com.vn.schedule.repository.ShiftByDateRepository;
 import com.vn.schedule.repository.SchedulePeriodRepository;
 import com.vn.schedule.repository.ShiftRepository;
-import com.vn.schedule.repository.UserRepository;
-import com.vn.schedule.repository.UserRoleRepository;
-import com.vn.schedule.repository.RoleRepository;
-import com.vn.schedule.repository.EmployeeRepository;
-import com.vn.schedule.repository.ShiftAssignmentRepository;
-import com.vn.schedule.repository.StoreManagerRepository;
+import com.vn.schedule.util.PageSupport;
 import com.vn.schedule.util.SecurityUtil;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.dto.request.ShiftByDateRequest;
@@ -31,43 +26,27 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class ShiftByDateService {
     private final ShiftByDateRepository repository;
     private final ShiftRepository shiftRepository;
     private final SchedulePeriodRepository schedulePeriodRepository;
-    private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final RoleRepository roleRepository;
-    private final EmployeeRepository employeeRepository;
-    private final ShiftAssignmentRepository shiftAssignmentRepository;
-    private final StoreManagerRepository storeManagerRepository;
     private final ScheduleRoundRepository scheduleRoundRepository;
     private final ScheduleSessionRepository scheduleSessionRepository;
+    private final StoreScopeService storeScopeService;
 
     public ShiftByDateService(ShiftByDateRepository repository, ShiftRepository shiftRepository,
                               SchedulePeriodRepository schedulePeriodRepository,
-                              UserRepository userRepository,
-                              UserRoleRepository userRoleRepository,
-                              RoleRepository roleRepository,
-                              EmployeeRepository employeeRepository,
-                              ShiftAssignmentRepository shiftAssignmentRepository,
-                              StoreManagerRepository storeManagerRepository,
                               ScheduleRoundRepository scheduleRoundRepository,
-                              ScheduleSessionRepository scheduleSessionRepository) {
+                              ScheduleSessionRepository scheduleSessionRepository,
+                              StoreScopeService storeScopeService) {
         this.repository = repository;
         this.shiftRepository = shiftRepository;
         this.schedulePeriodRepository = schedulePeriodRepository;
-        this.userRepository = userRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.roleRepository = roleRepository;
-        this.employeeRepository = employeeRepository;
-        this.shiftAssignmentRepository = shiftAssignmentRepository;
-        this.storeManagerRepository = storeManagerRepository;
         this.scheduleRoundRepository = scheduleRoundRepository;
         this.scheduleSessionRepository = scheduleSessionRepository;
+        this.storeScopeService = storeScopeService;
     }
 
     @Transactional(readOnly = true)
@@ -78,64 +57,20 @@ public class ShiftByDateService {
     @Transactional(readOnly = true)
     public List<ShiftByDateResponse> findAll(String query, LocalDate from, LocalDate to,
                                              Integer storeId, String status) {
-        Set<Integer> visibleIds = visibleShiftIds();
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-
-        return repository.findAll().stream()
-                .filter(item -> visibleIds == null || visibleIds.contains(item.getId()))
-                .filter(item -> from == null || !item.getWorkDate().isBefore(from))
-                .filter(item -> to == null || !item.getWorkDate().isAfter(to))
-                .filter(item -> storeId == null || item.getShift().getStore().getId().equals(storeId))
-                .filter(item -> status == null || status.isBlank()
-                        || status.equalsIgnoreCase(item.getStatus()))
-                .filter(item -> normalizedQuery.isBlank()
-                        || contains(item.getShiftName(), normalizedQuery)
-                        || contains(item.getShift().getShiftName(), normalizedQuery)
-                        || contains(item.getShift().getShiftCode(), normalizedQuery))
+        if (SecurityUtil.getCurrentUserLogin().isEmpty()) return List.of();
+        // ADMIN / MANAGER: mọi ca; STORE_MANAGER: ca của cửa hàng quản lý; còn lại: ca từng được phân
+        String roleCode = storeScopeService.primaryRoleCode();
+        boolean global = "MANAGER".equalsIgnoreCase(roleCode) || "ADMIN".equalsIgnoreCase(roleCode);
+        boolean storeManager = "STORE_MANAGER".equalsIgnoreCase(roleCode);
+        Set<Integer> storeIds = storeManager ? storeScopeService.visibleStoreIds() : null;
+        Integer assignedEmployeeId = global || storeManager ? null : storeScopeService.currentEmployeeId();
+        return repository.search(global || !storeManager, StoreScopeService.inParam(storeIds), assignedEmployeeId,
+                        from, to, storeId,
+                        status == null || status.isBlank() ? null : status,
+                        PageSupport.keyword(query))
+                .stream()
                 .map(this::toResponse)
                 .toList();
-    }
-
-    private boolean contains(String value, String query) {
-        return value != null && value.toLowerCase().contains(query);
-    }
-
-    private Set<Integer> visibleShiftIds() {
-        String login = SecurityUtil.getCurrentUserLogin().orElse(null);
-        if (login == null) return Set.of();
-
-        var user = userRepository.findByUsername(login)
-                .or(() -> userRepository.findByEmail(login))
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Tài khoản không tồn tại"));
-        String roleCode = userRoleRepository.findByUserId(user.getId()).stream()
-                .map(userRole -> roleRepository.findById(userRole.getRoleId()).orElse(null))
-                .filter(java.util.Objects::nonNull)
-                .map(role -> role.getRoleCode())
-                .findFirst()
-                .orElse("");
-
-        if ("MANAGER".equalsIgnoreCase(roleCode) || "ADMIN".equalsIgnoreCase(roleCode)) {
-            return null;
-        }
-
-        Integer employeeId = employeeRepository.findByUser_Id(user.getId())
-                .map(employee -> employee.getId())
-                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "Tài khoản chưa có hồ sơ nhân viên"));
-
-        if ("STORE_MANAGER".equalsIgnoreCase(roleCode)) {
-            Set<Integer> storeIds = storeManagerRepository.findByEmployeeIdAndStatus(employeeId, "ACTIVE")
-                    .stream().map(item -> item.getStoreId()).collect(Collectors.toSet());
-            return repository.findAll().stream()
-                    .filter(item -> item.getShift() != null
-                            && storeIds.contains(item.getShift().getStore().getId()))
-                    .map(ShiftByDate::getId)
-                    .collect(Collectors.toSet());
-        }
-
-        return shiftAssignmentRepository.findByEmployeeIdOrderByRegisteredAtDesc(employeeId)
-                .stream()
-                .map(assignment -> assignment.getShiftByDate().getId())
-                .collect(Collectors.toSet());
     }
 
     public ShiftByDate findById(Integer id) {

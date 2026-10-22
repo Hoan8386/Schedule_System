@@ -20,7 +20,8 @@ public class AuditLogService {
     }
 
     public List<AuditLog> findAll() {
-        return repository.findAll();
+        // Nhật ký mới nhất trước
+        return repository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("createdAt"), org.springframework.data.domain.Sort.Order.desc("auditId")));
     }
 
     public AuditLog findById(Integer id) {

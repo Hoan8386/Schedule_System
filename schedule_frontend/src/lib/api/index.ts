@@ -10,7 +10,7 @@
  *   storeManager.ts   – tập con cho trưởng cửa hàng
  *   types/*           – kiểu dữ liệu response / request
  */
-export { API_BASE_URL, ApiError, request, http, crud, withQuery, uploadFile } from "./http";
+export { API_BASE_URL, ApiError, request, http, crud, withQuery, uploadFile, isAbortError } from "./http";
 export type { ApiResponse, Body } from "./http";
 
 export { authApi } from "./auth";
@@ -28,3 +28,4 @@ export type * from "./types/schedule.types";
 export type * from "./types/operations.types";
 export type * from "./types/test.types";
 export type * from "./types/statistics.types";
+export type * from "./types/page.types";

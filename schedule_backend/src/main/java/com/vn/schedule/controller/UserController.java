@@ -28,6 +28,19 @@ public class UserController {
         return ResponseEntity.ok(responses(service.findAll()));
     }
 
+    /** Trang quản lý tài khoản: tài khoản + vai trò hiện tại, phân trang (mặc định 10, mới nhất trước) và số liệu tổng. */
+    @GetMapping("/accounts")
+    @ApiMessage("Lấy danh sách tài khoản")
+    public ResponseEntity<AccountPageResponse> accounts(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(service.accounts(page, size, sort, q, role, status));
+    }
+
     @GetMapping("/{id}")
     @ApiMessage("Lấy thông tin chi tiết")
     public ResponseEntity<UserResponse> get(@PathVariable Integer id) {

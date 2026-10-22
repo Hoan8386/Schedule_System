@@ -73,7 +73,7 @@ export default function CuaHangPage() {
     try {
       const [storeResponse, assignmentResponse, managerResponse, employeeResponse] =
         await Promise.all([
-          managerApi.getStores(status === "ALL" ? undefined : status),
+          managerApi.getStores(status === "ALL" ? undefined : status, true),
           managerApi.getEmployeeStores(),
           managerApi.getStoreManagers(),
           managerApi.getEmployees(),

@@ -11,6 +11,7 @@ import type {
   RuleResponse,
   ViolationResponse,
 } from "../types/operations.types";
+import type { AttendancePage, AttendancePageParams } from "../types/page.types";
 
 const attendance = crud<AttendanceResponse>("/api/v1/attendance");
 const rules = crud<RuleResponse>("/api/v1/rule");
@@ -23,6 +24,9 @@ const todos = crud<Body>("/api/v1/todo");
 /** Chấm công, nội quy, vi phạm, kỷ luật, thưởng, feedback, todo. */
 export const operationsApi = {
   getAttendances: (employeeId?: number) => http.get<AttendanceResponse[]>(withQuery("/api/v1/attendance", { employeeId })),
+  /** Trang chấm công: mới nhất trước, phân trang + lọc + tìm kiếm tại backend, kèm số liệu thống kê */
+  getAttendancePage: (params: AttendancePageParams, signal?: AbortSignal) =>
+    http.get<AttendancePage>(withQuery("/api/v1/attendance/page", { ...params }), { signal }),
   checkIn: (body: { employeeId: number; latitude?: number; longitude?: number }) =>
     http.post<AttendanceResponse>("/api/v1/attendance/check-in", body),
   createAttendance: attendance.create,

@@ -26,8 +26,12 @@ public class ShiftAssignmentController {
 
     @GetMapping
     @ApiMessage("Lấy danh sách dữ liệu")
-    public ResponseEntity<List<ShiftAssignmentResponse>> list() {
-        return ResponseEntity.ok(service.findAll());
+    public ResponseEntity<List<ShiftAssignmentResponse>> list(
+            @RequestParam(required = false) Integer storeId,
+            @RequestParam(required = false) java.time.LocalDate from,
+            @RequestParam(required = false) java.time.LocalDate to,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(service.findAll(storeId, from, to, status));
     }
 
     @GetMapping("/{id}")

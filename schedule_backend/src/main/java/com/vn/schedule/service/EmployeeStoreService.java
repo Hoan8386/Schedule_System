@@ -2,10 +2,8 @@ package com.vn.schedule.service;
 
 import com.vn.schedule.domain.EmployeeStore;
 import com.vn.schedule.repository.EmployeeStoreRepository;
-import com.vn.schedule.repository.StoreManagerRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.dto.request.EmployeeStoreRequest;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
 
 import org.springframework.http.HttpStatus;
@@ -18,15 +16,12 @@ import java.util.Set;
 @Service
 public class EmployeeStoreService {
     private final EmployeeStoreRepository repository;
-    private final StoreManagerRepository storeManagerRepository;
     private final StoreScopeService storeScopeService;
 
     public EmployeeStoreService(
             EmployeeStoreRepository repository,
-            StoreManagerRepository storeManagerRepository,
             StoreScopeService storeScopeService) {
         this.repository = repository;
-        this.storeManagerRepository = storeManagerRepository;
         this.storeScopeService = storeScopeService;
     }
 
@@ -39,33 +34,28 @@ public class EmployeeStoreService {
             String role,
             String status,
             Boolean primary) {
-        Set<String> managerAssignments = storeManagerRepository.findAll().stream()
-                .filter(manager -> status == null || status.equalsIgnoreCase(manager.getStatus()))
-                .map(manager -> manager.getEmployeeId() + ":" + manager.getStoreId())
-                .collect(java.util.stream.Collectors.toSet());
-
+        String roleFilter = normalizeRole(role);
+        if ("NONE".equals(roleFilter)) {
+            return List.of();
+        }
+        // Lọc phạm vi cửa hàng, trạng thái, cửa hàng chính và vai trò (so với store_manager) ngay trong một truy vấn
         Set<Integer> visibleStoreIds = storeScopeService.visibleStoreIds();
-        return repository.findAll().stream()
-                .filter(item -> visibleStoreIds == null || visibleStoreIds.contains(item.getStoreId()))
-                .filter(item -> storeId == null || storeId.equals(item.getStoreId()))
-                .filter(item -> status == null || status.equalsIgnoreCase(item.getStatus()))
-                .filter(item -> primary == null || primary.equals(item.getIsPrimary()))
-                .filter(item -> matchesRole(item, role, managerAssignments))
-                .toList();
+        return repository.search(visibleStoreIds == null, StoreScopeService.inParam(visibleStoreIds),
+                true, List.of(-1), storeId, status, primary, roleFilter);
     }
 
-    private boolean matchesRole(EmployeeStore item, String role, Set<String> managerAssignments) {
+    /** ALL / rỗng = không lọc; STAFF = EMPLOYEE; giá trị khác MANAGER / EMPLOYEE không khớp bản ghi nào (NONE). */
+    private static String normalizeRole(String role) {
         if (role == null || role.isBlank() || "ALL".equalsIgnoreCase(role)) {
-            return true;
+            return null;
         }
-        boolean manager = managerAssignments.contains(item.getEmployeeId() + ":" + item.getStoreId());
         if ("MANAGER".equalsIgnoreCase(role)) {
-            return manager;
+            return "MANAGER";
         }
         if ("EMPLOYEE".equalsIgnoreCase(role) || "STAFF".equalsIgnoreCase(role)) {
-            return !manager;
+            return "EMPLOYEE";
         }
-        return false;
+        return "NONE";
     }
 
     public EmployeeStore findById(Integer id) {
