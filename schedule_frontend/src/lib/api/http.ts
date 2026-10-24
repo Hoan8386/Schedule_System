@@ -8,7 +8,7 @@
 
 import { notify, successMessage } from "@/lib/toast";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.n2.tinhgon.xyz/";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
 export const ACCESS_TOKEN_KEY = "bloan_access_token";
 
 export class ApiError extends Error {
