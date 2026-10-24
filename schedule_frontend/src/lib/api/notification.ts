@@ -21,9 +21,9 @@ export interface NotificationTask {
 export const notificationApi = {
   getMine: (status: NotificationStatus, page = 0) =>
     http.get<NotificationPage>(withQuery("/api/v1/notification/me", { status, page, size: NOTIFICATION_PAGE_SIZE })),
-  getUnreadCount: () => http.get<{ unreadCount: number }>("/api/v1/notification/me/unread-count"),
-  // Gọi ngầm theo chu kỳ nên không hiện toast khi lỗi
-  getTasks: () => http.get<NotificationTask[]>("/api/v1/notification/me/tasks", { notify: false }),
+  // Gọi ngầm theo chu kỳ: không giữ overlay chuyển trang, không hiện toast khi lỗi
+  getUnreadCount: () => http.get<{ unreadCount: number }>("/api/v1/notification/me/unread-count", { background: true }),
+  getTasks: () => http.get<NotificationTask[]>("/api/v1/notification/me/tasks", { notify: false, background: true }),
   // Đánh dấu đã đọc diễn ra ngầm khi mở thông báo nên không hiện toast
   markRead: (id: number) => http.patch<NotificationResponse>(`/api/v1/notification/me/${id}/read`, undefined, { notify: false }),
   markAllRead: () => http.patch<{ updated: number }>("/api/v1/notification/me/read-all", undefined, { notify: false }),

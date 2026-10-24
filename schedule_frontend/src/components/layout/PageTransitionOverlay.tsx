@@ -21,7 +21,7 @@ export function PageTransitionOverlay({ visible }: { visible: boolean }) {
           <Image src="/logo/logo2.jpg" alt="" fill sizes="80px" priority className="scale-[2.3] object-cover" />
         </div>
       </div>
-      {visible && <p className="text-xs font-bold text-slate-500">Đang tải trang...</p>}
+      {visible && <p className="text-xs font-bold text-slate-500">Đang tải dữ liệu...</p>}
     </div>
   );
 }

@@ -5,6 +5,7 @@
  *   http.ts           – HTTP client, ApiError, helper crud/withQuery/uploadFile
  *   auth.ts           – đăng nhập, đăng ký, phiên
  *   admin.ts          – quản trị hệ thống
+ *   database.ts       – xuất / nhập toàn bộ database (.sql)
  *   manager/*         – API quản lý chuỗi theo domain (hr, schedule, operations, test)
  *   employee.ts       – tập con cho nhân viên
  *   storeManager.ts   – tập con cho trưởng cửa hàng
@@ -21,6 +22,8 @@ export { storeManagerApi } from "./storeManager";
 export { notificationApi, broadcastApi, NOTIFICATION_PAGE_SIZE } from "./notification";
 export type { NotificationStatus, NotificationTask, BroadcastAudience, BroadcastAudiences, BroadcastHistoryItem, BroadcastPriority } from "./notification";
 export { statisticsApi } from "./statistics";
+export { databaseApi } from "./database";
+export type { DatabaseStatus } from "./database";
 
 export type * from "./types/admin.types";
 export type * from "./types/hr.types";

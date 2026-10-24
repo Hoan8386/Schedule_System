@@ -67,15 +67,40 @@ export interface RequestOptions extends RequestInit {
    * Các API /auth tự hiển thị thông báo riêng nên mặc định tắt.
    */
   notify?: boolean;
+  /** Request chạy ngầm (polling...): không tính vào trạng thái "đang tải dữ liệu" của trang. */
+  background?: boolean;
+}
+
+/* ---------- Theo dõi request tải dữ liệu đang chạy (overlay chuyển trang chờ hết mới ẩn) ---------- */
+
+let pendingLoads = 0;
+const pendingListeners = new Set<(count: number) => void>();
+
+const setPendingLoads = (delta: number) => {
+  pendingLoads += delta;
+  pendingListeners.forEach((listener) => listener(pendingLoads));
+};
+
+/** Số request GET (không chạy ngầm) đang chờ phản hồi. */
+export const getPendingLoads = () => pendingLoads;
+
+/** Lắng nghe thay đổi số request đang tải; trả về hàm hủy đăng ký. */
+export function subscribePendingLoads(listener: (count: number) => void) {
+  pendingListeners.add(listener);
+  return () => {
+    pendingListeners.delete(listener);
+  };
 }
 
 const shouldNotify = (endpoint: string, method: string, notifyOption?: boolean) =>
   notifyOption ?? (method !== "GET" && !endpoint.startsWith("/api/v1/auth/"));
 
 export async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
-  const { notify: notifyOption, ...init } = options;
+  const { notify: notifyOption, background, ...init } = options;
   const method = (init.method ?? "GET").toUpperCase();
   const withToast = typeof window !== "undefined" && shouldNotify(endpoint, method, notifyOption);
+  const tracked = typeof window !== "undefined" && method === "GET" && !background;
+  if (tracked) setPendingLoads(1);
 
   try {
     const response = await send<T>(endpoint, init);
@@ -91,6 +116,8 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       notify.error(message, { id: `err:${message}`, description: error ? `HTTP ${error.statusCode}` : undefined });
     }
     throw cause;
+  } finally {
+    if (tracked) setPendingLoads(-1);
   }
 }
 
@@ -140,7 +167,7 @@ export function withQuery(path: string, params?: Record<string, QueryValue>) {
   return query ? `${path}?${query}` : path;
 }
 
-type CallOptions = Pick<RequestOptions, "notify" | "signal">;
+type CallOptions = Pick<RequestOptions, "notify" | "signal" | "background">;
 
 /** Lỗi do request bị hủy bằng AbortController (không phải lỗi cần hiển thị). */
 export const isAbortError = (cause: unknown) => cause instanceof DOMException && cause.name === "AbortError";

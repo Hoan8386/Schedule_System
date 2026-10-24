@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { CalendarRange, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
+import { CalendarRange, ChevronLeft, ChevronRight, ClipboardList, Search } from "lucide-react";
 import { Spinner } from "@/components/ui";
-import { dayKey, fromDayKey, localKey } from "@/lib/format";
+import { localKey } from "@/lib/format";
 import { shiftDateStyle, STATUS_OPTIONS, type CalendarView } from "../../constants";
 import { DAY_PART_LABEL } from "../../groupColors";
 import { useSchedule } from "../../ScheduleContext";
@@ -9,7 +9,7 @@ import { shiftDateId } from "../../useScheduleLookups";
 import { AddButton } from "../../components/EntityActions";
 import { FilterSelect } from "../../components/FilterSelect";
 import { StoreFilter } from "../../components/StoreFilter";
-import { EMPTY_CALENDAR_FILTERS, useCalendar } from "./useCalendar";
+import { useCalendar } from "./useCalendar";
 import { MonthView } from "./MonthView";
 import { WeekView } from "./WeekView";
 import { RequestList } from "./RequestList";
@@ -22,20 +22,12 @@ export function CalendarTab() {
   // Thời khóa biểu luôn xem theo một cửa hàng: chưa chọn thì mặc định cửa hàng đầu tiên
   const storeId = storeFilter || String(lookups.options.stores[0]?.value ?? "");
   const calendar = useCalendar(storeId);
-  const { filters, setFilters, view, stats } = calendar;
+  const { filters, draft, setDraft, view, stats } = calendar;
   const [showRequests, setShowRequests] = useState(false);
   // Nhóm ca của cửa hàng đang xem – để chú thích màu
   const legendGroups = calendar.groupOptions.map((option) => ({ id: Number(option.value), name: option.label }));
 
   const openDetail = (day: Date, items: typeof shiftDates) => openShiftDetail(localKey(day), items.map(shiftDateId));
-
-  const selectPeriod = (periodId: string) => {
-    setFilters((current) => ({ ...current, periodId }));
-    // Nhảy tới tháng bắt đầu áp dụng của kỳ được chọn
-    const period = lookups.maps.period.get(Number(periodId));
-    const start = dayKey(period?.effectiveStartDate ?? period?.startDate);
-    if (start) calendar.setCursor(fromDayKey(start));
-  };
 
   return (
     <section className="card p-4 sm:p-5">
@@ -72,48 +64,53 @@ export function CalendarTab() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
           {/* Các ô lọc chia 2 dòng × 3 cột trên màn hình lớn */}
           <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <StoreFilter className="min-w-0" allowAll={false} value={storeId} />
+            <StoreFilter className="min-w-0" allowAll={false} value={calendar.draftStore} onChange={calendar.setDraftStoreId} />
             <FilterSelect
               label="Kỳ lập lịch"
               allLabel="Tất cả kỳ"
               className="min-w-0"
-              value={filters.periodId}
-              onChange={selectPeriod}
+              value={draft.periodId}
+              onChange={(periodId) => setDraft((current) => ({ ...current, periodId }))}
               options={lookups.options.periods}
             />
             <FilterSelect
               label="Nhóm ca"
               allLabel="Tất cả nhóm ca"
               className="min-w-0"
-              value={calendar.groupOptions.some((option) => String(option.value) === filters.groupId) ? filters.groupId : ""}
-              onChange={(groupId) => setFilters((current) => ({ ...current, groupId }))}
-              options={calendar.groupOptions}
+              value={calendar.draftGroupOptions.some((option) => String(option.value) === draft.groupId) ? draft.groupId : ""}
+              onChange={(groupId) => setDraft((current) => ({ ...current, groupId }))}
+              options={calendar.draftGroupOptions}
             />
             <FilterSelect
               label="Trạng thái ca"
               allLabel="Tất cả trạng thái"
               className="min-w-0"
-              value={filters.status}
-              onChange={(status) => setFilters((current) => ({ ...current, status }))}
+              value={draft.status}
+              onChange={(status) => setDraft((current) => ({ ...current, status }))}
               options={STATUS_OPTIONS.shiftDate.map((status) => ({
                 value: status,
                 label: shiftDateStyle(status).label,
               }))}
             />
-            <FilterSelect
-              label="Nhân viên"
-              allLabel="Tất cả nhân viên"
-              className="min-w-0"
-              value={filters.employeeId}
-              onChange={(employeeId) => setFilters((current) => ({ ...current, employeeId }))}
-              options={calendar.employeeOptions}
-            />
+            <div className="flex min-w-0 items-end gap-2">
+              <FilterSelect
+                label="Nhân viên"
+                allLabel="Tất cả nhân viên"
+                className="min-w-0 flex-1"
+                value={draft.employeeId}
+                onChange={(employeeId) => setDraft((current) => ({ ...current, employeeId }))}
+                options={calendar.employeeOptions}
+              />
+              <button type="button" onClick={calendar.search} disabled={loading} className="btn btn-primary btn-sm disabled:cursor-not-allowed disabled:opacity-50">
+                <Search className="h-4 w-4" /> Tìm kiếm
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2 lg:ml-auto">
             <button
               type="button"
-              onClick={() => setFilters(EMPTY_CALENDAR_FILTERS)}
-              disabled={!calendar.hasFilters}
+              onClick={calendar.resetFilters}
+              disabled={!calendar.hasFilters && !calendar.hasDraft}
               className="btn btn-secondary btn-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               Bỏ lọc

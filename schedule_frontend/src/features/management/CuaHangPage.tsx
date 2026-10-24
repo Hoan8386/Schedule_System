@@ -145,6 +145,9 @@ export default function CuaHangPage() {
       if (logoFile) {
         const uploadResponse = await managerApi.uploadAttachment(logoFile);
         imageId = uploadResponse.data.attachmentId;
+        // Lưu lỗi rồi bấm lại → dùng ảnh đã tải, không tải trùng lên R2
+        setStoreForm((current) => ({ ...current, storeImageId: imageId, logoId: imageId }));
+        setLogoFile(null);
       }
       // Tạo mới luôn là OPENING (backend cũng ép); chỉ chọn trạng thái khi chỉnh sửa
       const payload = { ...storeForm, status: editingStore ? storeForm.status : "OPENING", storeImageId: imageId, logoId: imageId };

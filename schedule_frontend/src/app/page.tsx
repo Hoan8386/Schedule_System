@@ -5,6 +5,7 @@ import AuthLayout from "@/features/auth/AuthLayout";
 import LoginForm from "@/features/auth/LoginForm";
 import RegisterForm from "@/features/auth/RegisterForm";
 import ForgotPasswordModal from "@/features/auth/ForgotPasswordModal";
+import DatabaseSetupEntry from "@/features/auth/DatabaseSetupEntry";
 import AdminLayout from "@/features/admin/AdminLayout";
 import ManagementLayout from "@/features/management/ManagementLayout";
 import StoreManagerLayout from "@/features/store-manager/StoreManagerLayout";
@@ -56,6 +57,7 @@ export default function Home() {
         ) : (
           <RegisterForm onSwitchToLogin={() => setAuthMode("login")} />
         )}
+        <DatabaseSetupEntry />
       </AuthLayout>
       <ForgotPasswordModal
         isOpen={isForgotModalOpen}

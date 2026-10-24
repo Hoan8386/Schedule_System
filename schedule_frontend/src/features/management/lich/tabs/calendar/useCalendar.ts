@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { ShiftByDateResponse } from "@/lib/api";
-import { dayKey, hhmm, localKey, pad, relId, text, upper } from "@/lib/format";
+import { dayKey, fromDayKey, hhmm, localKey, pad, relId, text, upper } from "@/lib/format";
 import { isActiveAssignment, type CalendarView } from "../../constants";
 import { useSchedule } from "../../ScheduleContext";
 
@@ -18,21 +18,29 @@ const startOfWeek = (day: Date) => {
 /** Trạng thái và dữ liệu suy ra cho thời khóa biểu. */
 /** storeId: cửa hàng đang xem (thời khóa biểu luôn xem theo một cửa hàng). */
 export function useCalendar(storeId: string) {
-  const { shiftDates, specialEvents, shiftGroups, lookups } = useSchedule();
+  const { shiftDates, specialEvents, shiftGroups, lookups, setStoreFilter, reload } = useSchedule();
+  /** Bộ lọc đang áp dụng cho thời khóa biểu */
   const [filters, setFilters] = useState<CalendarFilters>(EMPTY_CALENDAR_FILTERS);
+  /** Bộ lọc đang chọn trên giao diện, chỉ áp dụng khi bấm "Tìm kiếm" */
+  const [draft, setDraft] = useState<CalendarFilters>(EMPTY_CALENDAR_FILTERS);
+  /** Cửa hàng đang chọn ("" = theo cửa hàng đang xem) */
+  const [draftStoreId, setDraftStoreId] = useState("");
+  const draftStore = draftStoreId || storeId;
   const [view, setView] = useState<CalendarView>("month");
   const [cursor, setCursor] = useState(() => new Date());
 
-  const groupOptions = useMemo(
-    () =>
+  const groupOptionsOf = useCallback(
+    (store: string) =>
       shiftGroups
-        .filter((group) => !storeId || Number(group.storeId ?? 0) === Number(storeId))
+        .filter((group) => !store || Number(group.storeId ?? 0) === Number(store))
         .map((group) => {
           const id = Number(group.id ?? group.shiftGroupId ?? 0);
           return { value: id, label: text(group.shiftGroupName, `Nhóm ca #${id}`) };
         }),
-    [shiftGroups, storeId]
+    [shiftGroups]
   );
+  const groupOptions = useMemo(() => groupOptionsOf(storeId), [groupOptionsOf, storeId]);
+  const draftGroupOptions = useMemo(() => groupOptionsOf(draftStore), [groupOptionsOf, draftStore]);
   // Đổi cửa hàng thì nhóm ca đã chọn (của cửa hàng cũ) không còn hiệu lực
   const groupId = groupOptions.some((option) => String(option.value) === filters.groupId) ? Number(filters.groupId) : 0;
 
@@ -100,17 +108,17 @@ export function useCalendar(storeId: string) {
     return { total: items.length, assigned, capacity, pending, missing };
   }, [byDay, days, cursor, view, lookups]);
 
-  /** Nhân viên có ca (còn hiệu lực) tại cửa hàng đang xem */
+  /** Nhân viên có ca (còn hiệu lực) tại cửa hàng đang chọn */
   const employeeOptions = useMemo(() => {
     const ids = new Set<number>();
     shiftDates
-      .filter((item) => !storeId || lookups.storeIdOf(item) === Number(storeId))
+      .filter((item) => !draftStore || lookups.storeIdOf(item) === Number(draftStore))
       .forEach((item) => lookups.activeAssignmentsOf(item).forEach((assignment) => ids.add(relId(assignment, "employee"))));
     ids.delete(0);
     return Array.from(ids)
       .map((id) => ({ value: id, label: lookups.employeeName(id) }))
       .sort((a, b) => a.label.localeCompare(b.label, "vi"));
-  }, [shiftDates, lookups, storeId]);
+  }, [shiftDates, lookups, draftStore]);
 
   /** Ca có nhân viên đang chọn; null khi không chọn nhân viên nào. */
   const highlight = useMemo(() => {
@@ -144,6 +152,52 @@ export function useCalendar(storeId: string) {
     });
 
   const hasFilters = Boolean(filters.periodId || groupId || filters.status || filters.employeeId);
+  const hasDraft = Boolean(draft.periodId || draft.groupId || draft.status || draft.employeeId);
 
-  return { filters, setFilters, hasFilters, filtered, groupOptions, employeeOptions, highlight, view, setView, cursor, setCursor, days, title, stats, shiftsOn, eventsOn, move };
+  /** Áp dụng bộ lọc đang chọn và tải lại dữ liệu từ API */
+  const search = () => {
+    const next = { ...draft, groupId: draftGroupOptions.some((option) => String(option.value) === draft.groupId) ? draft.groupId : "" };
+    // Chọn kỳ mới thì nhảy tới tháng bắt đầu áp dụng của kỳ
+    if (next.periodId && next.periodId !== filters.periodId) {
+      const period = lookups.maps.period.get(Number(next.periodId));
+      const start = dayKey(period?.effectiveStartDate ?? period?.startDate);
+      if (start) setCursor(fromDayKey(start));
+    }
+    setFilters(next);
+    if (draftStore !== storeId) setStoreFilter(draftStore);
+    setDraftStoreId("");
+    void reload();
+  };
+
+  const resetFilters = () => {
+    setFilters(EMPTY_CALENDAR_FILTERS);
+    setDraft(EMPTY_CALENDAR_FILTERS);
+  };
+
+  return {
+    filters,
+    draft,
+    setDraft,
+    draftStore,
+    setDraftStoreId,
+    search,
+    resetFilters,
+    hasFilters,
+    hasDraft,
+    filtered,
+    groupOptions,
+    draftGroupOptions,
+    employeeOptions,
+    highlight,
+    view,
+    setView,
+    cursor,
+    setCursor,
+    days,
+    title,
+    stats,
+    shiftsOn,
+    eventsOn,
+    move,
+  };
 }

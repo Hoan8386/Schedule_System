@@ -24,7 +24,9 @@ public class PermissionInterceptorConfiguration implements WebMvcConfigurer {
                 "/api/v1/attachment/file/**",
                 // Thông báo cá nhân: mọi vai trò đã đăng nhập đều dùng (dữ liệu chỉ của chính người đó)
                 "/api/v1/notification/me",
-                "/api/v1/notification/me/**"
+                "/api/v1/notification/me/**",
+                // Lần đầu database trống chưa có bảng quyền – DatabaseController tự kiểm tra quyền
+                "/api/v1/database/**"
         };
 
         registry.addInterceptor(permissionInterceptor)

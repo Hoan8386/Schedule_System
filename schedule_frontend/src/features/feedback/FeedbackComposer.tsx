@@ -34,12 +34,14 @@ interface FeedbackComposerProps {
   onCancel?: () => void;
 }
 
-interface UploadedImage {
+/** Ảnh chỉ giữ ở trình duyệt – chỉ tải lên R2 khi bấm Gửi (tránh ảnh rác khi bỏ form). */
+interface PendingImage {
   key: string;
   name: string;
   preview: string;
+  file: File;
+  /** Đã tải lên ở lần gửi trước (gửi lỗi) → gửi lại không tải lại */
   attachmentId?: number;
-  uploading: boolean;
 }
 
 const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
@@ -61,8 +63,9 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
   const [colleagueId, setColleagueId] = useState<number | undefined>();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [images, setImages] = useState<PendingImage[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [stores, setStores] = useState<StatStoreOption[]>([]);
   const [recentShifts, setRecentShifts] = useState<StatShift[]>([]);
   const [colleagues, setColleagues] = useState<FeedbackColleague[] | null>(null);
@@ -113,7 +116,7 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
   }, [images]);
   useEffect(() => () => imagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview)), []);
 
-  const pickFiles = async (fileList: FileList | null) => {
+  const pickFiles = (fileList: FileList | null) => {
     const files = Array.from(fileList ?? []);
     if (fileInput.current) fileInput.current.value = "";
     if (!files.length) return;
@@ -135,23 +138,32 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
     });
     if (files.length > room) notify.error(`Chỉ đính kèm tối đa ${MAX_IMAGES} ảnh`);
 
-    const pending = accepted.map((file) => ({
-      file,
-      image: { key: `${file.name}-${file.size}-${Math.random()}`, name: file.name, preview: URL.createObjectURL(file), uploading: true },
-    }));
-    setImages((current) => [...current, ...pending.map((item) => item.image)]);
+    setImages((current) => [
+      ...current,
+      ...accepted.map((file) => ({ key: `${file.name}-${file.size}-${Math.random()}`, name: file.name, preview: URL.createObjectURL(file), file })),
+    ]);
+  };
 
-    await Promise.all(
-      pending.map(async ({ file, image }) => {
-        try {
-          const { data } = await managerApi.uploadAttachment(file);
-          setImages((current) => current.map((item) => (item.key === image.key ? { ...item, attachmentId: data.attachmentId, uploading: false } : item)));
-        } catch {
-          URL.revokeObjectURL(image.preview);
-          setImages((current) => current.filter((item) => item.key !== image.key));
-        }
-      })
-    );
+  /** Tải các ảnh chưa có attachmentId lên R2; lỗi → ném ra để dừng gửi. */
+  const uploadImages = async () => {
+    const pending = images.filter((image) => image.attachmentId === undefined);
+    if (!pending.length) return images.map((image) => image.attachmentId as number);
+    setUploading(true);
+    try {
+      const uploaded = new Map<string, number>();
+      const results = await Promise.allSettled(
+        pending.map(async (image) => {
+          const { data } = await managerApi.uploadAttachment(image.file);
+          uploaded.set(image.key, data.attachmentId);
+        })
+      );
+      // Ghi lại ảnh đã tải xong để lần gửi lại không tải trùng
+      setImages((current) => current.map((image) => (uploaded.has(image.key) ? { ...image, attachmentId: uploaded.get(image.key) } : image)));
+      if (results.some((result) => result.status === "rejected")) throw new Error("upload failed");
+      return images.map((image) => image.attachmentId ?? (uploaded.get(image.key) as number));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const removeImage = (key: string) =>
@@ -168,7 +180,6 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
     if (picked) setStoreId(picked.storeId);
   };
 
-  const uploading = images.some((image) => image.uploading);
   const missingShift = type === "SHIFT" && !shiftByDateId;
 
   const submit = async (event: React.FormEvent) => {
@@ -187,6 +198,7 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
     }
     setSubmitting(true);
     try {
+      const attachmentIds = await uploadImages();
       const { data } = await managerApi.createFeedback({
         feedbackType: type,
         targetRole: isSystem ? undefined : target,
@@ -195,7 +207,7 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
         storeId,
         shiftByDateId: type === "SHIFT" ? shiftByDateId : undefined,
         targetEmployeeId: type === "EMPLOYEE" ? colleagueId : undefined,
-        attachmentIds: images.map((image) => image.attachmentId).filter((id): id is number => typeof id === "number"),
+        attachmentIds,
       });
       images.forEach((image) => URL.revokeObjectURL(image.preview));
       setImages([]);
@@ -362,7 +374,7 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
             <div key={image.key} className="group relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={image.preview} alt={image.name} className="h-full w-full object-cover" />
-              {image.uploading && (
+              {uploading && image.attachmentId === undefined && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/70">
                   <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
                 </div>
@@ -370,6 +382,7 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
               <button
                 type="button"
                 onClick={() => removeImage(image.key)}
+                disabled={submitting}
                 aria-label={`Bỏ ảnh ${image.name}`}
                 className="absolute right-1 top-1 rounded-full bg-slate-900/70 p-0.5 text-white hover:bg-slate-900"
               >
@@ -381,13 +394,14 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
+              disabled={submitting}
               className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-300 text-slate-400 transition hover:border-brand-400 hover:text-brand-600"
             >
               <ImagePlus className="h-5 w-5" />
               <span className="text-[10px] font-bold">Thêm ảnh</span>
             </button>
           )}
-          <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(event) => void pickFiles(event.target.files)} />
+          <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(event) => pickFiles(event.target.files)} />
         </div>
       </div>
 
@@ -397,7 +411,7 @@ export default function FeedbackComposer({ role, shift, onSent, onCancel }: Feed
             Hủy
           </Button>
         )}
-        <Button type="submit" icon={submitting ? Loader2 : Send} disabled={submitting || uploading || missingShift}>
+        <Button type="submit" icon={submitting ? Loader2 : Send} disabled={submitting || missingShift}>
           {uploading ? "Đang tải ảnh..." : submitting ? "Đang gửi..." : "Gửi phản hồi"}
         </Button>
       </div>

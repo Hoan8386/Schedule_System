@@ -24,7 +24,10 @@ public class CorsConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
         // các phần header được phép gửi lên
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "x-no-retry"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "x-no-retry", "X-Setup-Key"));
+
+        // Cho trình duyệt đọc tên file khi tải bản sao lưu database
+        configuration.setExposedHeaders(Arrays.asList("Content-Disposition"));
 
         // gửi kèm cookies hay không
         configuration.setAllowCredentials(true);

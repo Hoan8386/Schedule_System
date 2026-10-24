@@ -52,7 +52,9 @@ public class SecurityConfiguration {
 
                 "/api/v1/auth/vnpay/return",
                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
-                "/api/v1/data-ai/*"
+                "/api/v1/data-ai/*",
+                // Xuất / nhập database: DatabaseController tự kiểm tra ADMIN / setup key (lần đầu chưa có tài khoản)
+                "/api/v1/database/**"
         };
 
         // Public read-only (GET) endpoints — accessible without authentication
