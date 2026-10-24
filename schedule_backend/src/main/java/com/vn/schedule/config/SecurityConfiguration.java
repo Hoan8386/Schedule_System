@@ -51,6 +51,7 @@ public class SecurityConfiguration {
                 "/api/v1/auth/reset-password",
 
                 "/api/v1/auth/vnpay/return",
+                "/health", "/actuator/health", "/actuator/health/**",
                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
                 "/api/v1/data-ai/*",
                 // Xuất / nhập database: DatabaseController tự kiểm tra ADMIN / setup key (lần đầu chưa có tài khoản)

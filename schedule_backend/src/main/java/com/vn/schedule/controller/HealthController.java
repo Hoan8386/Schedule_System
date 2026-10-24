@@ -12,7 +12,7 @@ import com.vn.schedule.util.anotation.ApiMessage;
 
 @RestController
 public class HealthController {
-    @GetMapping("/health")
+    @GetMapping({ "/", "/health" })
     @ApiMessage("Kiểm tra trạng thái hệ thống")
     public ResponseEntity<HealthResponse> health() {
         return ResponseEntity.ok(new HealthResponse("UP", Instant.now().toString()));
