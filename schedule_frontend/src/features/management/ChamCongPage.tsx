@@ -132,7 +132,7 @@ export default function ChamCongPage() {
   const employeeOf = editing ? employeeIdOf(editing) : "";
   const attendanceForm = modal && (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <form onSubmit={saveAttendance} className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 shadow-2xl">
+      <form onSubmit={saveAttendance} className="max-h-[92dvh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-white p-4 sm:p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-black text-slate-800">{editing ? "Chỉnh sửa chấm công" : "Thêm chấm công"}</h2>
           <button type="button" onClick={() => setModal(null)} aria-label="Đóng"><X /></button>
@@ -168,7 +168,7 @@ export default function ChamCongPage() {
   const violations = summary?.violations ?? 0;
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">{attendanceForm}
+    <div className="mx-auto max-w-7xl space-y-4 p-4 sm:space-y-6 sm:p-6">{attendanceForm}
       <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">Quản lý chấm công</h1>

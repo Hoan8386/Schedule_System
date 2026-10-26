@@ -1,26 +1,31 @@
 import React from "react";
+import { SearchSelect } from "@/components/ui";
 import { cn } from "@/lib/cn";
 
 interface FilterSelectProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  allLabel: string;
-  options: { value: string | number; label: React.ReactNode }[];
+  /** Nhãn của lựa chọn "tất cả" (giá trị rỗng); bỏ trống = bắt buộc chọn một giá trị */
+  allLabel?: string;
+  options: { value: string | number; label: string }[];
   className?: string;
 }
 
-/** Ô chọn dùng cho thanh lọc (giá trị rỗng = tất cả). */
+/** Ô lọc cho thanh lọc: gõ chữ để tìm trong danh sách (giá trị rỗng = tất cả). */
 export function FilterSelect({ label, value, onChange, allLabel, options, className = "min-w-48" }: FilterSelectProps) {
   return (
-    <label className={cn("text-[11px] font-semibold text-slate-600", className)}>
-      {label}
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="field-input font-medium">
-        <option value="">{allLabel}</option>
-        {options.map((option) => (
-          <option key={option.value} value={String(option.value)}>{option.label}</option>
-        ))}
-      </select>
-    </label>
+    <div className={cn("text-[11px] font-semibold text-slate-600", className)}>
+      <span className="mb-1 block">{label}</span>
+      <SearchSelect
+        aria-label={label}
+        value={value}
+        onChange={onChange}
+        allLabel={allLabel}
+        placeholder={allLabel ? `${allLabel} – gõ để tìm` : "Gõ để tìm..."}
+        options={options.map((option) => ({ value: String(option.value), label: option.label }))}
+        inputClassName="font-medium"
+      />
+    </div>
   );
 }

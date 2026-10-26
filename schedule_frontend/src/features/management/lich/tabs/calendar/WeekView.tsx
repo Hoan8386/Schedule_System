@@ -31,8 +31,8 @@ const minutesOf = (value: unknown) => {
   return Number.isFinite(h) ? h * 60 + (Number.isFinite(m) ? m : 0) : null;
 };
 
-/** 480 → "8:00" */
-const duration = (minutes: number) => `${Math.floor(minutes / 60)}:${pad(minutes % 60)}`;
+/** 480 → "8 tiếng", 450 → "7 tiếng 30 phút" */
+const duration = (minutes: number) => `${Math.floor(minutes / 60)} tiếng${minutes % 60 ? ` ${minutes % 60} phút` : ""}`;
 
 /** Chế độ tuần dạng biểu đồ thời gian: mỗi ngày một khối, mỗi dòng một ca, thanh ca theo giờ bắt đầu – kết thúc. */
 export function WeekView({ days, shiftsOn, eventsOn, highlight, onOpen }: Props) {
@@ -126,7 +126,7 @@ export function WeekView({ days, shiftsOn, eventsOn, highlight, onOpen }: Props)
                     const empty = count === 0;
                     const cancelled = upper(row.item.status) === "CANCELLED";
                     const shiftCode = text(lookups.templateOf(row.item)?.shiftCode, "");
-                    const title = `${text(row.item.shiftName, "")} · ${timeRange(row.item.startTime, row.item.endTime)} · ${count}/${cap} người${
+                    const title = `${text(row.item.shiftName, "")} · ${timeRange(row.item.startTime, row.item.endTime)} (${duration(row.end - row.start)}) · ${count}/${cap} người${
                       pending ? ` · ${pending} chờ duyệt` : ""
                     } — bấm để xem nhân viên`;
                     return (
@@ -149,8 +149,8 @@ export function WeekView({ days, shiftsOn, eventsOn, highlight, onOpen }: Props)
                             style={{ left: position(row.start), width: `calc(${position(row.end)} - ${position(row.start)})` }}
                           >
                             <span className="truncate">
-                              {duration(row.end - row.start)}
-                              <span className="font-normal opacity-75"> · {timeRange(row.item.startTime, row.item.endTime)}</span>
+                              {timeRange(row.item.startTime, row.item.endTime)}
+                              <span className="font-normal opacity-75"> ({duration(row.end - row.start)})</span>
                             </span>
                             <span className="flex shrink-0 items-center gap-1">
                               {pending > 0 && <span className="rounded bg-white/70 px-1 text-[9px] font-bold text-brand-700">{pending} chờ</span>}

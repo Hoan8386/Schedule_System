@@ -41,7 +41,7 @@ export default function QuanLyTaiKhoanPage() {
             >
               <Info className="h-3.5 w-3.5 stroke-[2.5]" />
             </button>
-            <div className="pointer-events-none absolute left-0 top-8 z-40 hidden w-80 rounded-xl border border-slate-700 bg-slate-900 p-3.5 text-white shadow-2xl group-hover:block">
+            <div className="pointer-events-none absolute left-0 top-8 z-40 hidden w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-700 bg-slate-900 p-3.5 text-white shadow-2xl group-hover:block">
               <div className="mb-1 flex items-center gap-1.5 text-xs font-bold text-brand-400">
                 <ShieldCheck className="h-4 w-4 shrink-0" />
                 <span>Phân quyền hệ thống</span>

@@ -43,7 +43,7 @@ export function Drawer({ open, onClose, children, size = "max-w-xl" }: DrawerPro
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-slate-950/50" onClick={onClose}>
-      <div className={cn("h-full w-full overflow-y-auto bg-surface p-5 shadow-2xl", size)} onClick={(event) => event.stopPropagation()}>
+      <div className={cn("h-full w-full overflow-y-auto bg-surface p-4 shadow-2xl sm:p-5", size)} onClick={(event) => event.stopPropagation()}>
         {children}
       </div>
     </div>

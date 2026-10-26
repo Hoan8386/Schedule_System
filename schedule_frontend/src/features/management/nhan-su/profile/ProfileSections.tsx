@@ -1,7 +1,7 @@
 import React from "react";
 import { Building2, Clock, MapPin, ShieldCheck, User as UserIcon } from "lucide-react";
-import type { EmployeeResponse, EmployeeStoreResponse, StoreResponse } from "@/lib/api";
-import { date, dateTime, genderName, isActive, value } from "../utils";
+import { managerApi, type EmployeeResponse, type EmployeeStoreResponse, type StoreResponse } from "@/lib/api";
+import { date, dateTime, genderName, isActive, positionName, value } from "../utils";
 
 function Section({ icon: Icon, iconClass, title, aside, children }: {
   icon: React.ComponentType<{ className?: string }>;
@@ -45,6 +45,18 @@ export function PersonalSection({ profile }: { profile: EmployeeResponse }) {
         <Info label="CCCD / CMND">
           <span className="font-medium text-slate-700">{profile.idCardFrontId || profile.idCardBackId ? "Đã lưu trữ hồ sơ định danh" : "Chưa cập nhật"}</span>
         </Info>
+        <Info label="Chữ ký" wide>
+          {profile.signatureId ? (
+            // eslint-disable-next-line @next/next/no-img-element -- ảnh từ backend
+            <img
+              src={managerApi.getAttachmentFileUrl(profile.signatureId)}
+              alt={`Chữ ký ${value(profile.fullName, "")}`}
+              className="mt-1 h-20 max-w-60 rounded-lg border border-slate-200 bg-white object-contain p-1"
+            />
+          ) : (
+            <span className="font-medium text-slate-700">Chưa cập nhật</span>
+          )}
+        </Info>
         <Info label="Địa chỉ liên hệ" wide>
           <div className="mt-0.5 flex items-start gap-1.5">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
@@ -56,7 +68,7 @@ export function PersonalSection({ profile }: { profile: EmployeeResponse }) {
   );
 }
 
-export function AccountSection({ profile, isManager }: { profile: EmployeeResponse; isManager: boolean }) {
+export function AccountSection({ profile }: { profile: EmployeeResponse }) {
   return (
     <Section icon={ShieldCheck} iconClass="text-indigo-500" title="Tài khoản hệ thống & Đăng nhập">
       <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
@@ -69,8 +81,8 @@ export function AccountSection({ profile, isManager }: { profile: EmployeeRespon
         </Info>
         <Info label="Email đăng nhập"><span className="font-medium text-slate-700">{value(profile.email)}</span></Info>
         <Info label="Số điện thoại liên hệ"><span className="font-medium text-slate-700">{value(profile.phone)}</span></Info>
-        <Info label="Vai trò tài khoản">
-          <span className="font-medium text-slate-700">{isManager ? "Quản lý (Store Manager)" : "Nhân viên (Staff)"}</span>
+        <Info label="Vị trí">
+          <span className="font-medium text-slate-700">{positionName(profile.position)}</span>
         </Info>
       </div>
     </Section>
@@ -118,7 +130,7 @@ export function StoreSection({ assignments, storeMap }: { assignments: EmployeeS
                 <span
                   className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${isActive(assignment.status) ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}
                 >
-                  {assignment.status ?? "ACTIVE"}
+                  {isActive(assignment.status ?? "ACTIVE") ? "Đang làm" : "Đã rời"}
                 </span>
               </div>
             );

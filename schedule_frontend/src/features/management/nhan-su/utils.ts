@@ -12,39 +12,58 @@ export const dateTime = (input: string | null | undefined) => (input ? new Date(
 export const genderName = (gender: string | null | undefined) =>
   ({ MALE: "Nam", FEMALE: "Nữ", OTHER: "Khác" })[gender?.toUpperCase() ?? ""] ?? value(gender);
 
+/** Giới tính chỉ có Nam / Nữ. */
+export const GENDER_OPTIONS = [
+  { value: "MALE", label: "Nam" },
+  { value: "FEMALE", label: "Nữ" },
+];
+
+/** Trạng thái làm việc: mã ACTIVE / INACTIVE / RESIGNED chỉ dùng trong code, người dùng chỉ thấy nhãn. */
+export const STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Đang làm việc" },
+  { value: "INACTIVE", label: "Tạm nghỉ" },
+  { value: "RESIGNED", label: "Đã nghỉ việc" },
+];
+
 export const statusName = (status: string | null | undefined) =>
-  ({ ACTIVE: "ĐANG LÀM VIỆC", INACTIVE: "TẠM NGƯNG", RESIGNED: "ĐÃ NGHỈ VIỆC" })[status?.toUpperCase() ?? ""] ??
-  value(status, "CHƯA CẬP NHẬT");
+  STATUS_OPTIONS.find((option) => option.value === status?.toUpperCase())?.label.toUpperCase() ?? "CHƯA CẬP NHẬT";
 
 export const isActive = (status: string | null | undefined) => status?.toUpperCase() === "ACTIVE";
 
-/** Ảnh: URL tuyệt đối, data URI, đường dẫn tương đối hoặc id tệp đính kèm. */
+/** Vị trí của nhân viên (quyền tài khoản đi theo vị trí). */
+export const POSITION_OPTIONS = [
+  { value: "EMPLOYEE", label: "Nhân viên" },
+  { value: "STORE_MANAGER", label: "Trưởng cửa hàng" },
+];
+
+const POSITION_LABEL: Record<string, string> = {
+  EMPLOYEE: "Nhân viên",
+  STORE_MANAGER: "Trưởng cửa hàng",
+  MANAGER: "Quản lý",
+  ADMIN: "Quản trị viên",
+};
+
+export const positionName = (position: string | null | undefined) => POSITION_LABEL[position?.toUpperCase() ?? ""] ?? NOT_SET;
+
+/** Ảnh: URL tuyệt đối, data URI, đường dẫn backend ("/api/...") hoặc id tệp đính kèm. */
 export const resolveImageUrl = (imgOrId?: string | number | null) => {
   if (!imgOrId) return null;
   const str = String(imgOrId).trim();
   if (!str) return null;
-  if (/^(https?:|data:)/.test(str)) return str;
+  if (/^(https?:|data:|blob:)/.test(str)) return str;
   if (str.startsWith("/")) return `${API_BASE_URL}${str}`;
-  return managerApi.getAttachmentFileUrl(str);
+  if (/^\d+$/.test(str)) return managerApi.getAttachmentFileUrl(str);
+  // Khóa lưu trữ nội bộ ("images/xxx.png") không mở trực tiếp được → hiện ảnh mặc định
+  return null;
 };
 
-/** URL hiển thị của tệp vừa tải lên. */
-export const attachmentUrl = (attachment: AttachmentResponse) =>
-  attachment.url || (attachment.attachmentId ? managerApi.getAttachmentFileUrl(attachment.attachmentId) : "") || attachment.filePath || "";
-
-export const emptyEmployeeForm: EmployeeRequest = {
-  userId: undefined,
-  employeeCode: "",
-  fullName: "",
-  avatar: "",
-  idCardFrontId: null,
-  idCardBackId: null,
-  email: "",
-  phone: "",
-  address: "",
-  hireDate: "",
-  status: "ACTIVE",
-  note: "",
+/**
+ * Giá trị lưu vào hồ sơ cho ảnh vừa tải lên: URL công khai nếu có, ngược lại đường dẫn tải ảnh qua backend.
+ * (Khi kho ảnh chưa cấu hình tên miền công khai, `url` chỉ là khóa nội bộ "images/xxx.png" – không hiển thị được.)
+ */
+export const attachmentUrl = (attachment: AttachmentResponse) => {
+  if (attachment.url && /^https?:/.test(attachment.url)) return attachment.url;
+  return attachment.attachmentId ? `/api/v1/attachment/file/${attachment.attachmentId}` : "";
 };
 
 export const toEmployeeForm = (employee?: EmployeeResponse | null): EmployeeRequest => ({
@@ -54,23 +73,20 @@ export const toEmployeeForm = (employee?: EmployeeResponse | null): EmployeeRequ
   avatar: (employee?.avatar as string) ?? "",
   idCardFrontId: employee?.idCardFrontId ?? null,
   idCardBackId: employee?.idCardBackId ?? null,
+  signatureId: employee?.signatureId ?? null,
   dateOfBirth: employee?.dateOfBirth ?? "",
-  gender: employee?.gender ?? "",
+  // Dữ liệu cũ "OTHER" phải chọn lại Nam / Nữ
+  gender: GENDER_OPTIONS.some((option) => option.value === employee?.gender?.toUpperCase()) ? employee!.gender!.toUpperCase() : "",
   email: employee?.email ?? "",
   phone: employee?.phone ?? "",
   address: employee?.address ?? "",
   hireDate: employee?.hireDate ?? "",
-  status: employee?.status ?? "ACTIVE",
+  status: employee?.status?.toUpperCase() ?? "ACTIVE",
   note: employee?.note ?? "",
+  // Tạo mới: không chọn sẵn vị trí nào
+  position: POSITION_OPTIONS.some((option) => option.value === employee?.position) ? (employee?.position as string) : "",
 });
 
-/** Phân bổ hiện tại: ưu tiên bản ghi ACTIVE, nếu không lấy bản đầu tiên. */
-export const currentAssignmentOf = (assignments: EmployeeStoreResponse[] | undefined) =>
-  assignments?.find((assignment) => isActive(assignment.status)) ?? assignments?.[0];
-
-export interface EmployeeStoreForm {
-  storeId: number;
-  startDate: string;
-  isPrimary: boolean;
-  status: string;
-}
+/** Phân bổ còn hiệu lực (đang làm tại cửa hàng). */
+export const activeAssignmentsOf = (assignments: EmployeeStoreResponse[] | undefined) =>
+  (assignments ?? []).filter((assignment) => !assignment.status || isActive(assignment.status));

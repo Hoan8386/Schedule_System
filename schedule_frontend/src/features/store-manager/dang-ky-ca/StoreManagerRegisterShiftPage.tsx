@@ -68,7 +68,7 @@ export default function StoreManagerRegisterShiftPage() {
   const inPeriod = useCallback((dayKey: string) => Boolean(range && dayKey >= range.from && dayKey <= range.to), [range]);
   const cellOf = useCallback(
     (row: TemplateRow, dayKey: string) =>
-      cellFor(row, dayKey, todayKey, inPeriod(dayKey), windows.get(row.group.shiftGroupId) ?? { open: false, note: "" }, byKey),
+      cellFor(row, dayKey, todayKey, inPeriod, windows.get(row.group.shiftGroupId) ?? { open: false, note: "" }, byKey),
     [todayKey, inPeriod, windows, byKey]
   );
 
@@ -125,7 +125,7 @@ export default function StoreManagerRegisterShiftPage() {
       {base.error && <Alert>{base.error}</Alert>}
 
       {base.data && groups.length === 0 ? (
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <EmptyState>Bạn chưa được gán vào nhóm ca nào. Vui lòng liên hệ quản lý để được gán vào nhóm ca của cửa hàng.</EmptyState>
         </Card>
       ) : (

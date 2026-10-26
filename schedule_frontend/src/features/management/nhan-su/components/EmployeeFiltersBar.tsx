@@ -1,8 +1,8 @@
 import React from "react";
 import { Search, X } from "lucide-react";
 import type { StoreResponse } from "@/lib/api";
-import { value } from "../utils";
-import { EMPTY_FILTERS, type EmployeeFilters, type RoleFilter } from "../useEmployees";
+import { POSITION_OPTIONS, STATUS_OPTIONS, value } from "../utils";
+import { EMPTY_FILTERS, type EmployeeFilters, type PositionFilter } from "../useEmployees";
 
 interface Props {
   filters: EmployeeFilters;
@@ -30,9 +30,9 @@ export function EmployeeFiltersBar({ filters, onChange, stores }: Props) {
 
         <select value={filters.status} onChange={(event) => set("status", event.target.value)} className={selectClass}>
           <option value="ALL">Trạng thái: Tất cả</option>
-          <option value="ACTIVE">Đang làm việc</option>
-          <option value="INACTIVE">Tạm ngưng</option>
-          <option value="RESIGNED">Đã nghỉ việc</option>
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
 
         <select value={filters.storeId} onChange={(event) => set("storeId", event.target.value)} className={selectClass}>
@@ -42,10 +42,11 @@ export function EmployeeFiltersBar({ filters, onChange, stores }: Props) {
           ))}
         </select>
 
-        <select value={filters.role} onChange={(event) => set("role", event.target.value as RoleFilter)} className={selectClass}>
-          <option value="ALL">Vai trò: Tất cả</option>
-          <option value="MANAGER">Quản lý</option>
-          <option value="EMPLOYEE">Nhân viên</option>
+        <select value={filters.position} onChange={(event) => set("position", event.target.value as PositionFilter)} className={selectClass}>
+          <option value="ALL">Vị trí: Tất cả</option>
+          {POSITION_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
 
         <button

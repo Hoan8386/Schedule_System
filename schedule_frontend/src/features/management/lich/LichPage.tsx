@@ -17,8 +17,11 @@ import { SessionTab } from "./tabs/SessionTab";
 import { EventTab, GroupTab } from "./tabs/CatalogTabs";
 import { CapacityConfigTab } from "./tabs/CapacityConfigTab";
 
-/** Thứ tự tab: Kỳ → Nhóm ca → Thời khóa biểu → Sự kiện (yêu cầu khẩn của nhân viên xử lý trong Danh sách yêu cầu của TKB). */
-export type GroupKey = "period" | "group" | "calendar" | "event" | "config";
+/**
+ * Thứ tự tab: Kỳ → Nhóm ca (gồm cấu hình số lượng theo khung giờ) → Thời khóa biểu → Sự kiện
+ * (yêu cầu khẩn của nhân viên xử lý trong Danh sách yêu cầu của TKB).
+ */
+export type GroupKey = "period" | "group" | "calendar" | "event";
 
 /** Tab chính; nhóm có nhiều tab con thì hiện thêm thanh chọn tab con bên dưới. */
 const GROUPS: (TabItem<GroupKey> & { tabs: TabItem<TabKey>[] })[] = [
@@ -39,11 +42,11 @@ const GROUPS: (TabItem<GroupKey> & { tabs: TabItem<TabKey>[] })[] = [
     tabs: [
       { key: "group", label: "Nhóm ca", icon: Award },
       { key: "shift", label: "Ca", icon: Clock3 },
+      { key: "config", label: "Số lượng theo khung giờ", icon: SlidersHorizontal },
     ],
   },
   { key: "calendar", label: "Thời khóa biểu", icon: Calendar, tabs: [{ key: "calendar", label: "Thời khóa biểu" }] },
   { key: "event", label: "Sự kiện", icon: AlertTriangle, tabs: [{ key: "event", label: "Sự kiện" }] },
-  { key: "config", label: "Cấu hình", icon: SlidersHorizontal, tabs: [{ key: "config", label: "Cấu hình" }] },
 ];
 
 const TAB_CONTENT: Record<TabKey, React.ComponentType> = {

@@ -118,6 +118,11 @@ public class StoreScopeService {
         return primaryRole(scope());
     }
 
+    /** Id tài khoản đang đăng nhập. */
+    public Integer currentUserId() {
+        return scope().userId;
+    }
+
     public Integer currentEmployeeId() {
         Integer employeeId = employeeIdOrNull(scope());
         if (employeeId == null) {

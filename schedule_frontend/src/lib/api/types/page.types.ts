@@ -42,6 +42,8 @@ export interface EmployeePageParams extends PageParams {
   status?: string;
   storeId?: number;
   role?: "MANAGER" | "EMPLOYEE";
+  /** Vị trí theo vai trò tài khoản */
+  position?: "STORE_MANAGER" | "EMPLOYEE";
   assignmentStatus?: string;
   primary?: boolean;
 }

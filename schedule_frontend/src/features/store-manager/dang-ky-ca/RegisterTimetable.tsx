@@ -6,6 +6,7 @@ import { formatDateTime, localKey, pad } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { MONTH_HEADER, WEEKDAY_SHORT } from "@/features/management/lich/constants";
 import { isRegistered } from "./model";
+import { capacityFor } from "@/features/employee/dang-ky-ca/RegisterTimetable";
 
 // ------------------------------------------------------------------ Trạng thái một ô (ca mẫu × ngày)
 
@@ -64,13 +65,15 @@ export function cellFor(
   row: TemplateRow,
   dayKey: string,
   todayKey: string,
-  inPeriod: boolean,
+  inPeriodDay: (dayKey: string) => boolean,
   window: { open: boolean; note: string },
   byKey: Map<string, MyOpenShift>
 ): Cell {
   const shiftByDate = byKey.get(`${row.shift.shiftId}|${dayKey}`);
   const count = shiftByDate?.registeredCount ?? 0;
-  const capacity = shiftByDate?.maxCapacity || row.shift.maxCapacity || DEFAULT_CAPACITY;
+  const inPeriod = inPeriodDay(dayKey);
+  // Cùng quy tắc min / max theo tuần với trang đăng ký của nhân viên (backend kiểm tra lại)
+  const { capacity, limitedByMin } = capacityFor(row, dayKey, todayKey, inPeriodDay, byKey);
   const base = { count, capacity, shiftByDate };
   if (!inPeriod) return { ...base, kind: "outside", note: "Ngoài kỳ" };
   if (shiftByDate && isRegistered(shiftByDate)) {
@@ -78,7 +81,7 @@ export function cellFor(
   }
   if (dayKey < todayKey) return { ...base, kind: "past", note: "Đã qua" };
   if (shiftByDate && shiftByDate.status !== "OPEN") return { ...base, kind: "closed", note: "Đã đóng" };
-  if (count >= capacity) return { ...base, kind: "full", note: "Hết chỗ" };
+  if (count >= capacity) return { ...base, kind: "full", note: limitedByMin ? "Đủ tối thiểu – các ca khác trong tuần chưa đủ người" : "Hết chỗ" };
   if (!window.open) return { ...base, kind: "window", note: window.note };
   return { ...base, kind: "available", note: "Bấm để đăng ký" };
 }

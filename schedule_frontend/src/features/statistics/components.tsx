@@ -214,14 +214,14 @@ export function EmployeeStatTable({ employees, title = "Thống kê nhân viên"
       <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="card-title">{title}</h2>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Tìm tên hoặc mã nhân viên"
               aria-label="Tìm nhân viên"
-              className={cn(controlClass, "w-56 pl-8")}
+              className={cn(controlClass, "w-full pl-8 sm:w-56")}
             />
           </div>
           <select aria-label="Sắp xếp" value={sort} onChange={(event) => setSort(event.target.value as EmployeeSort)} className={controlClass}>
@@ -336,14 +336,14 @@ export function ShiftHistoryTable({ shifts, title, loading, showEmployee = false
       <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="card-title">{title}</h2>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Tìm ngày, ca hoặc cửa hàng"
               aria-label="Tìm ca"
-              className={cn(controlClass, "w-52 pl-8")}
+              className={cn(controlClass, "w-full pl-8 sm:w-52")}
             />
           </div>
           <select aria-label="Lọc trạng thái ca" value={status} onChange={(event) => setStatus(event.target.value)} className={controlClass}>

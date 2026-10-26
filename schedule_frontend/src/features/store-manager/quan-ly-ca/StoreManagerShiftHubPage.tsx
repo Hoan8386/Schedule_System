@@ -24,7 +24,7 @@ export default function StoreManagerShiftHubPage({ initialTab = "lich" }: { init
   const [tab, setTab] = useState<ShiftHubTab>(initialTab);
   return (
     <div>
-      <div className="mx-auto max-w-7xl px-6 pt-6">
+      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 sm:pt-6">
         <Tabs items={TABS} active={tab} onChange={setTab} />
       </div>
       {tab === "lich" && (

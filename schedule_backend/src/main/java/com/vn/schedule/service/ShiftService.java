@@ -137,12 +137,16 @@ public class ShiftService {
         if (createdBy != null) entity.setCreatedBy(createdBy);
     }
 
-    /** Phạm vi số lượng của khung giờ: 0 ≤ min ≤ max. */
+    /** Phạm vi số lượng của khung giờ: bắt buộc có max > 0; min không bắt buộc, nếu có thì 0 ≤ min ≤ max. */
     private static void validateCapacity(Shift entity) {
         Integer min = entity.getMinCapacity();
         Integer max = entity.getMaxCapacity();
-        if ((min != null && min < 0) || (max != null && max < 0)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Số lượng tối thiểu / tối đa không được âm");
+        if (max == null || max <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng nhập số lượng tối đa (max) lớn hơn 0 cho khung giờ "
+                    + (entity.getShiftName() == null ? "" : entity.getShiftName()));
+        }
+        if (min != null && min < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Số lượng tối thiểu không được âm");
         }
         if (min != null && max != null && min > max) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Số lượng tối thiểu không được lớn hơn tối đa");

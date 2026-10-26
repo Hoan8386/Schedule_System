@@ -14,13 +14,35 @@ const shiftIdOf = (shift: ShiftResponse) => Number(shift.id ?? shift.shiftId ?? 
 const numberOrNull = (value: string) => (value.trim() === "" ? null : Number(value));
 const controlClass = "w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold outline-hidden focus:border-brand-400";
 
+/** Tab con "Số lượng theo khung giờ" của Nhóm ca: mọi nhóm ca của cửa hàng đang lọc. */
+export function CapacityConfigTab() {
+  const { shifts } = useSchedule();
+  return (
+    <TabSection
+      title={`Số lượng nhân viên theo khung giờ (${shifts.length})`}
+      icon={SlidersHorizontal}
+      iconClassName="text-violet-600"
+      layout="list"
+      actions={<StoreFilter />}
+    >
+      <CapacityConfigPanel />
+    </TabSection>
+  );
+}
+
 /**
- * Cấu hình phạm vi số lượng (min / max) cho tất cả khung giờ (ca mẫu) của cửa hàng.
- * - Nhân viên tự đăng ký: mỗi ca nhận tới min; khi mọi khung giờ của nhóm trong ngày đạt min thì nâng lên max.
+ * Cấu hình số lượng (min / max) cho các khung giờ (ca mẫu) của nhóm ca – groupId bỏ trống = mọi nhóm.
+ * - Bắt buộc chọn max; min không bắt buộc, có min thì phải có max và min ≤ max.
+ * - Nhân viên tự đăng ký: ngưỡng ban đầu là min (không có min thì là max); khi mọi ca của nhóm trong tuần
+ *   đã đạt min và kỳ còn đang mở thì nâng lên max.
  * - Quản lý / trưởng cửa hàng phân bổ: được vượt min bất kể điều kiện trên, chỉ giới hạn bởi max.
  */
-export function CapacityConfigTab() {
-  const { shifts, lookups, reload, setError } = useSchedule();
+export function CapacityConfigPanel({ groupId, onSaved }: { groupId?: number; onSaved?: () => void }) {
+  const { shifts: allShifts, lookups, reload, setError } = useSchedule();
+  const shifts = useMemo(
+    () => (groupId === undefined ? allShifts : allShifts.filter((shift) => relId(shift, "shiftGroup") === groupId)),
+    [allShifts, groupId]
+  );
   const [draft, setDraft] = useState<Draft>({});
   const [bulk, setBulk] = useState({ min: "", max: "" });
   const [saving, setSaving] = useState(false);
@@ -50,11 +72,16 @@ export function CapacityConfigTab() {
     const current = draft[shiftIdOf(shift)];
     return current && (current.min !== text(shift.minCapacity, "") || current.max !== text(shift.maxCapacity, ""));
   });
-  const invalid = (value: { min: string; max: string }) => {
+  /** Lỗi của một dòng (rỗng = hợp lệ): bắt buộc max > 0, min (nếu có) không âm và không vượt max. */
+  const problemOf = (value: { min: string; max: string }) => {
     const min = numberOrNull(value.min);
     const max = numberOrNull(value.max);
-    return (min !== null && min < 0) || (max !== null && max < 0) || (min !== null && max !== null && min > max);
+    if (max === null || max <= 0) return "Bắt buộc nhập max > 0";
+    if (min !== null && min < 0) return "Min không được âm";
+    if (min !== null && min > max) return "Min phải ≤ max";
+    return "";
   };
+  const invalid = (value: { min: string; max: string }) => problemOf(value) !== "";
   const hasInvalid = shifts.some((shift) => invalid(valueOf(shift)));
 
   const applyAll = () =>
@@ -80,6 +107,7 @@ export function CapacityConfigTab() {
       );
       setDraft({});
       await reload();
+      onSaved?.();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể lưu cấu hình");
     } finally {
@@ -88,23 +116,19 @@ export function CapacityConfigTab() {
   };
 
   return (
-    <TabSection
-      title={`Cấu hình số lượng theo khung giờ (${shifts.length})`}
-      icon={SlidersHorizontal}
-      iconClassName="text-violet-600"
-      layout="list"
-      actions={<StoreFilter />}
-    >
+    <div className="space-y-3">
       <div className="flex items-start gap-2.5 rounded-xl border border-brand-200/80 bg-brand-50/70 p-3 text-[11px] leading-relaxed text-brand-900">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
         <div>
           <p>
-            <b>Nhân viên đăng ký ca:</b> ngưỡng ban đầu của mỗi khung giờ là <b>min</b>. Khi tất cả khung giờ của nhóm ca trong ngày đã
-            đạt min, ngưỡng được nâng lên <b>max</b>.
+            <b>Bắt buộc chọn max</b> cho mỗi khung giờ. <b>Min</b> không bắt buộc; nếu chọn min thì phải có max và min ≤ max.
+          </p>
+          <p className="mt-1">
+            <b>Nhân viên đăng ký ca:</b> ngưỡng ban đầu là <b>min</b> (không có min thì dùng max). Chỉ khi <b>tất cả các ca của nhóm trong tuần</b> đã
+            đạt min và kỳ vẫn đang mở, ngưỡng mới được nâng lên <b>max</b>.
           </p>
           <p className="mt-1">
             <b>Quản lý / trưởng cửa hàng phân bổ:</b> được thêm nhân viên vượt min dù chưa thỏa điều kiện trên, chỉ không vượt max.
-            Bỏ trống min = không áp ngưỡng tối thiểu.
           </p>
         </div>
       </div>
@@ -130,24 +154,27 @@ export function CapacityConfigTab() {
         </div>
       </div>
 
-      {shifts.length === 0 && <EmptyState>Cửa hàng chưa có ca mẫu (khung giờ) nào.</EmptyState>}
+      {shifts.length === 0 && <EmptyState>{groupId === undefined ? "Cửa hàng chưa có ca mẫu (khung giờ) nào." : "Nhóm ca chưa có khung giờ nào."}</EmptyState>}
 
       {groups.map((group) => (
-        <div key={group.groupId} className="overflow-hidden rounded-xl border border-slate-200">
-          <p className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">{group.name}</p>
+        <div key={group.groupId} className="overflow-x-auto rounded-xl border border-slate-200">
+          {groupId === undefined && <p className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">{group.name}</p>}
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-400">
                 <th className="px-3 py-2">Khung giờ</th>
                 <th className="px-3 py-2">Giờ</th>
-                <th className="px-3 py-2">Min</th>
-                <th className="px-3 py-2">Max</th>
+                <th className="px-3 py-2">Min (tùy chọn)</th>
+                <th className="px-3 py-2">
+                  Max <span className="text-rose-500">*</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {group.items.map((shift) => {
                 const value = valueOf(shift);
-                const bad = invalid(value);
+                const problem = problemOf(value);
+                const bad = problem !== "";
                 return (
                   <tr key={shiftIdOf(shift)}>
                     <td className="px-3 py-2 font-semibold text-slate-800">
@@ -160,7 +187,7 @@ export function CapacityConfigTab() {
                     </td>
                     <td className="px-3 py-2">
                       <input type="number" min={0} value={value.max} onChange={(event) => setValue(shift, "max", event.target.value)} className={cn(controlClass, bad && "border-rose-400")} />
-                      {bad && <span className="ml-2 text-[10px] font-semibold text-rose-600">min phải ≤ max, không âm</span>}
+                      {bad && <span className="ml-2 text-[10px] font-semibold text-rose-600">{problem}</span>}
                     </td>
                   </tr>
                 );
@@ -169,6 +196,6 @@ export function CapacityConfigTab() {
           </table>
         </div>
       ))}
-    </TabSection>
+    </div>
   );
 }

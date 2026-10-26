@@ -1,5 +1,4 @@
 import React from "react";
-import { cn } from "@/lib/cn";
 import { useSchedule } from "../ScheduleContext";
 import { FilterSelect } from "./FilterSelect";
 
@@ -30,13 +29,12 @@ export function StoreFilter({ className = "min-w-52", allowAll = true, value, on
     );
   }
   return (
-    <label className={cn("text-[11px] font-semibold text-slate-600", className)}>
-      Cửa hàng
-      <select value={value ?? storeFilter} onChange={(event) => setStoreFilter(event.target.value)} className="field-input font-medium">
-        {lookups.options.stores.map((option) => (
-          <option key={option.value} value={String(option.value)}>{option.label}</option>
-        ))}
-      </select>
-    </label>
+    <FilterSelect
+      label="Cửa hàng"
+      className={className}
+      value={value ?? storeFilter}
+      onChange={setStoreFilter}
+      options={lookups.options.stores}
+    />
   );
 }

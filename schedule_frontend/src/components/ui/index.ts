@@ -9,3 +9,7 @@ export { PageHeader } from "./PageHeader";
 export { Tabs } from "./Tabs";
 export type { TabItem } from "./Tabs";
 export { Pagination } from "./Pagination";
+export { useConfirm } from "./ConfirmDialog";
+export { SearchSelect, normalizeSearch } from "./SearchSelect";
+export type { SearchOption } from "./SearchSelect";
+export type { ConfirmOptions } from "./ConfirmDialog";

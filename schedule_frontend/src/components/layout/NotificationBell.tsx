@@ -170,7 +170,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (page: string) =
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-2 flex max-h-[70vh] w-96 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-surface shadow-xl">
+          <div className="fixed inset-x-3 top-(--topbar-height) z-50 mt-1 flex max-h-[75dvh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:max-h-[70vh] sm:w-96">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <h3 className="text-sm font-black text-slate-800">
                 Thông báo

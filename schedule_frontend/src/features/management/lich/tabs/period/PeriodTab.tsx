@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { CalendarRange } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui";
-import { dayKey, formatDate, hhmm, relId, text, upper } from "@/lib/format";
-import { isActiveAssignment, STATUS_OPTIONS } from "../../constants";
+import { dayKey, formatDate, hhmm, text, upper } from "@/lib/format";
+import { periodStatusLabel, STATUS_OPTIONS } from "../../constants";
 import { useSchedule } from "../../ScheduleContext";
 import { AddButton, EntityActions } from "../../components/EntityActions";
 import { PeriodDetail } from "./PeriodDetail";
 import { StoreFilter } from "../../components/StoreFilter";
+import { FilterSelect } from "../../components/FilterSelect";
 
 const EMPTY_FILTERS = { q: "", from: "", to: "", status: "" };
 
@@ -33,19 +34,14 @@ export function PeriodTab() {
   const selected = filtered.find((period) => periodIdOfItem(period) === pickedId) ?? filtered[0];
   const activeId = selected ? periodIdOfItem(selected) : 0;
 
-  const { entries, totalEmployees } = useMemo(() => {
-    const list = shiftDates
-      .filter((item) => lookups.periodIdOf(item) === activeId)
-      .sort((a, b) => `${dayKey(a.workDate)} ${hhmm(a.startTime)}`.localeCompare(`${dayKey(b.workDate)} ${hhmm(b.startTime)}`));
-    const employeeIds = new Set<number>();
-    list.forEach((entry) =>
-      lookups.allAssignmentsOf(entry).forEach((assignment) => {
-        const employeeId = relId(assignment, "employee");
-        if (employeeId && isActiveAssignment(assignment)) employeeIds.add(employeeId);
-      })
-    );
-    return { entries: list, totalEmployees: employeeIds.size };
-  }, [shiftDates, lookups, activeId]);
+  // Chỉ các ca làm việc (bỏ ca đã hủy), theo ngày rồi giờ bắt đầu
+  const entries = useMemo(
+    () =>
+      shiftDates
+        .filter((item) => lookups.periodIdOf(item) === activeId && upper(item.status) !== "CANCELLED")
+        .sort((a, b) => `${dayKey(a.workDate)} ${hhmm(a.startTime)}`.localeCompare(`${dayKey(b.workDate)} ${hhmm(b.startTime)}`)),
+    [shiftDates, lookups, activeId]
+  );
 
   return (
     <>
@@ -62,15 +58,14 @@ export function PeriodTab() {
           Đến ngày
           <input type="date" value={filters.to} onChange={(event) => setFilter("to", event.target.value)} className="field-input" />
         </label>
-        <label className="field-label">
-          Trạng thái
-          <select value={filters.status} onChange={(event) => setFilter("status", event.target.value)} className="field-input">
-            <option value="">Tất cả</option>
-            {STATUS_OPTIONS.period.map((status) => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </label>
+        <FilterSelect
+          label="Trạng thái"
+          allLabel="Tất cả"
+          className="field-label min-w-40"
+          value={filters.status}
+          onChange={(value) => setFilter("status", value)}
+          options={STATUS_OPTIONS.period.map((status) => ({ value: status, label: periodStatusLabel(status) }))}
+        />
         <StoreFilter className="field-label min-w-48" />
         <button type="button" onClick={() => setFilters(EMPTY_FILTERS)} className="btn btn-secondary btn-sm">
           Đặt lại
@@ -106,7 +101,7 @@ export function PeriodTab() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="badge badge-neutral">{text(item.status)}</span>
+                    <span className="badge badge-neutral">{periodStatusLabel(item.status)}</span>
                     <EntityActions kind="period" item={item} />
                   </div>
                 </div>
@@ -115,7 +110,7 @@ export function PeriodTab() {
           </div>
         </Card>
 
-        <PeriodDetail period={selected} periodId={activeId} entries={entries} totalEmployees={totalEmployees} />
+        <PeriodDetail period={selected} periodId={activeId} entries={entries} />
       </section>
     </>
   );

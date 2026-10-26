@@ -5,13 +5,10 @@ import com.vn.schedule.domain.EmployeeStore;
 import com.vn.schedule.domain.Store;
 import com.vn.schedule.domain.StoreManager;
 import com.vn.schedule.domain.User;
-import com.vn.schedule.domain.UserRole;
 import com.vn.schedule.repository.EmployeeRepository;
 import com.vn.schedule.repository.EmployeeStoreRepository;
-import com.vn.schedule.repository.RoleRepository;
 import com.vn.schedule.repository.StoreRepository;
 import com.vn.schedule.repository.UserRepository;
-import com.vn.schedule.repository.UserRoleRepository;
 import com.vn.schedule.util.ApiException;
 import com.vn.schedule.util.PageSupport;
 import com.vn.schedule.dto.request.EmployeeRequest;
@@ -39,14 +36,16 @@ import java.util.stream.Collectors;
 public class EmployeeService {
     private final EmployeeRepository repository;
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final StoreScopeService storeScopeService;
     private final EmployeeStoreRepository employeeStoreRepository;
     private final StoreRepository storeRepository;
     private final StoreManagerService storeManagerService;
+    private final EmployeeAssignmentService assignmentService;
+
+    private static final Set<String> GENDERS = Set.of("MALE", "FEMALE");
+    private static final Set<String> STATUSES = Set.of("ACTIVE", "INACTIVE", "RESIGNED");
 
     /** Khóa sắp xếp được phép cho trang nhân sự (kèm id để thứ tự ổn định giữa các trang). */
     private static final Map<String, Sort> PAGE_SORTS = Map.of(
@@ -58,24 +57,22 @@ public class EmployeeService {
     public EmployeeService(
             EmployeeRepository repository,
             UserRepository userRepository,
-            RoleRepository roleRepository,
-            UserRoleRepository userRoleRepository,
             PasswordEncoder passwordEncoder,
             EmailService emailService,
             StoreScopeService storeScopeService,
             EmployeeStoreRepository employeeStoreRepository,
             StoreRepository storeRepository,
-            StoreManagerService storeManagerService) {
+            StoreManagerService storeManagerService,
+            EmployeeAssignmentService assignmentService) {
         this.repository = repository;
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.userRoleRepository = userRoleRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.storeScopeService = storeScopeService;
         this.employeeStoreRepository = employeeStoreRepository;
         this.storeRepository = storeRepository;
         this.storeManagerService = storeManagerService;
+        this.assignmentService = assignmentService;
     }
 
     public List<EmployeeResponse> findAll(String status) {
@@ -83,10 +80,16 @@ public class EmployeeService {
         Set<Integer> visibleStoreIds = storeScopeService.visibleStoreIds();
         // Giữ thứ tự cũ: không lọc trạng thái thì theo id, có lọc thì theo họ tên
         Sort sort = status == null ? Sort.by("id") : Sort.by("fullName");
-        return repository.findInScope(status, selfId, visibleStoreIds == null,
-                        StoreScopeService.inParam(visibleStoreIds), sort)
-                .stream()
-                .map(this::toResponse)
+        List<Employee> employees = repository.findInScope(status, selfId, visibleStoreIds == null,
+                StoreScopeService.inParam(visibleStoreIds), sort);
+        // Vị trí của cả danh sách trong một truy vấn
+        Map<Integer, String> positions = assignmentService.positionsByUserIds(employees.stream()
+                .filter(employee -> employee.getUser() != null)
+                .map(employee -> employee.getUser().getId())
+                .collect(Collectors.toSet()));
+        return employees.stream()
+                .map(employee -> toResponse(employee,
+                        employee.getUser() == null ? null : positions.get(employee.getUser().getId())))
                 .toList();
     }
 
@@ -96,11 +99,13 @@ public class EmployeeService {
      */
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public EmployeePageResponse page(Integer page, Integer size, String sort, String query, String status,
-                                     Integer storeId, String role, String assignmentStatus, Boolean primary) {
+                                     Integer storeId, String role, String assignmentStatus, Boolean primary,
+                                     String position) {
         Pageable pageable = PageSupport.pageable(page, size, sort, PAGE_SORTS, "newest");
         String statusFilter = blankToNull(status);
         String roleFilter = normalizeRole(role);
         String assignmentStatusFilter = blankToNull(assignmentStatus);
+        String positionFilter = blankToNull(position) == null ? null : EmployeeAssignmentService.normalizePosition(position);
         boolean assignmentFilter = storeId != null || roleFilter != null || assignmentStatusFilter != null || primary != null;
 
         Integer selfId = storeScopeService.isCurrentUserRole("EMPLOYEE") ? storeScopeService.currentEmployeeId() : null;
@@ -111,7 +116,7 @@ public class EmployeeService {
         Page<Employee> employees = "NONE".equals(roleFilter)
                 ? Page.empty(pageable)
                 : repository.searchPage(statusFilter, selfId, allStores, scopeStoreIds, PageSupport.keyword(query),
-                        assignmentFilter, storeId, assignmentStatusFilter, primary, roleFilter, pageable);
+                        assignmentFilter, storeId, assignmentStatusFilter, primary, roleFilter, positionFilter, pageable);
 
         List<Integer> pageIds = employees.getContent().stream().map(Employee::getId).toList();
         Map<Integer, List<EmployeeStore>> assignments = pageIds.isEmpty()
@@ -127,16 +132,23 @@ public class EmployeeService {
                 : storeRepository.findAllById(storeIds).stream()
                         .collect(Collectors.toMap(Store::getId, store -> String.valueOf(store.getStoreName())));
         Set<Integer> managerIds = storeManagerService.findAll().stream()
+                .filter(manager -> "ACTIVE".equalsIgnoreCase(manager.getStatus()))
                 .map(StoreManager::getEmployeeId)
                 .collect(Collectors.toSet());
+        Map<Integer, String> positions = assignmentService.positionsByUserIds(employees.getContent().stream()
+                .filter(employee -> employee.getUser() != null)
+                .map(employee -> employee.getUser().getId())
+                .collect(Collectors.toSet()));
 
         List<EmployeePageResponse.Item> items = employees.getContent().stream()
                 .map(employee -> toItem(employee, managerIds.contains(employee.getId()),
+                        employee.getUser() == null ? null : positions.get(employee.getUser().getId()),
                         assignments.getOrDefault(employee.getId(), List.of()), storeNames))
                 .toList();
         Object[] counts = repository.countInScope(statusFilter, selfId, allStores, scopeStoreIds).get(0);
         EmployeePageResponse.Summary summary = new EmployeePageResponse.Summary(
-                ((Number) counts[0]).longValue(), ((Number) counts[1]).longValue(), managerIds.size());
+                ((Number) counts[0]).longValue(), ((Number) counts[1]).longValue(),
+                repository.countStoreManagersInScope(statusFilter, selfId, allStores, scopeStoreIds));
         return new EmployeePageResponse(PageSupport.meta(employees), items, summary);
     }
 
@@ -153,7 +165,7 @@ public class EmployeeService {
         return "MANAGER".equals(upper) || "EMPLOYEE".equals(upper) ? upper : "NONE";
     }
 
-    private EmployeePageResponse.Item toItem(Employee employee, boolean manager, List<EmployeeStore> assignments,
+    private EmployeePageResponse.Item toItem(Employee employee, boolean manager, String position, List<EmployeeStore> assignments,
                                              Map<Integer, String> storeNames) {
         return new EmployeePageResponse.Item(
                 employee.getId(),
@@ -168,12 +180,14 @@ public class EmployeeService {
                 employee.getAddress(),
                 employee.getIdCardFrontId(),
                 employee.getIdCardBackId(),
+                employee.getSignatureId(),
                 employee.getHireDate(),
                 employee.getStatus(),
                 employee.getNote(),
                 employee.getCreatedAt(),
                 employee.getUpdatedAt(),
                 manager,
+                position,
                 assignments.stream()
                         .map(item -> new EmployeePageResponse.Assignment(
                                 item.getEmployeeStoreId(), item.getEmployeeId(), item.getStoreId(),
@@ -196,38 +210,96 @@ public class EmployeeService {
         return employee;
     }
 
+    /**
+     * Tạo nhân viên: mã tự sinh (NVxxxx), vị trí bắt buộc và quyết định quyền của tài khoản tự tạo,
+     * phân bổ cửa hàng theo storeIds.
+     */
     @Transactional
     public EmployeeResponse create(EmployeeRequest body) {
-        User user = resolveOrCreateUser(body);
+        validate(body);
+        String position = EmployeeAssignmentService.normalizePosition(body.position());
+        if (position == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng chọn vị trí của nhân viên");
+        }
+        if (body.resolvedUserId() == null && (body.email() == null || body.email().isBlank())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng nhập Email để hệ thống tạo tài khoản và gửi thông tin đăng nhập");
+        }
+        String employeeCode = nextEmployeeCode();
+        User user = resolveOrCreateUser(body, employeeCode);
 
         Employee entity = new Employee();
         entity.setUser(user);
-        entity.setEmployeeCode(body.employeeCode());
-        entity.setFullName(body.fullName());
+        entity.setEmployeeCode(employeeCode);
+        entity.setFullName(body.fullName().trim());
         entity.setAvatar(body.avatar());
         entity.setDateOfBirth(body.dateOfBirth());
-        entity.setGender(body.gender());
+        entity.setGender(body.gender().trim().toUpperCase());
         entity.setEmail(body.email());
         entity.setPhone(body.phone());
         entity.setAddress(body.address());
         entity.setIdCardFrontId(body.idCardFrontId());
         entity.setIdCardBackId(body.idCardBackId());
+        entity.setSignatureId(body.signatureId());
         entity.setHireDate(body.hireDate());
-        entity.setStatus(body.status() != null && !body.status().isBlank() ? body.status() : "ACTIVE");
+        entity.setStatus(body.status() != null && !body.status().isBlank() ? body.status().trim().toUpperCase() : "ACTIVE");
         entity.setNote(body.note());
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
 
         Employee saved = repository.save(entity);
+        assignmentService.setPosition(saved, position);
+        if (body.storeIds() != null) {
+            assignmentService.syncStores(saved, body.storeIds(), body.primaryStoreId(),
+                    body.storeStartDate() != null ? body.storeStartDate() : body.hireDate());
+        }
         return toResponse(saved);
     }
 
+    /** Sửa hồ sơ: mã nhân viên giữ nguyên; position / storeIds = null thì không đổi vị trí / phân bổ. */
     @Transactional
     public EmployeeResponse update(Integer id, EmployeeRequest body) {
         Employee current = findEntityById(id);
+        validate(body);
         applyFields(current, body);
         current.setUpdatedAt(LocalDateTime.now());
-        return toResponse(repository.save(current));
+        Employee saved = repository.save(current);
+        if (body.position() != null && !body.position().isBlank()) {
+            assignmentService.setPosition(saved, body.position());
+        }
+        if (body.storeIds() != null) {
+            assignmentService.syncStores(saved, body.storeIds(), body.primaryStoreId(), body.storeStartDate());
+        }
+        return toResponse(saved);
+    }
+
+    /** Dữ liệu bắt buộc: họ tên, ngày sinh, giới tính Nam / Nữ; trạng thái chỉ gồm đang làm việc / tạm nghỉ / đã nghỉ việc. */
+    private static void validate(EmployeeRequest body) {
+        if (body.fullName() == null || body.fullName().isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng nhập họ và tên");
+        }
+        if (body.dateOfBirth() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng nhập ngày sinh");
+        }
+        if (body.dateOfBirth().isAfter(java.time.LocalDate.now())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Ngày sinh không được ở tương lai");
+        }
+        if (body.gender() == null || !GENDERS.contains(body.gender().trim().toUpperCase())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng chọn giới tính (Nam hoặc Nữ)");
+        }
+        if (body.status() != null && !body.status().isBlank() && !STATUSES.contains(body.status().trim().toUpperCase())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Trạng thái chỉ có Đang làm việc, Tạm nghỉ hoặc Đã nghỉ việc");
+        }
+    }
+
+    /** Mã nhân viên kế tiếp: NV + số lớn nhất hiện có + 1, đủ 4 chữ số (NV0025). */
+    private String nextEmployeeCode() {
+        int max = repository.findGeneratedCodes().stream()
+                .map(code -> code.substring(2))
+                .filter(number -> number.matches("\\d{1,9}"))
+                .mapToInt(Integer::parseInt)
+                .max()
+                .orElse(0);
+        return String.format("NV%04d", max + 1);
     }
 
     @Transactional
@@ -249,7 +321,8 @@ public class EmployeeService {
         return toResponse(findEntityById(id));
     }
 
-    private User resolveOrCreateUser(EmployeeRequest body) {
+    /** Tài khoản của nhân viên: tìm theo userId / email hoặc tạo mới (quyền gán sau theo vị trí). */
+    private User resolveOrCreateUser(EmployeeRequest body, String employeeCode) {
         Integer requestedUserId = body.resolvedUserId();
         if (requestedUserId != null && requestedUserId > 0) {
             return userRepository.findById(requestedUserId)
@@ -278,8 +351,8 @@ public class EmployeeService {
         if (targetUser == null) {
             // Tạo username từ mã nhân viên hoặc tiền tố email
             String baseUsername;
-            if (body.employeeCode() != null && !body.employeeCode().isBlank()) {
-                baseUsername = body.employeeCode().trim().toLowerCase().replaceAll("[^a-zA-Z0-9_]", "");
+            if (employeeCode != null && !employeeCode.isBlank()) {
+                baseUsername = employeeCode.trim().toLowerCase().replaceAll("[^a-zA-Z0-9_]", "");
             } else if (email != null) {
                 baseUsername = email.split("@")[0].toLowerCase().replaceAll("[^a-zA-Z0-9_]", "");
             } else {
@@ -309,17 +382,7 @@ public class EmployeeService {
             newUser.setCreatedAt(LocalDateTime.now());
             newUser.setUpdatedAt(LocalDateTime.now());
             targetUser = userRepository.save(newUser);
-
-            // Gán quyền EMPLOYEE trong user_role
-            final Integer newUserId = targetUser.getId();
-            roleRepository.findByRoleCode("EMPLOYEE").ifPresent(role -> {
-                UserRole userRole = new UserRole();
-                userRole.setUserId(newUserId);
-                userRole.setRoleId(role.getRoleId());
-                userRole.setAssignedAt(LocalDateTime.now());
-                userRoleRepository.save(userRole);
-            });
-            log.info("Tự động tạo User mới (ID: {}, Username: {}) cho nhân viên mã {}", targetUser.getId(), targetUsername, body.employeeCode());
+            log.info("Tự động tạo User mới (ID: {}, Username: {}) cho nhân viên mã {}", targetUser.getId(), targetUsername, employeeCode);
         }
 
         // Gửi email chứa thông tin tài khoản nếu có email và mật khẩu khởi tạo
@@ -327,7 +390,7 @@ public class EmployeeService {
             emailService.sendAccountCreatedEmail(
                     email,
                     body.fullName(),
-                    body.employeeCode(),
+                    employeeCode,
                     targetUsername,
                     rawPassword
             );
@@ -338,7 +401,7 @@ public class EmployeeService {
 
     private Employee toEntity(EmployeeRequest body) {
         Employee entity = new Employee();
-        entity.setUser(resolveOrCreateUser(body));
+        entity.setUser(resolveOrCreateUser(body, body.employeeCode()));
         entity.setEmployeeCode(body.employeeCode());
         entity.setFullName(body.fullName());
         entity.setAvatar(body.avatar());
@@ -349,6 +412,7 @@ public class EmployeeService {
         entity.setAddress(body.address());
         entity.setIdCardFrontId(body.idCardFrontId());
         entity.setIdCardBackId(body.idCardBackId());
+        entity.setSignatureId(body.signatureId());
         entity.setHireDate(body.hireDate());
         entity.setStatus(body.status() != null && !body.status().isBlank() ? body.status() : "ACTIVE");
         entity.setNote(body.note());
@@ -361,16 +425,16 @@ public class EmployeeService {
         if (body.resolvedUserId() != null && body.resolvedUserId() > 0) {
             entity.setUser(resolveUser(body));
         }
-        entity.setEmployeeCode(body.employeeCode());
-        entity.setFullName(body.fullName());
+        entity.setFullName(body.fullName().trim());
         if (body.avatar() != null) {
             entity.setAvatar(body.avatar());
         }
         entity.setDateOfBirth(body.dateOfBirth());
-        entity.setGender(body.gender());
+        entity.setGender(body.gender().trim().toUpperCase());
         entity.setEmail(body.email());
         entity.setPhone(body.phone());
         entity.setAddress(body.address());
+        entity.setSignatureId(body.signatureId());
         if (body.idCardFrontId() != null) {
             entity.setIdCardFrontId(body.idCardFrontId());
         }
@@ -379,7 +443,7 @@ public class EmployeeService {
         }
         entity.setHireDate(body.hireDate());
         if (body.status() != null && !body.status().isBlank()) {
-            entity.setStatus(body.status());
+            entity.setStatus(body.status().trim().toUpperCase());
         }
         entity.setNote(body.note());
         entity.setUpdatedAt(LocalDateTime.now());
@@ -395,6 +459,10 @@ public class EmployeeService {
     }
 
     private EmployeeResponse toResponse(Employee employee) {
+        return toResponse(employee, assignmentService.positionOf(employee));
+    }
+
+    private EmployeeResponse toResponse(Employee employee, String position) {
         return new EmployeeResponse(
                 employee.getId(),
                 employee.getUser() == null ? null : employee.getUser().getId(),
@@ -408,10 +476,12 @@ public class EmployeeService {
                 employee.getAddress(),
                 employee.getIdCardFrontId(),
                 employee.getIdCardBackId(),
+                employee.getSignatureId(),
                 employee.getHireDate(),
                 employee.getStatus(),
                 employee.getNote(),
                 employee.getCreatedAt(),
-                employee.getUpdatedAt());
+                employee.getUpdatedAt(),
+                position);
     }
 }

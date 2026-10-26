@@ -19,6 +19,13 @@ public interface UserRoleRepository extends JpaRepository<UserRole, UserRoleId> 
             """)
     List<String> findRoleCodesByUserId(@Param("userId") Integer userId);
 
+    /** [userId, roleCode] của nhiều tài khoản trong một truy vấn (xác định vị trí nhân viên theo trang). */
+    @Query("""
+            SELECT ur.userId, r.roleCode FROM UserRole ur, Role r
+            WHERE r.roleId = ur.roleId AND ur.userId IN :userIds
+            """)
+    List<Object[]> findRoleCodesByUserIds(@Param("userIds") java.util.Collection<Integer> userIds);
+
     /** Số tài khoản ACTIVE mang vai trò roleId, không tính excludeUserId (null = tính tất cả). */
     @Query("""
             SELECT COUNT(u) FROM User u

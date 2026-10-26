@@ -83,6 +83,19 @@ export const idOf = (item: Entity) =>
       0
   );
 
+export const PERIOD_STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Nháp",
+  OPEN: "Đang mở",
+  CANCELLED: "Đã hủy",
+  FINALIZED: "Đã chốt",
+};
+
+export const periodStatusLabel = (status: unknown) => PERIOD_STATUS_LABEL[upper(status)] ?? text(status);
+
+/** Trạng thái duy nhất của đợt / phiên: đã đóng (thủ công) hoặc theo thời gian mở đăng ký. */
+export const windowStatusOf = (status: unknown, start: unknown, end: unknown) =>
+  upper(status) === "CLOSED" ? { label: "Đã đóng", badge: "bg-slate-200 text-slate-600" } : phaseOf(start, end);
+
 /** Trạng thái theo thời gian: sắp mở / đang diễn ra / đã kết thúc */
 export const phaseOf = (start: unknown, end: unknown) => {
   const now = localMinuteKey(new Date());

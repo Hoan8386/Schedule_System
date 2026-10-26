@@ -13,6 +13,8 @@ import java.util.Set;
 public interface EmployeeStoreRepository extends JpaRepository<EmployeeStore, Integer> {
     List<EmployeeStore> findByEmployeeIdAndStatus(Integer employeeId, String status);
 
+    List<EmployeeStore> findByStoreIdAndStatus(Integer storeId, String status);
+
     @Query("""
             SELECT DISTINCT es.employeeId FROM EmployeeStore es
             WHERE es.storeId IN :storeIds AND UPPER(es.status) = 'ACTIVE'

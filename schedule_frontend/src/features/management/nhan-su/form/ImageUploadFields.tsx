@@ -69,23 +69,28 @@ export function AvatarField({ avatar, gender, busy, onChange, onUpload }: Avatar
   );
 }
 
-interface IdCardSideProps {
-  side: "front" | "back";
+interface AttachmentSlotProps {
+  title: string;
+  /** Tên dùng trong nút / chú thích, ví dụ "mặt trước", "chữ ký" */
+  name: string;
+  dotClass: string;
   attachmentId: number | null | undefined;
   busy: boolean;
   onRemove: () => void;
   onUpload: (file: File) => void;
+  /** contain: giữ nguyên tỉ lệ ảnh (chữ ký) */
+  fit?: "cover" | "contain";
+  emptyIcon?: React.ComponentType<{ className?: string }>;
 }
 
-/** Một mặt CCCD: xem trước, xóa và tải lên. */
-export function IdCardSide({ side, attachmentId, busy, onRemove, onUpload }: IdCardSideProps) {
-  const name = side === "front" ? "mặt trước" : "mặt sau";
+/** Một ô ảnh lưu theo id tệp đính kèm: xem trước, xóa và tải lên. */
+export function AttachmentSlot({ title, name, dotClass, attachmentId, busy, onRemove, onUpload, fit = "cover", emptyIcon: EmptyIcon = CreditCard }: AttachmentSlotProps) {
   return (
     <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1 text-[11px] font-bold text-slate-700">
-          <span className={`h-2 w-2 rounded-full ${side === "front" ? "bg-brand-500" : "bg-orange-500"}`} />
-          {side === "front" ? "Mặt trước" : "Mặt sau"}
+          <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+          {title}
         </span>
         {attachmentId ? (
           <button type="button" onClick={onRemove} className="text-[11px] text-rose-600 hover:underline">
@@ -96,11 +101,11 @@ export function IdCardSide({ side, attachmentId, busy, onRemove, onUpload }: IdC
       {attachmentId ? (
         <div className="relative aspect-[16/10] overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
           {/* eslint-disable-next-line @next/next/no-img-element -- ảnh từ backend */}
-          <img src={managerApi.getAttachmentFileUrl(attachmentId)} alt={`CCCD ${name}`} className="h-full w-full object-cover" />
+          <img src={managerApi.getAttachmentFileUrl(attachmentId)} alt={title} className={`h-full w-full ${fit === "contain" ? "object-contain p-2" : "object-cover"}`} />
         </div>
       ) : (
         <div className="flex aspect-[16/10] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-[11px] text-slate-400">
-          <CreditCard className="mb-1 h-5 w-5 text-slate-300" />
+          <EmptyIcon className="mb-1 h-5 w-5 text-slate-300" />
           <span>Chưa có ảnh {name}</span>
         </div>
       )}
@@ -111,5 +116,16 @@ export function IdCardSide({ side, attachmentId, busy, onRemove, onUpload }: IdC
         className="w-full bg-slate-50 py-2 hover:bg-slate-100"
       />
     </div>
+  );
+}
+
+type IdCardSideProps = Omit<AttachmentSlotProps, "title" | "name" | "dotClass"> & { side: "front" | "back" };
+
+/** Một mặt CCCD. */
+export function IdCardSide({ side, ...props }: IdCardSideProps) {
+  return side === "front" ? (
+    <AttachmentSlot title="Mặt trước" name="mặt trước" dotClass="bg-brand-500" {...props} />
+  ) : (
+    <AttachmentSlot title="Mặt sau" name="mặt sau" dotClass="bg-orange-500" {...props} />
   );
 }

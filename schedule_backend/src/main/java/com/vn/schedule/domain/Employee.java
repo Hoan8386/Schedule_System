@@ -41,6 +41,9 @@ public class Employee {
     private Integer idCardFrontId;
     @Column(name = "id_card_back_id")
     private Integer idCardBackId;
+    /** Ảnh chữ ký (id tệp đính kèm) */
+    @Column(name = "signature_id")
+    private Integer signatureId;
     @Column(name = "hire_date")
     private LocalDate hireDate;
     @Column(name = "status", nullable = false)

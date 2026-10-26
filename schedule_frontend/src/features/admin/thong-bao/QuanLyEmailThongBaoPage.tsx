@@ -47,7 +47,7 @@ export default function QuanLyEmailThongBaoPage() {
               >
                 <Info className="h-3.5 w-3.5 stroke-[2.5]" />
               </button>
-              <div className="pointer-events-none absolute left-0 top-8 z-40 hidden w-80 rounded-xl border border-slate-700 bg-slate-900 p-3.5 text-white shadow-2xl group-hover:block">
+              <div className="pointer-events-none absolute left-0 top-8 z-40 hidden w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-700 bg-slate-900 p-3.5 text-white shadow-2xl group-hover:block">
                 <p className="text-xs font-medium leading-relaxed text-slate-200">
                   Cấu hình mẫu thư điện tử tự động, mẫu thông báo ứng dụng và thiết lập máy chủ kết nối SMTP an toàn.
                 </p>

@@ -23,12 +23,15 @@ public record EmployeePageResponse(ResultPaginationDTO.Meta meta, List<Item> res
             String address,
             Integer idCardFrontId,
             Integer idCardBackId,
+            Integer signatureId,
             LocalDate hireDate,
             String status,
             String note,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
             boolean manager,
+            /** EMPLOYEE / STORE_MANAGER (theo vai trò tài khoản) */
+            String position,
             List<Assignment> assignments) {
     }
 
@@ -46,7 +49,7 @@ public record EmployeePageResponse(ResultPaginationDTO.Meta meta, List<Item> res
             LocalDateTime createdAt) {
     }
 
-    /** total / active: theo phạm vi + bộ lọc trạng thái; managers: số nhân viên đang giữ vai trò quản lý cửa hàng. */
+    /** total / active / managers (vị trí trưởng cửa hàng): theo phạm vi + bộ lọc trạng thái. */
     public record Summary(long total, long active, long managers) {
     }
 }

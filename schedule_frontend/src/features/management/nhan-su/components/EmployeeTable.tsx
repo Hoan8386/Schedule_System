@@ -1,7 +1,7 @@
 import React from "react";
 import { Edit, Eye, Trash2 } from "lucide-react";
 import type { EmployeeListItem, StoreResponse } from "@/lib/api";
-import { date, isActive, statusName, value } from "../utils";
+import { date, isActive, positionName, statusName, value } from "../utils";
 import { EmployeeAvatar } from "./EmployeeAvatar";
 
 interface Props {
@@ -15,7 +15,7 @@ interface Props {
   onDelete?: (employee: EmployeeListItem) => void;
 }
 
-const HEADERS = ["Nhân viên", "Email / điện thoại", "Cửa hàng phụ trách", "Ngày bắt đầu", "Trạng thái"];
+const HEADERS = ["Nhân viên", "Vị trí", "Email / điện thoại", "Cửa hàng phụ trách", "Ngày bắt đầu", "Trạng thái"];
 
 export function EmployeeTable({ employees, storeMap, onView, onEdit, onDelete }: Props) {
   return (
@@ -41,12 +41,18 @@ export function EmployeeTable({ employees, storeMap, onView, onEdit, onDelete }:
                     </div>
                     <div>
                       <b className="text-sm text-slate-800 transition-colors group-hover:text-brand-600">{value(employee.fullName)}</b>
-                      <span className="block font-mono text-[11px] text-slate-400">
-                        Mã: {value(employee.employeeCode)}
-                        {employee.manager ? " · QUẢN LÝ" : ""}
-                      </span>
+                      <span className="block font-mono text-[11px] text-slate-400">Mã: {value(employee.employeeCode)}</span>
                     </div>
                   </div>
+                </td>
+                <td className="px-5 py-4">
+                  <span
+                    className={`whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-bold ${
+                      employee.position === "STORE_MANAGER" ? "bg-brand-100 text-brand-800" : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {positionName(employee.position)}
+                  </span>
                 </td>
                 <td className="px-5 py-4 text-slate-600">
                   {value(employee.email)}

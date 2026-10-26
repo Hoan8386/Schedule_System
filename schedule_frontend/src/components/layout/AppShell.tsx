@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { PageTransitionOverlay } from "./PageTransitionOverlay";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
@@ -48,20 +48,36 @@ export function AppShell({
 }: AppShellProps) {
   const title = sections.flatMap((section) => section.items).find((item) => item.id === activeId)?.label ?? "Tổng quan";
   const mainRef = useRef<HTMLElement>(null);
+  // Menu trượt trên điện thoại / tablet (dưới lg sidebar ẩn khỏi bố cục)
+  const [navOpen, setNavOpen] = useState(false);
 
   // Trang mới luôn bắt đầu từ đầu thay vì giữ vị trí cuộn của trang cũ.
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0 });
   }, [activeId]);
 
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setNavOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navOpen]);
+
+  const select = (id: string) => {
+    setNavOpen(false);
+    onSelect(id);
+  };
+
   return (
-    <div className="flex h-screen overflow-hidden bg-app font-sans text-slate-800">
+    <div className="flex h-dvh overflow-hidden bg-app font-sans text-slate-800">
       <Sidebar
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
         subtitle={subtitle}
         scope={scope}
         sections={sections}
         activeId={activeId}
-        onSelect={onSelect}
+        onSelect={select}
         variant={navVariant}
         helpMessage={helpMessage}
         helpLabel={helpLabel}
@@ -77,6 +93,7 @@ export function AppShell({
           menuActions={userMenuActions}
           onLogout={onLogout}
           onNavigate={onSelect}
+          onOpenNav={() => setNavOpen(true)}
         />
         <div className="relative min-h-0 flex-1">
           <main ref={mainRef} className="h-full overflow-y-auto">{children}</main>

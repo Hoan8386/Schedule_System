@@ -62,6 +62,26 @@ export const formatDateTime = (value: unknown) => {
 
 export const dateTimeRange = (start: unknown, end: unknown) => `${formatDateTime(start)} → ${formatDateTime(end)}`;
 
+/** Giờ trước, ngày sau: "23:15 18/10/2026" (bỏ năm khi withYear = false: "23:15 18/10"). */
+export const timeDate = (value: unknown, withYear = true) => {
+  const key = minuteKey(value);
+  if (!key || key.length < 10) return "—";
+  const [y, m, d] = key.slice(0, 10).split("-");
+  const time = key.length >= 16 ? `${key.slice(11, 16)} ` : "";
+  return `${time}${d}/${m}${withYear ? `/${y}` : ""}`;
+};
+
+/** "23:15 18/10/2026 - 23:15 23/10/2026" */
+export const timeDateRange = (start: unknown, end: unknown, withYear = true) => `${timeDate(start, withYear)} - ${timeDate(end, withYear)}`;
+
+/** "17/10" – ngày không kèm năm. */
+export const shortDate = (value: unknown) => {
+  const key = dayKey(value);
+  if (!key) return "—";
+  const [, m, d] = key.split("-");
+  return `${d}/${m}`;
+};
+
 /** Ngày giờ -> "YYYY-MM-DDTHH:mm" để so sánh / gán cho input datetime-local. */
 export const minuteKey = (value: unknown) => {
   if (Array.isArray(value)) return `${dayKey(value.slice(0, 3))}T${hhmm(value.slice(3, 5))}`;

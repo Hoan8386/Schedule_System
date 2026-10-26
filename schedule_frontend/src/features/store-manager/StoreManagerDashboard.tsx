@@ -110,7 +110,7 @@ export default function StoreManagerDashboard({ onGoToRequests, onGoToMyShift, o
                 {data.requestQueue.length === 0 ? (
                   <EmptyState>Không có yêu cầu nào đang chờ</EmptyState>
                 ) : (
-                  <div className="overflow-hidden rounded-xl border border-slate-100">
+                  <div className="overflow-x-auto rounded-xl border border-slate-100">
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-semibold text-slate-400">

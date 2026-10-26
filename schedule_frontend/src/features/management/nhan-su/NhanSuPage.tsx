@@ -46,7 +46,7 @@ export default function NhanSuPage({ readOnly = false }: { readOnly?: boolean })
   const stats = [
     { label: "Tổng nhân sự", count: data.summary?.total ?? 0 },
     { label: "Đang làm việc", count: data.summary?.active ?? 0 },
-    { label: "Đang giữ vai trò quản lý", count: data.summary?.managers ?? 0 },
+    { label: "Trưởng cửa hàng", count: data.summary?.managers ?? 0 },
   ];
 
   return (

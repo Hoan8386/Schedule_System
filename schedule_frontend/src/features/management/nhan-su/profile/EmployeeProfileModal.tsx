@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Briefcase, Check, Copy, Edit, Mail, Phone, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { managerApi, type EmployeeResponse, type EmployeeStoreResponse, type StoreResponse } from "@/lib/api";
-import { resolveImageUrl, statusName, value } from "../utils";
+import { positionName, resolveImageUrl, statusName, value } from "../utils";
 import { AccountSection, NoteSection, PersonalSection, StoreSection } from "./ProfileSections";
 
 interface Props {
@@ -87,13 +87,13 @@ export function EmployeeProfileModal({ employee, isManager, assignments, storeMa
                   <span>Mã: {value(profile.employeeCode)}</span>
                   {copied ? <Check className="h-3 w-3 text-emerald-300" /> : <Copy className="h-3 w-3 text-white/70" />}
                 </button>
-                {isManager ? (
+                {(profile.position ?? (isManager ? "STORE_MANAGER" : "EMPLOYEE")) === "STORE_MANAGER" ? (
                   <span className="inline-flex items-center gap-1 rounded-lg border border-indigo-300/30 bg-indigo-900/40 px-2.5 py-1 text-xs font-bold text-indigo-100">
-                    <ShieldCheck className="h-3.5 w-3.5" /> Quản lý cửa hàng
+                    <ShieldCheck className="h-3.5 w-3.5" /> {positionName("STORE_MANAGER")}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/20 px-2.5 py-1 text-xs font-bold text-white">
-                    <Briefcase className="h-3.5 w-3.5" /> Nhân viên
+                    <Briefcase className="h-3.5 w-3.5" /> {positionName(profile.position ?? "EMPLOYEE")}
                   </span>
                 )}
                 <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ${STATUS_BADGE[profile.status?.toUpperCase() ?? ""] ?? "bg-rose-500 text-white"}`}>
@@ -119,7 +119,7 @@ export function EmployeeProfileModal({ employee, isManager, assignments, storeMa
 
         <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/50 p-6">
           <PersonalSection profile={profile} />
-          <AccountSection profile={profile} isManager={isManager} />
+          <AccountSection profile={profile} />
           <StoreSection assignments={assignments} storeMap={storeMap} />
           <NoteSection profile={profile} />
         </div>

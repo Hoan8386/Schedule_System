@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -93,11 +94,15 @@ public class ShiftRegistrationService {
         }
         Integer capacity = shiftByDate.getMaxCapacity() != null ? shiftByDate.getMaxCapacity() : shift.getMaxCapacity();
         if (capacity != null && active >= capacity) throw bad("Ca này đã đủ " + capacity + " người");
-        // Ngưỡng ban đầu là min: chỉ nâng lên max khi mọi khung giờ của nhóm trong ngày đã đạt min
+        // Ngưỡng ban đầu là min (nếu có, không thì max): chỉ nâng lên max khi mọi ca của nhóm trong tuần đã đạt min
+        // và kỳ vẫn đang mở (registrationWindow đã bắt buộc kỳ OPEN)
         Integer min = shift.getMinCapacity();
-        if (min != null && min > 0 && active >= min && !allSlotsReachedMin(shift.getShiftGroup().getId(), workDate)) {
-            throw bad("Ca này đã đạt số lượng tối thiểu (" + min + " người). Các khung giờ khác của nhóm trong ngày "
-                    + workDate.format(DATE) + " chưa đủ người tối thiểu – hãy đăng ký khung giờ khác trước");
+        if (min != null && min > 0 && active >= min
+                && !allSlotsReachedMinInWeek(shift.getShiftGroup().getId(), workDate, window.periodId())) {
+            LocalDate monday = workDate.with(DayOfWeek.MONDAY);
+            throw bad("Ca này đã đạt số lượng tối thiểu (" + min + " người). Các ca khác của nhóm trong tuần "
+                    + monday.format(DATE) + " – " + monday.plusDays(6).format(DATE)
+                    + " chưa đủ người tối thiểu – hãy đăng ký ca khác trước");
         }
 
         // Bảng phân ca chỉ cho một bản ghi / nhân viên / ca theo ngày: đăng ký lại thì dùng lại bản ghi đã hủy
@@ -154,22 +159,54 @@ public class ShiftRegistrationService {
     }
 
     /**
-     * Mọi khung giờ (ca mẫu đang hoạt động có min) của nhóm ca trong ngày đã đủ số lượng tối thiểu chưa.
-     * Bỏ qua khung giờ không thể đăng ký trong ngày đó (ca theo ngày đã hủy / đóng), vì sẽ không bao giờ đủ min.
+     * Mọi ca của nhóm trong tuần (thứ Hai – Chủ nhật chứa workDate) đã đủ số lượng tối thiểu chưa.
+     * Một "ca" là một khung giờ (ca mẫu đang hoạt động có min) vào một ngày còn đăng ký được: thuộc thời gian áp dụng
+     * của kỳ, chưa qua, và chưa có ca theo ngày bị hủy / đóng (những ca đó không bao giờ đủ min nên bỏ qua).
      */
-    public boolean allSlotsReachedMin(Integer shiftGroupId, LocalDate workDate) {
-        return rows(entityManager, """
-                SELECT sh.shift_id, sh.min_capacity,
+    public boolean allSlotsReachedMinInWeek(Integer shiftGroupId, LocalDate workDate, Integer periodId) {
+        LocalDate monday = workDate.with(DayOfWeek.MONDAY);
+        LocalDate from = monday;
+        LocalDate to = monday.plusDays(6);
+        List<Object[]> period = rows(entityManager, """
+                SELECT COALESCE(effective_start_date, start_date), COALESCE(effective_end_date, end_date)
+                FROM schedule_period WHERE schedule_period_id = :id
+                """, Map.of("id", periodId));
+        if (!period.isEmpty()) {
+            LocalDate periodStart = period.get(0)[0] == null ? null : toDate(period.get(0)[0]);
+            LocalDate periodEnd = period.get(0)[1] == null ? null : toDate(period.get(0)[1]);
+            if (periodStart != null && periodStart.isAfter(from)) from = periodStart;
+            if (periodEnd != null && periodEnd.isBefore(to)) to = periodEnd;
+        }
+        LocalDate today = LocalDate.now();
+        if (today.isAfter(from)) from = today;
+        if (from.isAfter(to)) return true;
+
+        List<Object[]> slots = rows(entityManager, """
+                SELECT shift_id, min_capacity FROM shift
+                WHERE shift_group_id = :groupId AND status = 'ACTIVE' AND COALESCE(min_capacity, 0) > 0
+                """, Map.of("groupId", shiftGroupId));
+        if (slots.isEmpty()) return true;
+
+        // (ca mẫu|ngày) → số người đã đăng ký; ca theo ngày không còn mở thì ghi -1 để bỏ qua
+        Map<String, Long> registered = new java.util.HashMap<>();
+        rows(entityManager, """
+                SELECT sbd.shift_id, sbd.work_date, sbd.status,
                        (SELECT COUNT(*) FROM shift_assignment a
-                        JOIN shift_by_date sbd ON sbd.shift_by_date_id = a.shift_by_date_id
-                        WHERE sbd.shift_id = sh.shift_id AND sbd.work_date = :workDate
-                          AND a.status NOT IN ('CANCELLED', 'REJECTED'))
-                FROM shift sh
-                WHERE sh.shift_group_id = :groupId AND sh.status = 'ACTIVE' AND COALESCE(sh.min_capacity, 0) > 0
-                  AND NOT EXISTS (SELECT 1 FROM shift_by_date x
-                                  WHERE x.shift_id = sh.shift_id AND x.work_date = :workDate AND x.status <> 'OPEN')
-                """, Map.of("groupId", shiftGroupId, "workDate", workDate)).stream()
-                .allMatch(row -> toLong(row[2]) >= toInt(row[1]));
+                        WHERE a.shift_by_date_id = sbd.shift_by_date_id AND a.status NOT IN ('CANCELLED', 'REJECTED'))
+                FROM shift_by_date sbd
+                JOIN shift sh ON sh.shift_id = sbd.shift_id
+                WHERE sh.shift_group_id = :groupId AND sbd.work_date BETWEEN :from AND :to
+                """, Map.of("groupId", shiftGroupId, "from", from, "to", to))
+                .forEach(row -> registered.put(toInt(row[0]) + "|" + toDate(row[1]),
+                        "OPEN".equalsIgnoreCase(String.valueOf(row[2])) ? toLong(row[3]) : -1L));
+
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            for (Object[] slot : slots) {
+                long count = registered.getOrDefault(toInt(slot[0]) + "|" + day, 0L);
+                if (count >= 0 && count < toInt(slot[1])) return false;
+            }
+        }
+        return true;
     }
 
     /**

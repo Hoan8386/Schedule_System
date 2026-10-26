@@ -113,7 +113,7 @@ export default function CauHinhSinhMaPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-4 p-4 sm:space-y-6 sm:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -136,7 +136,7 @@ export default function CauHinhSinhMaPage() {
               >
                 <Info className="w-3.5 h-3.5 stroke-[2.5]" />
               </button>
-              <div className="absolute left-0 top-8 z-40 hidden group-hover:block w-80 p-3.5 bg-slate-900 text-white rounded-xl shadow-2xl transition-all pointer-events-none border border-slate-700">
+              <div className="absolute left-0 top-8 z-40 hidden group-hover:block w-80 max-w-[calc(100vw-2rem)] p-3.5 bg-slate-900 text-white rounded-xl shadow-2xl transition-all pointer-events-none border border-slate-700">
                 <p className="text-slate-200 text-xs leading-relaxed font-medium">
                   Tùy biến tiền tố, định dạng ngày tháng và số lượng chữ số tự tăng cho các thực thể dữ liệu trong chuỗi Ăn Vặt BLOAN.
                 </p>

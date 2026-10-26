@@ -108,9 +108,9 @@ export default function AdminDashboardPage({ onNavigate }: AdminDashboardProps) 
   ];
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-4 p-4 sm:space-y-6 sm:p-6">
       {/* Top Welcome Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-brand-950 rounded-2xl p-6 text-white shadow-md relative overflow-visible flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-brand-950 rounded-2xl p-4 sm:p-6 text-white shadow-md relative overflow-visible flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2 relative z-10">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-brand-400 text-slate-900 shadow-2xs">
@@ -130,7 +130,7 @@ export default function AdminDashboardPage({ onNavigate }: AdminDashboardProps) 
               >
                 <Info className="w-3.5 h-3.5 stroke-[2.5]" />
               </button>
-              <div className="absolute left-0 top-8 z-50 hidden group-hover:block w-80 p-3.5 bg-slate-900 text-white rounded-xl shadow-2xl transition-all pointer-events-none border border-slate-700">
+              <div className="absolute left-0 top-8 z-50 hidden group-hover:block w-80 max-w-[calc(100vw-2rem)] p-3.5 bg-slate-900 text-white rounded-xl shadow-2xl transition-all pointer-events-none border border-slate-700">
                 <p className="text-slate-200 text-xs leading-relaxed font-medium">
                   Kiểm soát toàn diện tài khoản, bảo mật phân quyền RBAC, thương hiệu chuỗi, cổng kết nối API và hệ thống phát thông báo toàn quốc.
                 </p>

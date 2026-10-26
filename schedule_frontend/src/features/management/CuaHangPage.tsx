@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Edit,
+  Eye,
   Grid,
   List,
   MapPin,
@@ -10,6 +11,7 @@ import {
   Plus,
   Store,
   RefreshCw,
+  Upload,
   Users,
   X,
 } from "lucide-react";
@@ -21,6 +23,8 @@ import {
   StoreRequest,
   managerApi,
 } from "@/lib/api";
+import { positionName } from "@/features/management/nhan-su/utils";
+import { initialStaffDraft, StoreStaffEditor, staffRequestOf, type StaffDraft } from "./cua-hang/StoreStaffEditor";
 
 const text = (value: unknown, fallback = "Chưa cập nhật") =>
   value === null || value === undefined || String(value).trim() === ""
@@ -39,6 +43,9 @@ const statusClass = (status: string | null | undefined) =>
   normalizeStatus(status) === "OPENING"
     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
     : "bg-rose-50 text-rose-700 border border-rose-200";
+
+/** Phân công trưởng cửa hàng còn hiệu lực (bản ghi cũ đã kết thúc có status INACTIVE). */
+const isActiveManager = (manager: StoreManagerResponse) => !manager.status || String(manager.status).toUpperCase() === "ACTIVE";
 
 const emptyStoreForm: StoreRequest = {
   storeCode: "",
@@ -66,6 +73,16 @@ export default function CuaHangPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   // Cửa hàng đang xem chi tiết (bấm vào cửa hàng)
   const [detailStore, setDetailStore] = useState<StoreResponse | null>(null);
+  const [staffDraft, setStaffDraft] = useState<StaffDraft>(() => initialStaffDraft(null, [], [], null));
+  const activeManagers = useMemo(() => managers.filter(isActiveManager), [managers]);
+  const managerIdOf = useCallback(
+    (storeId: number) => activeManagers.find((manager) => manager.storeId === storeId)?.employeeId ?? null,
+    [activeManagers]
+  );
+  const employeeName = useCallback(
+    (employeeId: number | null) => (employeeId ? text(employees.find((employee) => employee.id === employeeId)?.fullName, `Nhân viên #${employeeId}`) : null),
+    [employees]
+  );
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -116,6 +133,7 @@ export default function CuaHangPage() {
     });
     setLogoFile(null);
     setLogoPreview(store?.logoImage ?? null);
+    setStaffDraft(initialStaffDraft(store?.id ?? null, assignments, employees, store ? managerIdOf(store.id) : null));
   };
 
   const selectLogo = (file: File | null) => {
@@ -151,11 +169,12 @@ export default function CuaHangPage() {
       }
       // Tạo mới luôn là OPENING (backend cũng ép); chỉ chọn trạng thái khi chỉnh sửa
       const payload = { ...storeForm, status: editingStore ? storeForm.status : "OPENING", storeImageId: imageId, logoId: imageId };
-      if (editingStore) {
-        await managerApi.updateStore(editingStore.id, payload);
-      } else {
-        await managerApi.createStore(payload);
-      }
+      const storeId = editingStore
+        ? (await managerApi.updateStore(editingStore.id, payload), editingStore.id)
+        : (await managerApi.createStore(payload)).data.id;
+      // Trưởng cửa hàng + phân bổ nhân viên (đã xác nhận từng thao tác) áp dụng trong một giao dịch
+      const staffRequest = staffRequestOf(staffDraft);
+      if (staffRequest && storeId) await managerApi.updateStoreStaff(storeId, staffRequest);
       closeStoreForm();
       await loadData();
     } catch (saveError) {
@@ -179,21 +198,20 @@ export default function CuaHangPage() {
             assignment.storeId === store.id &&
             (!assignment.status || assignment.status.toUpperCase() === "ACTIVE")
         ).length,
-        managerCount: managers.filter((manager) => manager.storeId === store.id)
-          .length,
+        managerName: employeeName(managerIdOf(store.id)),
       })),
-    [assignments, managers, stores]
+    [assignments, employeeName, managerIdOf, stores]
   );
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-4 p-4 sm:space-y-6 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">
             Quản lý cửa hàng
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Dữ liệu được lấy trực tiếp từ API STORE, EMPLOYEE_STORE và STORE_MANAGER.
+            Thông tin cửa hàng, trưởng cửa hàng và nhân viên được phân bổ.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -234,8 +252,8 @@ export default function CuaHangPage() {
           className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 text-xs"
         >
           <option value="ALL">Trạng thái: Tất cả</option>
-          <option value="OPENING">Đang hoạt động (OPENING)</option>
-          <option value="CLOSED">Đã đóng (CLOSED)</option>
+          <option value="OPENING">Đang hoạt động</option>
+          <option value="CLOSED">Đã đóng</option>
         </select>
       </div>
 
@@ -254,7 +272,7 @@ export default function CuaHangPage() {
         </div>
       ) : view === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {storeRows.map(({ store, staffCount, managerCount }) => (
+          {storeRows.map(({ store, staffCount, managerName }) => (
             <div
               key={store.id}
               role="button"
@@ -291,7 +309,7 @@ export default function CuaHangPage() {
                 </div>
                 <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
                   <p><span className="block text-[10px] text-slate-400 font-bold">NHÂN SỰ</span><b>{staffCount}</b></p>
-                  <p><span className="block text-[10px] text-slate-400 font-bold">TRƯỞNG CỬA HÀNG</span><b>{managerCount}</b></p>
+                  <p className="min-w-0"><span className="block text-[10px] text-slate-400 font-bold">TRƯỞNG CỬA HÀNG</span><b className="block truncate">{managerName ?? "Chưa có"}</b></p>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
                   <button
@@ -321,17 +339,17 @@ export default function CuaHangPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/60 text-[11px] font-bold text-slate-400 uppercase">
-              <tr><th className="px-5 py-3">Mã & cửa hàng</th><th className="px-5 py-3">Địa chỉ</th><th className="px-5 py-3">Hotline</th><th className="px-5 py-3">Nhân sự</th><th className="px-5 py-3">Quản lý</th><th className="px-5 py-3">Trạng thái</th><th className="px-5 py-3">Thao tác</th></tr>
+              <tr><th className="px-5 py-3">Mã & cửa hàng</th><th className="px-5 py-3">Địa chỉ</th><th className="px-5 py-3">Hotline</th><th className="px-5 py-3">Nhân sự</th><th className="px-5 py-3">Trưởng cửa hàng</th><th className="px-5 py-3">Trạng thái</th><th className="px-5 py-3">Thao tác</th></tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {storeRows.map(({ store, staffCount, managerCount }) => (
+              {storeRows.map(({ store, staffCount, managerName }) => (
                 <tr key={store.id} onClick={() => setDetailStore(store)} title="Bấm để xem chi tiết" className="cursor-pointer hover:bg-slate-50/50">
                   <td className="px-5 py-4"><b>{text(store.storeName)}</b><span className="block text-[11px] text-slate-400 font-mono">{text(store.storeCode)}</span></td>
                   <td className="px-5 py-4 text-slate-600">{text(store.address)}</td>
                   <td className="px-5 py-4 text-slate-600">{text(store.phone)}</td>
-                  <td className="px-5 py-4">{staffCount}</td><td className="px-5 py-4">{managerCount}</td>
+                  <td className="px-5 py-4">{staffCount}</td><td className="px-5 py-4">{managerName ?? <span className="text-slate-400">Chưa có</span>}</td>
                   <td className="px-5 py-4"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusClass(store.status)}`}>{statusLabel(store.status)}</span></td>
-                  <td className="px-5 py-4"><div className="flex gap-1"><button onClick={(event) => { event.stopPropagation(); openStoreForm(store); }} title="Sửa cửa hàng" className="p-2 rounded-lg border border-slate-200 text-slate-600"><Edit className="w-3.5 h-3.5" /></button></div></td>
+                  <td className="px-5 py-4"><div className="flex gap-1"><button onClick={(event) => { event.stopPropagation(); setDetailStore(store); }} title="Xem chi tiết & nhân viên" aria-label="Xem chi tiết" className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"><Eye className="w-3.5 h-3.5" /></button><button onClick={(event) => { event.stopPropagation(); openStoreForm(store); }} title="Sửa cửa hàng" aria-label="Sửa cửa hàng" className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"><Edit className="w-3.5 h-3.5" /></button></div></td>
                 </tr>
               ))}
             </tbody>
@@ -340,16 +358,25 @@ export default function CuaHangPage() {
       )}
       {storeFormOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={saveStore} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
+          <form onSubmit={saveStore} className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 sm:p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-800">{editingStore ? "Sửa cửa hàng" : "Thêm cửa hàng"}</h2><button type="button" onClick={closeStoreForm} className="text-slate-400 text-xl">×</button></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {([["storeCode", "Mã cửa hàng"], ["storeName", "Tên cửa hàng"], ["address", "Địa chỉ"], ["phone", "Số điện thoại"], ["note", "Ghi chú"]] as const).map(([field, label]) => <label key={field} className="text-xs font-bold text-slate-600">{label}<input required={field === "storeCode" || field === "storeName"} value={storeForm[field] ?? ""} onChange={(event) => setStoreForm({ ...storeForm, [field]: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal" /></label>)}
-              <label className="text-xs font-bold text-slate-600 sm:col-span-2">Ảnh cửa hàng<input type="file" accept="image/*" onChange={(event) => selectLogo(event.target.files?.[0] ?? null)} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 font-normal text-xs" />{logoFile && <span className="mt-1 block text-[11px] font-normal text-slate-500">{logoFile.name}</span>}{logoPreview && <img src={logoPreview} alt="Xem trước logo cửa hàng" className="mt-3 h-32 w-full rounded-xl border border-slate-200 object-cover" />}</label>
+              <div className="text-xs font-bold text-slate-600 sm:col-span-2">Ảnh cửa hàng<label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 font-normal hover:bg-slate-50"><span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700"><Upload className="h-3.5 w-3.5" />{logoPreview ? "Đổi ảnh" : "Chọn ảnh"}</span><span className="truncate text-xs text-slate-500">{logoFile ? logoFile.name : logoPreview ? "Đang dùng ảnh hiện tại" : "Chưa chọn ảnh nào"}</span><input type="file" accept="image/*" hidden onChange={(event) => selectLogo(event.target.files?.[0] ?? null)} /></label>{logoPreview && <img src={logoPreview} alt="Xem trước logo cửa hàng" className="mt-3 h-32 w-full rounded-xl border border-slate-200 object-cover" />}</div>
               {editingStore ? (
-                <label className="text-xs font-bold text-slate-600">Trạng thái<select value={storeForm.status} onChange={(event) => setStoreForm({ ...storeForm, status: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal"><option value="OPENING">OPENING – Đang hoạt động</option><option value="CLOSED">CLOSED – Đã đóng</option></select></label>
+                <label className="text-xs font-bold text-slate-600">Trạng thái<select value={storeForm.status} onChange={(event) => setStoreForm({ ...storeForm, status: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-normal"><option value="OPENING">Đang hoạt động</option><option value="CLOSED">Đã đóng</option></select></label>
               ) : (
-                <p className="self-end pb-2 text-[11px] text-slate-500">Cửa hàng mới mặc định <b>OPENING</b> (đang hoạt động); đổi trạng thái khi chỉnh sửa.</p>
+                <p className="self-end pb-2 text-[11px] text-slate-500">Cửa hàng mới mặc định <b>đang hoạt động</b>; đổi trạng thái khi chỉnh sửa.</p>
               )}
+              <StoreStaffEditor
+                storeId={editingStore?.id ?? null}
+                storeName={storeForm.storeName}
+                draft={staffDraft}
+                onChange={setStaffDraft}
+                employees={employees}
+                assignments={assignments}
+                stores={stores}
+              />
             </div>
             <div className="flex justify-end gap-2"><button type="button" onClick={closeStoreForm} className="rounded-xl border px-4 py-2 text-sm">Hủy</button><button disabled={saving} className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-bold disabled:opacity-50">{saving ? "Đang lưu..." : "Lưu"}</button></div>
           </form>
@@ -360,7 +387,7 @@ export default function CuaHangPage() {
           store={detailStore}
           assignments={assignments}
           employees={employees}
-          managers={managers}
+          managers={activeManagers}
           onClose={() => setDetailStore(null)}
           onEdit={() => {
             const store = detailStore;
@@ -413,7 +440,8 @@ function StoreDetailModal({
     ["Số điện thoại", text(store.phone)],
     ["Địa chỉ", text(store.address)],
     ["Ghi chú", text(store.note)],
-    ["Số nhân viên", `${staff.length} (trưởng cửa hàng: ${staff.filter((item) => item.isManager).length})`],
+    ["Trưởng cửa hàng", text(staff.find((item) => item.isManager)?.employee?.fullName, "Chưa có")],
+    ["Số nhân viên", String(staff.length)],
     ["Tạo lúc", dateTime(store.createdAt)],
     ["Cập nhật lúc", dateTime(store.updatedAt)],
   ];
@@ -434,7 +462,7 @@ function StoreDetailModal({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="space-y-5 p-6">
+        <div className="space-y-5 p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-black text-slate-800">{text(store.storeName)}</h2>
@@ -479,7 +507,7 @@ function StoreDetailModal({
                     </p>
                   </div>
                   <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isManager ? "bg-brand-50 text-brand-700" : "bg-slate-100 text-slate-600"}`}>
-                    {isManager ? "TRƯỞNG CỬA HÀNG" : "NHÂN VIÊN"}
+                    {isManager ? "TRƯỞNG CỬA HÀNG" : positionName(employee?.position ?? "EMPLOYEE").toUpperCase()}
                   </span>
                 </div>
               ))}

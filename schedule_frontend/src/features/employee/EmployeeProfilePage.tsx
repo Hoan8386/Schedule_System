@@ -24,7 +24,7 @@ export default function EmployeeProfilePage() {
   const initials = fullName.split(" ").map((part) => part[0]).join("").slice(-2).toUpperCase();
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-4 p-4 sm:space-y-6 sm:p-6">
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">{error}</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -49,7 +49,7 @@ export default function EmployeeProfilePage() {
         {/* Left Column (Avatar + Account) */}
         <div className="space-y-6">
           {/* Main User Card */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs text-center flex flex-col items-center">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs text-center flex flex-col items-center">
             <div className="w-24 h-24 rounded-full bg-slate-100 border-4 border-white shadow-sm flex items-center justify-center text-2xl font-black text-slate-700">
               {initials}
             </div>
@@ -103,7 +103,7 @@ export default function EmployeeProfilePage() {
         {/* Right Column (Info Details) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Thông tin nhân viên */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
             <h4 className="font-bold text-slate-800 text-sm">
               Thông tin nhân viên
             </h4>
@@ -145,7 +145,7 @@ export default function EmployeeProfilePage() {
           </div>
 
           {/* Thông tin công việc */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
             <h4 className="font-bold text-slate-800 text-sm">
               Thông tin công việc
             </h4>
@@ -184,7 +184,7 @@ export default function EmployeeProfilePage() {
           </div>
 
           {/* Cửa hàng làm việc */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
             <h4 className="font-bold text-slate-800 text-sm">
               Cửa hàng làm việc
             </h4>

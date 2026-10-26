@@ -13,7 +13,7 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
         <h1 className="page-title">{title}</h1>
         {subtitle && <p className="page-subtitle">{subtitle}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
   );
 }

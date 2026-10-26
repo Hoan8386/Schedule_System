@@ -1,17 +1,21 @@
 import React, { useState } from "react";
-import { AlertTriangle, Award, Users } from "lucide-react";
+import { AlertTriangle, Award, SlidersHorizontal, Users } from "lucide-react";
+import { Modal } from "@/components/ui";
 import { formatDate, relId, text, timeRange } from "@/lib/format";
 import { useSchedule } from "../ScheduleContext";
 import { AddButton, EntityActions } from "../components/EntityActions";
 import { GroupMembersModal } from "../components/GroupMembersModal";
 import { TabSection } from "../components/TabSection";
 import { StoreFilter } from "../components/StoreFilter";
+import { CapacityConfigPanel } from "./CapacityConfigTab";
 
 /** Tab nhóm ca */
 export function GroupTab() {
   const { shiftGroups, shifts, reload, openModal } = useSchedule();
   const [membersOf, setMembersOf] = useState<number | null>(null);
+  const [capacityOf, setCapacityOf] = useState<number | null>(null);
   const selectedGroup = shiftGroups.find((group) => Number(group.id ?? group.shiftGroupId ?? 0) === membersOf);
+  const capacityGroup = shiftGroups.find((group) => Number(group.id ?? group.shiftGroupId ?? 0) === capacityOf);
   return (
     <TabSection title={`Nhóm ca (${shiftGroups.length})`} icon={Award} actions={
         <>
@@ -30,6 +34,16 @@ export function GroupTab() {
           onClose={() => setMembersOf(null)}
           onSaved={() => void reload()}
         />
+      )}
+      {capacityOf && capacityGroup && (
+        <Modal
+          open
+          size="max-w-3xl"
+          title={`Số lượng nhân viên theo khung giờ · ${text(capacityGroup.shiftGroupName, `Nhóm ca #${capacityOf}`)}`}
+          onClose={() => setCapacityOf(null)}
+        >
+          <CapacityConfigPanel groupId={capacityOf} />
+        </Modal>
       )}
       {shiftGroups.map((item) => {
         const id = Number(item.id ?? item.shiftGroupId ?? 0);
@@ -62,7 +76,8 @@ export function GroupTab() {
                     <div key={shiftId} className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1 text-[10px]">
                       <span className="truncate font-bold text-slate-700">{text(shift.shiftName, `Ca #${shiftId}`)}</span>
                       <span className="shrink-0 text-slate-500">
-                        {timeRange(shift.startTime, shift.endTime)} · {text(shift.maxCapacity, "0")} người
+                        {timeRange(shift.startTime, shift.endTime)} ·{" "}
+                        {shift.minCapacity ? `${shift.minCapacity}–${text(shift.maxCapacity, "?")}` : text(shift.maxCapacity, "chưa đặt max")} người
                       </span>
                     </div>
                   );
@@ -81,6 +96,10 @@ export function GroupTab() {
                   className="font-bold text-violet-700 hover:underline"
                 >
                   + Ca
+                </button>
+                <button type="button" onClick={() => setCapacityOf(id)} className="inline-flex items-center gap-1 font-bold text-violet-700 hover:underline">
+                  <SlidersHorizontal className="h-3 w-3" />
+                  Số lượng
                 </button>
                 <button type="button" onClick={() => setMembersOf(id)} className="inline-flex items-center gap-1 font-bold text-violet-700 hover:underline">
                   <Users className="h-3 w-3" />

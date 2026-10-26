@@ -38,8 +38,9 @@ public class EmployeeController {
             @RequestParam(required = false) Integer storeId,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String assignmentStatus,
-            @RequestParam(required = false) Boolean primary) {
-        return ResponseEntity.ok(service.page(page, size, sort, q, status, storeId, role, assignmentStatus, primary));
+            @RequestParam(required = false) Boolean primary,
+            @RequestParam(required = false) String position) {
+        return ResponseEntity.ok(service.page(page, size, sort, q, status, storeId, role, assignmentStatus, primary, position));
     }
 
     @GetMapping("/{id}")

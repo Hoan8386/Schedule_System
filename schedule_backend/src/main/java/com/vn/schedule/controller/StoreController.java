@@ -30,10 +30,13 @@ public class StoreController {
     private final R2StorageService storage;
 
     private final com.vn.schedule.service.StoreScopeService storeScopeService;
+    private final com.vn.schedule.service.EmployeeAssignmentService assignmentService;
 
     public StoreController(StoreRepository stores, AttachmentRepository attachments, R2StorageService storage,
-                           com.vn.schedule.service.StoreScopeService storeScopeService) {
+                           com.vn.schedule.service.StoreScopeService storeScopeService,
+                           com.vn.schedule.service.EmployeeAssignmentService assignmentService) {
         this.storeScopeService = storeScopeService;
+        this.assignmentService = assignmentService;
         this.stores = stores;
         this.attachments = attachments;
         this.storage = storage;
@@ -97,6 +100,15 @@ public class StoreController {
         store.setPhone(request.phone());
         store.setStatus(request.status());
         store.setNote(request.note());
+    }
+
+    /** Đổi trưởng cửa hàng, thêm / bỏ / chuyển cửa hàng và đổi vị trí nhân viên của cửa hàng trong một giao dịch. */
+    @PutMapping("/{id}/staff")
+    @ApiMessage("Cập nhật nhân sự cửa hàng")
+    public ResponseEntity<Void> updateStaff(@PathVariable Integer id,
+                                            @RequestBody com.vn.schedule.dto.request.StoreStaffRequest request) {
+        assignmentService.updateStoreStaff(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

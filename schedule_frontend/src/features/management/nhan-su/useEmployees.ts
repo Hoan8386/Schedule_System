@@ -4,13 +4,13 @@ import { listData } from "@/lib/format";
 import { useDebouncedValue, useInitialLoad, usePagedList } from "@/lib/hooks";
 
 export const ALL = "ALL";
-export type RoleFilter = typeof ALL | "MANAGER" | "EMPLOYEE";
+export type PositionFilter = typeof ALL | "STORE_MANAGER" | "EMPLOYEE";
 
 export const EMPTY_FILTERS = {
   search: "",
   status: ALL,
   storeId: ALL,
-  role: ALL as RoleFilter,
+  position: ALL as PositionFilter,
   assignmentStatus: ALL,
   primary: ALL,
 };
@@ -29,7 +29,7 @@ export function useEmployees() {
   const [filters, setFilters] = useState<EmployeeFilters>(EMPTY_FILTERS);
   const [stores, setStores] = useState<StoreResponse[]>([]);
   const search = useDebouncedValue(filters.search.trim());
-  const { status, storeId, role, assignmentStatus, primary } = filters;
+  const { status, storeId, position, assignmentStatus, primary } = filters;
 
   const fetchPage = useCallback(
     (page: number, signal: AbortSignal) =>
@@ -40,13 +40,13 @@ export function useEmployees() {
           q: search || undefined,
           status: optional(status),
           storeId: storeId === ALL ? undefined : Number(storeId),
-          role: role === ALL ? undefined : role,
+          position: position === ALL ? undefined : position,
           assignmentStatus: optional(assignmentStatus),
           primary: primary === ALL ? undefined : primary === "true",
         },
         signal
       ),
-    [search, status, storeId, role, assignmentStatus, primary]
+    [search, status, storeId, position, assignmentStatus, primary]
   );
   const list = usePagedList(fetchPage);
 

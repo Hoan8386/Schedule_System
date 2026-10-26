@@ -63,27 +63,65 @@ export function windowState(period: RegistrationPeriod | null, group: MyShiftGro
   return { open: true, note: "" };
 }
 
+/** Các ngày (YYYY-MM-DD) của tuần thứ Hai – Chủ nhật chứa dayKey. */
+const weekKeys = (dayKey: string) => {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  const offset = (new Date(y, m - 1, d).getDay() + 6) % 7;
+  return Array.from({ length: 7 }, (_, index) => localKey(new Date(y, m - 1, d - offset + index)));
+};
+
+/**
+ * Mọi ca của nhóm trong tuần chứa dayKey đã đủ min chưa (khớp ShiftRegistrationService.allSlotsReachedMinInWeek):
+ * chỉ xét ngày còn đăng ký được (trong kỳ, chưa qua); ca theo ngày đã hủy / đóng không bao giờ đủ min nên bỏ qua.
+ */
+export function weekReachedMin(
+  row: TemplateRow,
+  dayKey: string,
+  todayKey: string,
+  inPeriod: (dayKey: string) => boolean,
+  byKey: Map<string, MyOpenShift>
+) {
+  return weekKeys(dayKey)
+    .filter((key) => key >= todayKey && inPeriod(key))
+    .every((key) =>
+      row.group.shifts.every((slot) => {
+        const slotByDate = byKey.get(`${slot.shiftId}|${key}`);
+        if (!slot.minCapacity || (slotByDate && slotByDate.status !== "OPEN")) return true;
+        return (slotByDate?.registeredCount ?? 0) >= slot.minCapacity;
+      })
+    );
+}
+
+/**
+ * Sức chứa đang áp dụng của một ô: ngưỡng ban đầu là min (không có min thì max);
+ * chỉ nâng lên max khi mọi ca của nhóm trong tuần đã đạt min.
+ */
+export function capacityFor(
+  row: TemplateRow,
+  dayKey: string,
+  todayKey: string,
+  inPeriod: (dayKey: string) => boolean,
+  byKey: Map<string, MyOpenShift>
+) {
+  const shiftByDate = byKey.get(`${row.shift.shiftId}|${dayKey}`);
+  const max = shiftByDate?.maxCapacity || row.shift.maxCapacity || DEFAULT_CAPACITY;
+  const min = row.shift.minCapacity ?? 0;
+  const limitedByMin = min > 0 && min < max && !weekReachedMin(row, dayKey, todayKey, inPeriod, byKey);
+  return { capacity: limitedByMin ? min : max, limitedByMin };
+}
+
 export function cellFor(
   row: TemplateRow,
   dayKey: string,
   todayKey: string,
-  inPeriod: boolean,
+  inPeriodDay: (dayKey: string) => boolean,
   window: { open: boolean; note: string },
   byKey: Map<string, MyOpenShift>
 ): Cell {
   const shiftByDate = byKey.get(`${row.shift.shiftId}|${dayKey}`);
   const count = shiftByDate?.registeredCount ?? 0;
-  const max = shiftByDate?.maxCapacity || row.shift.maxCapacity || DEFAULT_CAPACITY;
-  // Ngưỡng ban đầu là min; chỉ nâng lên max khi mọi khung giờ của nhóm trong ngày đã đạt min (khớp ShiftRegistrationService)
-  const min = row.shift.minCapacity ?? 0;
-  // Khung giờ có ca theo ngày đã hủy / đóng thì không thể đủ min nên bỏ qua
-  const allReachedMin = row.group.shifts.every((slot) => {
-    const slotByDate = byKey.get(`${slot.shiftId}|${dayKey}`);
-    if (!slot.minCapacity || (slotByDate && slotByDate.status !== "OPEN")) return true;
-    return (slotByDate?.registeredCount ?? 0) >= slot.minCapacity;
-  });
-  const limitedByMin = min > 0 && !allReachedMin && min < max;
-  const capacity = limitedByMin ? min : max;
+  const inPeriod = inPeriodDay(dayKey);
+  const { capacity, limitedByMin } = capacityFor(row, dayKey, todayKey, inPeriodDay, byKey);
   const base = { count, capacity, shiftByDate };
   if (!inPeriod) return { ...base, kind: "outside", note: "Ngoài kỳ" };
   if (shiftByDate && isRegistered(shiftByDate)) {
@@ -98,7 +136,7 @@ export function cellFor(
   if (dayKey < todayKey) return { ...base, kind: "past", note: "Đã qua" };
   if (shiftByDate && shiftByDate.status !== "OPEN") return { ...base, kind: "closed", note: "Đã đóng" };
   if (count >= capacity) {
-    return { ...base, kind: "full", note: limitedByMin ? "Đủ tối thiểu – đăng ký khung giờ khác trước" : "Hết chỗ" };
+    return { ...base, kind: "full", note: limitedByMin ? "Đủ tối thiểu – các ca khác trong tuần chưa đủ người" : "Hết chỗ" };
   }
   if (!window.open) return { ...base, kind: "window", note: window.note };
   return { ...base, kind: "available", note: "Còn chỗ" };

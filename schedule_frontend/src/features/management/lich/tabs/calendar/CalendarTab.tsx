@@ -207,7 +207,7 @@ export function CalendarTab() {
         <span className="rounded-md bg-rose-50 px-2 py-1 text-rose-600">★ Sự kiện đặc biệt</span>
         {calendar.highlight && <span className="rounded-md px-2 py-1 ring-2 ring-accent">Ca có nhân viên đang chọn</span>}
         <span className="ml-auto">
-          {view === "month" ? "Số trên ca = nhân viên đã phân bổ / số người tối đa" : "Thanh ca: số giờ · giờ ca · nhân viên đã phân bổ / tối đa — bấm vào để xem danh sách nhân viên"}
+          {view === "month" ? "Số trên ca = nhân viên đã phân bổ / số người tối đa" : "Thanh ca: giờ bắt đầu – giờ kết thúc (tổng số giờ) · nhân viên đã phân bổ / tối đa — bấm vào để xem danh sách nhân viên"}
         </span>
       </div>
     </section>

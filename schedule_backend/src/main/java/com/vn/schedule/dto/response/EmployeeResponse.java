@@ -16,9 +16,12 @@ public record EmployeeResponse(
         String address,
         Integer idCardFrontId,
         Integer idCardBackId,
+        Integer signatureId,
         LocalDate hireDate,
         String status,
         String note,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        LocalDateTime updatedAt,
+        /** EMPLOYEE / STORE_MANAGER (theo vai trò tài khoản) */
+        String position) {
 }

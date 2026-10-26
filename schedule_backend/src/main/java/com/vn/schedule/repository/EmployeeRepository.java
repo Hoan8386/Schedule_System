@@ -59,6 +59,11 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
                            OR (:role = 'EMPLOYEE' AND NOT EXISTS (SELECT 1 FROM StoreManager sm
                                 WHERE sm.employeeId = es.employeeId AND sm.storeId = es.storeId
                                   AND (:assignmentStatus IS NULL OR sm.status = :assignmentStatus))))))
+              AND (:position IS NULL
+                   OR (:position = 'STORE_MANAGER' AND EXISTS (SELECT 1 FROM UserRole ur, Role r
+                        WHERE ur.userId = e.user.id AND r.roleId = ur.roleId AND r.roleCode = 'STORE_MANAGER'))
+                   OR (:position = 'EMPLOYEE' AND NOT EXISTS (SELECT 1 FROM UserRole ur, Role r
+                        WHERE ur.userId = e.user.id AND r.roleId = ur.roleId AND r.roleCode = 'STORE_MANAGER')))
             """)
     Page<Employee> searchPage(@Param("status") String status,
                               @Param("selfId") Integer selfId,
@@ -70,6 +75,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
                               @Param("assignmentStatus") String assignmentStatus,
                               @Param("primary") Boolean primary,
                               @Param("role") String role,
+                              @Param("position") String position,
                               Pageable pageable);
 
     /** [tổng, đang ACTIVE] trong phạm vi + bộ lọc trạng thái – một truy vấn cho các thẻ thống kê. */
@@ -85,4 +91,23 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
                                 @Param("selfId") Integer selfId,
                                 @Param("allStores") boolean allStores,
                                 @Param("visibleStoreIds") Collection<Integer> visibleStoreIds);
+
+    /** Số nhân viên giữ vị trí trưởng cửa hàng (vai trò tài khoản STORE_MANAGER) trong phạm vi + bộ lọc trạng thái. */
+    @Query("""
+            SELECT COUNT(e) FROM Employee e
+            WHERE (:status IS NULL OR e.status = :status)
+              AND (:selfId IS NULL OR e.id = :selfId)
+              AND (:allStores = TRUE OR EXISTS (SELECT 1 FROM EmployeeStore vs
+                    WHERE vs.employeeId = e.id AND vs.storeId IN :visibleStoreIds AND UPPER(vs.status) = 'ACTIVE'))
+              AND EXISTS (SELECT 1 FROM UserRole ur, Role r
+                        WHERE ur.userId = e.user.id AND r.roleId = ur.roleId AND r.roleCode = 'STORE_MANAGER')
+            """)
+    long countStoreManagersInScope(@Param("status") String status,
+                                   @Param("selfId") Integer selfId,
+                                   @Param("allStores") boolean allStores,
+                                   @Param("visibleStoreIds") Collection<Integer> visibleStoreIds);
+
+    /** Mã nhân viên dạng NVxxxx (sinh mã tự động lấy số lớn nhất + 1). */
+    @Query("SELECT e.employeeCode FROM Employee e WHERE e.employeeCode LIKE 'NV%'")
+    List<String> findGeneratedCodes();
 }

@@ -7,6 +7,7 @@ import type {
   StoreManagerResponse,
   StoreRequest,
   StoreResponse,
+  StoreStaffRequest,
 } from "../types/hr.types";
 import type { EmployeeListItem, EmployeePageParams, EmployeePageSummary, PageResult } from "../types/page.types";
 
@@ -30,6 +31,8 @@ export const hrApi = {
     http.get<StoreResponse[]>(withQuery("/api/v1/stores", { status, includeLogo })),
   createStore: stores.create,
   updateStore: stores.update,
+  /** Đổi trưởng cửa hàng, thêm / bỏ / chuyển nhân viên, đổi vị trí – một giao dịch */
+  updateStoreStaff: (storeId: number, body: StoreStaffRequest) => http.put<void>(`/api/v1/stores/${storeId}/staff`, body),
   getStoreManagers: () => http.get<StoreManagerResponse[]>("/api/v1/store_manager"),
 
   getEmployeeStores: (filters?: { storeId?: number; role?: "MANAGER" | "EMPLOYEE"; status?: string; primary?: boolean }) =>
